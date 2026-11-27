@@ -50,3 +50,14 @@ test('the debug menu lives in the Log and can start a new day', async () => {
   expect(useGameStore.getState().save.dev.offsetMs).toBeGreaterThan(0);
   require('@/src/game/clock').setClockOffset(0);
 });
+
+test('the debug menu and scrapbook close', async () => {
+  useGameStore.setState({ save: newSave(), loaded: true });
+  await render(<LogScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Open debug menu' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+  expect(screen.queryByText('Skip 3 hours')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: /Thornwick Meadows scrapbook/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+  expect(screen.queryByText('Scrapbook: Thornwick Meadows')).toBeNull();
+});

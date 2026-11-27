@@ -387,3 +387,53 @@ test('wins and losses look different for adventures and bosses', async () => {
   await show({ kind: 'boss', offer, success: false, exp: 0, gold: 0, resolvedAt: 'c', boss: { bossId: 'old-bramblehide', difficulty: 'hard', success: false, exp: 0, gold: 0 } });
   expect(screen.getByText('Not this time')).toBeTruthy();
 });
+
+describe('every overlay on Home closes', () => {
+  const base = () => {
+    const s = newSave();
+    s.habits = [habit('Read')];
+    s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+    return s;
+  };
+  test('habit page: Cancel closes it', async () => {
+    useGameStore.setState({ save: base() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: '+ New habit' }));
+    expect(screen.getByText('New habit')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText('New habit')).toBeNull();
+  });
+  test('map, sort, boss habit and adventure board close', async () => {
+    useGameStore.setState({ save: base() });
+    await render(<HomeScreen />);
+    for (const [open, marker] of [
+      [/^Map\./, 'The map'],
+      ['Sort habits', 'Sort habits'],
+      ['Choose a boss habit', 'Boss habit'],
+      ['Choose an adventure', 'Adventures in Thornwick Meadows'],
+    ] as const) {
+      await fireEvent.press(screen.getByRole('button', { name: open }));
+      expect(screen.getAllByText(marker).length).toBeGreaterThan(0);
+      await fireEvent.press(screen.getAllByRole('button', { name: 'Close' }).slice(-1)[0]);
+      expect(screen.queryByText(marker === 'Sort habits' ? 'Custom' : marker)).toBeNull();
+    }
+  });
+  test('the boss screen closes with ×', async () => {
+    const s = base();
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+    expect(screen.getByText('chance of victory')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('chance of victory')).toBeNull();
+  });
+  test('the return screen closes with Collect', async () => {
+    const s = newSave();
+    s.pendingResult = { offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 90, rewardExp: 40, rewardGold: 20 }, success: true, exp: 40, gold: 20, resolvedAt: 'x' };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Collect' }));
+    expect(screen.queryByText('Your hero has returned!')).toBeNull();
+  });
+});

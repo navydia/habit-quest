@@ -34,7 +34,8 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
   const [index, setIndex] = useState(0);
   const [difficulty, setDifficulty] = useState<BossDifficulty>('normal');
   const boss = bosses[Math.min(index, bosses.length - 1)];
-  if (!boss) return null;
+  // Only mounted while open (see Sheet): closing unmounts the Modal.
+  if (!visible || !boss) return null;
 
   const chance = bossChance(save.player, boss, difficulty);
   const yourPower = powerOf(save.player) + BOSS_DEFENSE_PER_POINT * totalStats(save.player).defense;
@@ -46,7 +47,7 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
   const label = DIFFS.find((x) => x.d === difficulty)!;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: c.bg }}>
         <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}>
           <View style={{ backgroundColor: tone, paddingTop: insets.top + space.m, paddingBottom: space.xl, borderBottomLeftRadius: radius.sheet, borderBottomRightRadius: radius.sheet }}>

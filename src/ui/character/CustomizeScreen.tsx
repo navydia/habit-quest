@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLACES } from '@/src/content/places';
 import { REGIONS } from '@/src/content/regions';
@@ -55,6 +55,7 @@ export function CustomizeScreen({ visible, save, onClose: close, onChange }: Pro
   const prof = save.profile;
   // A blank name falls back to "Adventurer"; names are trimmed when you leave.
   const onClose = () => {
+    Keyboard.dismiss();
     const name = prof.name.trim();
     if (name !== prof.name || !name) onChange({ name: name || 'Adventurer' });
     close();
@@ -92,8 +93,10 @@ export function CustomizeScreen({ visible, save, onClose: close, onChange }: Pro
     </View>
   );
 
+  // Only mounted while open (see Sheet): closing unmounts the Modal.
+  if (!visible) return null;
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.s, minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.line }}>
           <View style={{ minWidth: 72 }} />

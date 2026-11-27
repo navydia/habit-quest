@@ -13,8 +13,11 @@ type Props = { visible: boolean; title: string; onClose: () => void; children: R
 export function Sheet({ visible, title, onClose, children, footer }: Props) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
+  // Only mount while open: closing unmounts the Modal. Toggling `visible` on a mounted Modal can fail to
+  // dismiss on iOS inside native tab screens (the Customize "Done" bug), so no Modal here stays mounted hidden.
+  if (!visible) return null;
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       {/* Keeps inputs above the keyboard. 'padding' on both platforms (Android is edge-to-edge). */}
       <KeyboardAvoidingView behavior={sheetKeyboardBehavior} style={styles.root} testID="sheet-keyboard-avoider">
         <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.backdrop} onPress={onClose} />

@@ -1,6 +1,6 @@
 import { clockNow } from '@/src/game/clock';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY, lifeAreaColor } from '@/src/content/habitOptions';
 import { dayKey } from '@/src/game/dates';
@@ -59,7 +59,7 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
   const submit = () => {
     if (!valid) return;
     onSave({ name, emoji: emoji.trim() || '✨', lifeArea, timeOfDay, schedule });
-    onClose();
+    close();
   };
 
   const chip = (label: string, selected: boolean, onPress: () => void, a11y = label) => (
@@ -87,6 +87,12 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
   );
   const wrap = { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.s };
 
+  // Dismiss the keyboard before closing so iOS can animate the page away cleanly.
+  const close = () => {
+    Keyboard.dismiss();
+    onClose();
+  };
+
   const row = (key: 'area' | 'time' | 'repeat', label: string, value: string, icon: string, body: React.ReactNode) => (
     <View style={{ backgroundColor: c.surface, borderRadius: radius.card, borderWidth: 1, borderColor: c.line }}>
       <Pressable
@@ -108,13 +114,14 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
   );
   const repeatLabel = repeat === 'daily' ? 'Every day' : repeat === 'weekdays' ? `On ${days.length} ${days.length === 1 ? 'day' : 'days'} a week` : `Every ${every} days`;
 
+  if (!visible) return null;
   return (
     // A full-screen page, not a sheet: the Add/Save action lives in the header bar, so the keyboard can
     // never hide it (style rule 17a), and nothing has to be squeezed up when the keyboard opens.
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={close}>
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.s, minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.line }}>
-          <Pressable accessibilityRole="button" onPress={onClose} style={{ minWidth: 72, minHeight: minTouch, justifyContent: 'center', paddingHorizontal: space.m }}>
+          <Pressable accessibilityRole="button" onPress={close} style={{ minWidth: 72, minHeight: minTouch, justifyContent: 'center', paddingHorizontal: space.m }}>
             <Text variant="bodyStrong" color="textMuted">Cancel</Text>
           </Pressable>
           <Text variant="heading" accessibilityRole="header">{habit ? 'Edit habit' : 'New habit'}</Text>
@@ -200,7 +207,7 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
               onPress={() => {
                 if (!confirmArchive) return setConfirmArchive(true);
                 onArchive(habit.id);
-                onClose();
+                close();
               }}
             />
           </View>

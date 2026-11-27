@@ -87,3 +87,23 @@ test('an empty name falls back to Adventurer when Customize closes', async () =>
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(g().save.profile.name).toBe('Adventurer');
 });
+
+describe('every overlay on the Character tab closes', () => {
+  test('Customize closes with Done', async () => {
+    await render(<CharacterScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Customize your character' }));
+    expect(screen.getByText('Customize')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByText('Customize')).toBeNull();
+  });
+  test('the slot sheet and familiar sheet close', async () => {
+    await render(<CharacterScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: /^Head:/ }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('Leather Cap')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: /^Familiar:/ }));
+    expect(screen.getByText(/Beat bosses for a chance/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText(/Beat bosses for a chance/)).toBeNull();
+  });
+});
