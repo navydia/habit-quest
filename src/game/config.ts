@@ -26,3 +26,16 @@ export const DROP_LUCK_PER_POINT = 0.01;
 /** Rarity weights; each Luck point moves RARITY_LUCK_SHIFT from common to rare. */
 export const RARITY_WEIGHTS = { common: 60, uncommon: 28, rare: 9, epic: 2.5, legendary: 0.5 } as const;
 export const RARITY_LUCK_SHIFT = 0.5;
+
+// Bosses (Plan 3)
+export const BOSS_TOKENS_NEEDED = 6;
+export const BOSS_DEFENSE_PER_POINT = 2;
+export const BOSS_BASE = { exp: 150, gold: 80 };
+export const BOSS_DIFFICULTY = {
+  normal: { penalty: 0, reward: 1, familiar: 1, rarityShift: 0 },
+  hard: { penalty: 30, reward: 1.75, familiar: 2, rarityShift: 10 },
+  extreme: { penalty: 60, reward: 3, familiar: 4, rarityShift: 20 },
+} as const;
+/** Boss loot never includes commons. rarityShift moves weight from uncommon to epic/legendary (2:1). */
+export const BOSS_RARITY_WEIGHTS = { uncommon: 50, rare: 35, epic: 12, legendary: 3 } as const;
+export const FAMILIAR_BASE_CHANCE = 0.1;

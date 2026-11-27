@@ -5,19 +5,24 @@ import { addExp } from './progression';
 import { powerOf, speedFactor } from './stats';
 import { rollDrop } from './drops';
 import { recordClear } from './world';
+import { attachBoss, resolveBoss } from './bosses';
+import { familiarBonus } from './familiars';
+import type { BossDifficulty } from './types';
 import { successChance } from './quests';
 import { QUEST_TEMPLATES } from '../content/quests';
 import type { Completion, QuestRun, SaveData } from './types';
 
 const completionKey = (c: Completion) => `${c.habitId}|${c.dayKey}`;
 
-export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
+export function startQuest(s: SaveData, offerId: string, now: Date, boss?: { bossId: string; difficulty: BossDifficulty }): SaveData {
   if (!canStartQuest(s, now)) throw new Error('A quest cannot be started right now.');
   const offer = s.board?.offers.find((o) => o.id === offerId);
   if (!offer) throw new Error(`Unknown quest offer: ${offerId}`);
   const today = dayKey(now);
+  const withBoss = boss ? attachBoss(s, boss, now) : undefined;
+  const base = withBoss?.save ?? s;
   return {
-    ...s,
+    ...base,
     activeRun: {
       offer,
       dayKey: today,
@@ -25,6 +30,7 @@ export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
       successChance: successChance(powerOf(s.player), offer.requiredPower),
       preStartKeys: s.completions.map(completionKey),
       speedFactor: speedFactor(s.player),
+      ...(withBoss ? { boss: withBoss.runBoss } : {}),
     },
     lastQuestStartedDayKey: today,
   };
@@ -60,8 +66,13 @@ export function resolveQuest(s: SaveData, now: Date, rng: () => number, force = 
     ...(drop ? { drop: { gearId: drop.id } } : {}),
   };
   const cleared = success ? recordClear(s, run.offer) : { save: s };
-  const final = { ...result, ...(cleared.memento ? { memento: cleared.memento } : {}) };
-  return { ...cleared.save, activeRun: null, pendingResult: final, questLog: [...s.questLog, final] };
+  const bossed = resolveBoss(cleared.save, run, rng);
+  const final = {
+    ...result,
+    ...(cleared.memento ? { memento: cleared.memento } : {}),
+    ...(bossed.result ? { boss: bossed.result } : {}),
+  };
+  return { ...bossed.save, activeRun: null, pendingResult: final, questLog: [...s.questLog, final] };
 }
 
 function storyFor(templateId: string, success: boolean): string | undefined {
@@ -72,9 +83,16 @@ function storyFor(templateId: string, success: boolean): string | undefined {
 export function collectResult(s: SaveData): { save: SaveData; levelsGained: number } {
   const r = s.pendingResult;
   if (!r) return { save: s, levelsGained: 0 };
-  const inventory = r.drop
-    ? [...s.player.inventory, { uid: `${r.resolvedAt}-${r.drop.gearId}`, gearId: r.drop.gearId, obtainedAt: r.resolvedAt }]
-    : s.player.inventory;
-  const { player, levelsGained } = addExp({ ...s.player, inventory, gold: s.player.gold + r.gold }, r.exp);
-  return { save: { ...s, player, pendingResult: null }, levelsGained };
+  const inventory = [...s.player.inventory];
+  if (r.drop) inventory.push({ uid: `${r.resolvedAt}-${r.drop.gearId}`, gearId: r.drop.gearId, obtainedAt: r.resolvedAt });
+  if (r.boss?.drop) inventory.push({ uid: `${r.resolvedAt}-boss-${r.boss.drop.gearId}`, gearId: r.boss.drop.gearId, obtainedAt: r.resolvedAt });
+  const bonus = familiarBonus(s);
+  const gold = Math.round((r.gold + (r.boss?.gold ?? 0)) * bonus.gold);
+  const exp = Math.round((r.exp + (r.boss?.exp ?? 0)) * bonus.exp);
+  const familiars =
+    r.boss?.familiarId && !s.familiars.owned.includes(r.boss.familiarId)
+      ? { owned: [...s.familiars.owned, r.boss.familiarId], active: s.familiars.active ?? r.boss.familiarId }
+      : s.familiars;
+  const { player, levelsGained } = addExp({ ...s.player, inventory, gold: s.player.gold + gold }, exp);
+  return { save: { ...s, player, familiars, pendingResult: null }, levelsGained };
 }
