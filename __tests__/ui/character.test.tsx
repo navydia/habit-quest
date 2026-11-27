@@ -59,6 +59,7 @@ test('an equipped item that no longer exists shows as Unknown item and can be ta
 test('a familiar can be made active', async () => {
   useGameStore.setState({ save: { ...g().save, familiars: { owned: ['hoglet', 'bog-toad'], active: 'hoglet' } } });
   await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: /^Familiar: Hoglet/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Bring Bog Toad along' }));
   expect(g().save.familiars.active).toBe('bog-toad');
 });

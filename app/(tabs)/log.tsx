@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { dayKey } from '@/src/game/dates';
+import { Button } from '@/src/ui/kit/Button';
+import { FamiliarsCard } from '@/src/ui/character/FamiliarsCard';
+import { useMinuteClock } from '@/src/ui/useMinuteClock';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { REGIONS } from '@/src/content/regions';
@@ -15,12 +19,18 @@ const dayTitle = (key: string) => {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 };
 
-/** The Log: history, scrapbooks, mail and daily quests — everything that doesn't have its own home. */
+/** The Log: mail, daily quests, scrapbooks, familiars and history — everything that doesn't have its own home. */
 export default function LogScreen() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const save = useGameStore((s) => s.save);
   const hideFromHistory = useGameStore((s) => s.hideFromHistory);
+  const { claimDaily, ensureDaily, setActiveFamiliar } = useGameStore.getState();
+  const now = useMinuteClock();
+  const today = dayKey(now);
+  useEffect(() => {
+    ensureDaily(now);
+  }, [ensureDaily, now]);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
 
   const entries = save.completions.filter((x) => !x.hidden).sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -40,7 +50,25 @@ export default function LogScreen() {
       <Text variant="display" accessibilityRole="header">Log</Text>
 
       {placeholder('Mail', 'Letters from the Guild Master arrive in a later update.')}
-      {placeholder('Daily quests', 'Daily quests from the City arrive in a later update.')}
+      <Card style={{ gap: space.s }}>
+        <Text variant="heading" accessibilityRole="header">Daily quests</Text>
+        <Text variant="caption" color="textMuted">Three new quests every day.</Text>
+        {save.daily.dayKey === today &&
+          save.daily.quests.map((q) => {
+            const done = q.progress >= q.target;
+            return (
+              <View key={q.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, minHeight: minTouch + 8 }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text variant="bodyStrong" color={q.claimed ? 'textMuted' : 'text'}>{q.title}</Text>
+                  <Text variant="caption" color="textMuted">{q.claimed ? 'Claimed' : `${q.progress} / ${q.target} · ${q.reward} gold`}</Text>
+                </View>
+                {!q.claimed && (
+                  <Button title={done ? 'Claim' : 'In progress'} variant={done ? 'reward' : 'secondary'} disabled={!done} onPress={() => claimDaily(q.id)} />
+                )}
+              </View>
+            );
+          })}
+      </Card>
 
       <Card style={{ gap: space.s }}>
         <Text variant="heading" accessibilityRole="header">Scrapbooks</Text>
@@ -57,6 +85,8 @@ export default function LogScreen() {
           </Pressable>
         ))}
       </Card>
+
+      <FamiliarsCard owned={save.familiars.owned} active={save.familiars.active} onSetActive={setActiveFamiliar} />
 
       <View style={{ gap: space.s }}>
         <Text variant="title" accessibilityRole="header">History</Text>

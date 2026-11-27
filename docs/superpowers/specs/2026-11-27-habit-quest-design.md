@@ -309,3 +309,17 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - **Boss preview:** the boss large on a backdrop coloured by risk (moss = safe, gold = a gamble, ember = a long shot), with small difficulty buttons showing the required power and chance.
 - **Adventure board:** a cork board with paper notes pinned on, each showing required power, chance, rewards and memento status.
 - **Skip (testing)** has **Win** and **Lose** buttons.
+
+## 16. Character tab, Shop, potions, daily quests *(creator decisions, built in Plan 6; supersedes §9 and §9.5)*
+
+- **Character tab:**
+  - A portrait with **six equipment boxes**: weapon, head and body on the left; feet, accessory and **familiar** on the right. Tapping a box shows the item's stats and lets you change it.
+  - **Stats show their effect** (for example "+9 power rating", "+6% drop chance", "−12% adventure time").
+  - Your familiar's bonus.
+  - **Lifetime stats:** adventures won and tried, habits completed, bosses beaten, regions explored, mementos, gold earned.
+- **The familiar collection** lives in the **Log**.
+- **The City tab is now the Shop tab** (no tavern). Each shop is its own tab:
+  - **Armory:** 4 items a day plus a weekly special (rare or better, 1.5× price). Prices: common 60, uncommon 150, rare 350, epic 800, legendary 1800.
+  - **Apothecary:** one-use potions you drink before your next trip. Fortune Draught: +10 Luck. Swift Tonic: −15% time. Courage Brew: +40 power. One active at a time.
+  - **Cosmetics** and **Housing:** coming soon.
+- **Daily quests:** 3 a day from a pool of 7 (an adventure, 3 or 5 habits, buy an item, drink a potion, equip gear, spend a skill point). Rewards are 40–80 gold, claimed in the Log.
