@@ -42,9 +42,10 @@ export function isReturned(run: QuestRun, completions: Completion[], now: Date):
   return now.getTime() >= questEndTime(run, completions).getTime();
 }
 
-export function resolveQuest(s: SaveData, now: Date, rng: () => number): SaveData {
+/** `force` resolves immediately (the testing Skip button). */
+export function resolveQuest(s: SaveData, now: Date, rng: () => number, force = false): SaveData {
   const run = s.activeRun;
-  if (!run || !isReturned(run, s.completions, now)) return s;
+  if (!run || (!force && !isReturned(run, s.completions, now))) return s;
   const success = rng() < run.successChance;
   const drop = success ? rollDrop(run.offer.difficulty, s.player, rng) : null;
   const share = success ? 1 : FAIL_REWARD_FRACTION;

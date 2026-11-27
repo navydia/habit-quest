@@ -50,14 +50,14 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
     <Modal visible animationType="fade" onRequestClose={onCollect}>
       <View style={[styles.root, { backgroundColor: c.bg }]}>
         <Text variant="label" color={result.success ? 'primary' : 'textMuted'}>
-          {result.success ? 'Quest complete' : 'Quest not completed'}
+          {result.success ? 'Adventure complete' : 'Adventure not completed'}
         </Text>
         <Text variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>Your hero has returned!</Text>
         <Text variant="heading" color="textMuted">{result.offer.name}</Text>
 
         {showLog && result.story ? (
           <Card style={styles.log}>
-            <Text variant="label" color="textMuted">From the quest log</Text>
+            <Text variant="label" color="textMuted">From the adventure log</Text>
             <ScrollView style={{ maxHeight: 220 }}>
               <Text>{result.story}</Text>
             </ScrollView>
@@ -101,7 +101,7 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
           <Button title="Collect" variant="reward" onPress={onCollect} />
           {result.story ? (
             <Button
-              title={showLog ? 'Hide quest log' : 'Read quest log'}
+              title={showLog ? 'Hide adventure log' : 'Read adventure log'}
               variant="secondary"
               onPress={() => setLogFor(showLog ? null : result.resolvedAt)}
             />

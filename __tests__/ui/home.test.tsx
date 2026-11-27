@@ -30,13 +30,13 @@ test('with no habits Home invites you to add one', async () => {
   expect(screen.getByText('Add a habit to start your journey.')).toBeTruthy();
 });
 
-test('with the gauge full a quest can be chosen', async () => {
+test('with the gauge full an adventure can be chosen', async () => {
   const s = newSave();
   s.habits = [habit('Read')];
   s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
-  expect(screen.getByRole('button', { name: 'Choose a quest' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
 });
 
 test('a returned hero shows the reveal with Collect', async () => {
@@ -68,7 +68,7 @@ test('notification permission is asked before the return is scheduled', async ()
   s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
-  await fireEvent.press(screen.getByRole('button', { name: 'Choose a quest' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
   await fireEvent.press(screen.getAllByRole('radio')[0]);
   await fireEvent.press(screen.getByRole('button', { name: /Set out/ }));
   await new Promise((r) => setTimeout(r, 0));
@@ -91,7 +91,7 @@ test('a habit backfilled for yesterday can still be unchecked', async () => {
   expect(boxes()[1].props.accessibilityState.checked).toBe(false);
 });
 
-test('the return screen lets you read the quest log story', async () => {
+test('the return screen lets you read the adventure log story', async () => {
   const s = newSave();
   s.pendingResult = {
     offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 80, rewardExp: 40, rewardGold: 20 },
@@ -104,7 +104,7 @@ test('the return screen lets you read the quest log story', async () => {
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
   expect(screen.queryByText('Our hero herded eleven slimes back over the stone wall.')).toBeNull();
-  await fireEvent.press(screen.getByRole('button', { name: 'Read quest log' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Read adventure log' }));
   expect(screen.getByText('Our hero herded eleven slimes back over the stone wall.')).toBeTruthy();
 });
 
@@ -116,4 +116,18 @@ test('with habits but none scheduled today, the gauge says so instead of asking 
   await render(<HomeScreen />);
   expect(screen.queryByText('Add a habit to start your journey.')).toBeNull();
   expect(screen.getByText('No habits are scheduled today. Your hero is resting.')).toBeTruthy();
+});
+
+test('in development builds a running adventure shows a Skip button for testing', async () => {
+  const s = newSave();
+  s.activeRun = {
+    offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 80, rewardExp: 40, rewardGold: 20 },
+    dayKey: today,
+    startedAt: new Date().toISOString(),
+    successChance: 1,
+  };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Skip (testing)' }));
+  expect(useGameStore.getState().save.pendingResult).not.toBeNull();
 });

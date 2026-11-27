@@ -26,6 +26,8 @@ interface GameState {
   startQuest(offerId: string, now?: Date): void;
   tick(now?: Date): void;
   collect(): number;
+  /** Testing only: finish the running adventure now. */
+  skipAdventure(now?: Date): void;
   allocateSp(stat: StatKey): void;
   respec(): void;
   equip(uid: string): void;
@@ -101,6 +103,12 @@ export const useGameStore = create<GameState>((set, get) => {
     tick(now = new Date()) {
       const s = get().save;
       const next = resolveQuest(s, now, Math.random);
+      if (next !== s) commit(next);
+    },
+
+    skipAdventure(now = new Date()) {
+      const s = get().save;
+      const next = resolveQuest(s, now, Math.random, true);
       if (next !== s) commit(next);
     },
 

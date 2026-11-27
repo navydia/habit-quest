@@ -26,7 +26,7 @@ export function HomeScreen() {
   const { height } = useWindowDimensions();
   const now = useMinuteClock();
   const save = useGameStore((s) => s.save);
-  const { toggleHabit, addHabit, ensureBoard, startQuest, collect } = useGameStore.getState();
+  const { toggleHabit, addHabit, ensureBoard, startQuest, collect, skipAdventure } = useGameStore.getState();
   const [adding, setAdding] = useState(false);
   const [choosing, setChoosing] = useState(false);
 
@@ -62,6 +62,7 @@ export function HomeScreen() {
               canStart={canStart}
               startedToday={save.lastQuestStartedDayKey === today}
               now={now}
+              onSkip={__DEV__ ? () => skipAdventure(new Date()) : undefined}
               onChoose={() => {
                 ensureBoard(new Date());
                 setChoosing(true);

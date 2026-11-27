@@ -31,7 +31,7 @@ export function HeroPlaceholder({ mode }: { mode: 'idle' | 'questing' }) {
   const look = useGlance(mode === 'idle' && !reduced);
 
   return (
-    <View style={styles.wrap} accessible accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : 'Your hero, out on a quest'}>
+    <View style={styles.wrap} accessible accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : 'Your hero, out on an adventure'}>
       {mode === 'questing' && <Slime reduced={reduced} />}
       <Animated.View style={{ transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }}>
         <Svg width={150} height={200} viewBox="0 0 120 160">

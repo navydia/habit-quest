@@ -169,3 +169,18 @@ describe('character actions', () => {
     expect(g().save).toBe(before);
   });
 });
+
+test('skip (testing) brings the hero home immediately', () => {
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-easy`, at(DAY, 9));
+  g().skipAdventure(at(DAY, 9, 5));
+  expect(g().save.activeRun).toBeNull();
+  expect(g().save.pendingResult).not.toBeNull();
+});
+
+test('skip does nothing when no adventure is running', () => {
+  const before = g().save;
+  g().skipAdventure(at(DAY, 9));
+  expect(g().save).toBe(before);
+});

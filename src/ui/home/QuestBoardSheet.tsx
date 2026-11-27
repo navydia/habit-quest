@@ -68,11 +68,11 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   };
 
   return (
-    <Sheet visible={visible} title="Choose today's quest" onClose={onClose}>
+    <Sheet visible={visible} title="Choose today's adventure" onClose={onClose}>
       <View style={{ gap: space.m }} accessibilityRole="radiogroup">
         {offers.map(card)}
         <Button
-          title={chosen ? `Set out: ${chosen.name}` : 'Choose a quest above'}
+          title={chosen ? `Set out: ${chosen.name}` : 'Choose an adventure above'}
           disabled={!chosen}
           onPress={() => {
             if (chosen) onStart(chosen.id);

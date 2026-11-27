@@ -32,6 +32,6 @@ test('Checkbox reports its checked state and toggles', async () => {
 });
 
 test('ProgressBar exposes its value', async () => {
-  await render(<ProgressBar value={0.5} label="Quest gauge" />);
-  expect(screen.getByRole('progressbar', { name: 'Quest gauge' }).props.accessibilityValue).toEqual({ min: 0, max: 100, now: 50 });
+  await render(<ProgressBar value={0.5} label="Adventure gauge" />);
+  expect(screen.getByRole('progressbar', { name: 'Adventure gauge' }).props.accessibilityValue).toEqual({ min: 0, max: 100, now: 50 });
 });

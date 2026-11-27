@@ -33,6 +33,17 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 - Stats becoming a min-maxing puzzle. Stats are light flavor; random SP allocation must still be fine.
 - The app feeling like a spreadsheet with a sprite glued on. The character is front and center.
 
+## 1a. Terminology *(creator decision)*
+
+- **Adventure** is the daily outing your hero goes on when the gauge fills: the adventure board, the adventure gauge, "On an adventure", and the adventure log.
+- **Quest** is reserved for the **daily quests in the City** (Tavern and similar), which are designed later. Older parts of this spec still say "quest" where they mean adventure.
+- Code identifiers keep their `quest…` names for now (for example `startQuest`, `QuestRun`). City quests will use distinct names, such as `cityQuest`.
+
+## 1b. Testing aids
+
+- **Development builds only** (`__DEV__`, which is true in Expo Go): a **"Skip (testing)"** button finishes a running adventure immediately. **Bosses get the same Skip** when they're built.
+- Release builds never show it.
+
 ## 2a. Look and feel
 
 The visual style, tokens and **UI rules for every screen** live in `docs/design/style-guide.md` (§9 lists the 18 rules). Every new screen and feature follows it, so the app stays consistent as it grows. The most important rules:
