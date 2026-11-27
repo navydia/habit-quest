@@ -5,6 +5,7 @@ import type { Anim } from '@/src/art/types';
 import { GEAR, RARITY_LABEL } from '@/src/content/gear';
 import type { Player, Slot } from '@/src/game/types';
 import { newSave } from '@/src/save/migrate';
+import { useGameStore } from '@/src/store/gameStore';
 import { radius, rarity, scene, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { HeroSprite } from '@/src/ui/hero/HeroSprite';
@@ -16,6 +17,7 @@ const SLOTS: Slot[] = ['weapon', 'head', 'body', 'feet', 'accessory'];
 export default function ArtPreview() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
+  const profile = useGameStore((st) => st.save.profile);
   const [equipped, setEquipped] = useState<Partial<Record<Slot, string>>>({ weapon: 'wooden-sword', body: 'travellers-tunic' });
   const player: Player = {
     ...newSave().player,
@@ -30,7 +32,7 @@ export default function ArtPreview() {
       <View style={{ flexDirection: 'row', gap: space.m }}>
         {(['idle', 'fight'] as Anim[]).map((anim) => (
           <View key={anim} style={{ flex: 1, alignItems: 'center', backgroundColor: scene.skyBottom, borderRadius: radius.card, paddingTop: space.m }}>
-            <HeroSprite player={player} anim={anim} height={180} />
+            <HeroSprite player={player} anim={anim} height={180} appearance={{ look: profile.look, pronouns: profile.pronouns }} />
             <Text variant="label" style={{ color: '#FFF8EC', marginBottom: space.s }}>{anim}</Text>
           </View>
         ))}

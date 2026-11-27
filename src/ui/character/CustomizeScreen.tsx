@@ -49,10 +49,16 @@ type Patch = Partial<Omit<SaveData['profile'], 'look'>> & { look?: Partial<Look>
 type Props = { visible: boolean; save: SaveData; onClose: () => void; onChange: (patch: Patch) => void };
 
 /** Customize: name, title, pronouns, skin, hair, eyes, ears and the character box background. Changes apply as you tap. */
-export function CustomizeScreen({ visible, save, onClose, onChange }: Props) {
+export function CustomizeScreen({ visible, save, onClose: close, onChange }: Props) {
   const { c, t } = useTheme();
   const insets = useSafeAreaInsets();
   const prof = save.profile;
+  // A blank name falls back to "Adventurer"; names are trimmed when you leave.
+  const onClose = () => {
+    const name = prof.name.trim();
+    if (name !== prof.name || !name) onChange({ name: name || 'Adventurer' });
+    close();
+  };
   const earned = new Set(earnedTitles(save).map((x) => x.id));
   const backgrounds = ['home', ...REGIONS.filter((r) => isRegionUnlocked(save, r.id)).map((r) => r.id)];
 
@@ -108,7 +114,6 @@ export function CustomizeScreen({ visible, save, onClose, onChange }: Props) {
                 <TextInput
                   value={prof.name}
                   onChangeText={(name) => onChange({ name: name.slice(0, 24) })}
-                  onEndEditing={() => !prof.name.trim() && onChange({ name: 'Adventurer' })}
                   accessibilityLabel="Name"
                   placeholder="Adventurer"
                   placeholderTextColor={c.textMuted}

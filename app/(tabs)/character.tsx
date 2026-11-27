@@ -14,6 +14,7 @@ import { useGameStore } from '@/src/store/gameStore';
 import { board, fonts, home, hud, minTouch, radius, rarity as rarityColors, space } from '@/src/theme/tokens';
 import { titleById } from '@/src/content/titles';
 import { HomeScene } from '@/src/ui/home/HomeScene';
+import { placeOf } from '@/src/content/places';
 import { CustomizeScreen } from '@/src/ui/character/CustomizeScreen';
 import { CogIcon } from '@/src/ui/icons/Icons';
 import { useTheme } from '@/src/theme/useTheme';
@@ -77,7 +78,7 @@ export default function CharacterScreen() {
         <View style={{ width: 64, height: 64, borderRadius: 18, borderWidth: 3, borderColor: border, backgroundColor: filled ? 'rgba(255,248,236,0.16)' : 'rgba(255,248,236,0.06)', alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontSize: 26, lineHeight: 32, opacity: filled ? 1 : 0.4 }}>{s === 'familiar' ? (fam ? '🐾' : '🐾') : SLOT_INFO[s].emoji}</Text>
         </View>
-        <Text variant="caption" style={{ color: home.text, textAlign: 'center' }} numberOfLines={1}>{name}</Text>
+        <Text variant="caption" style={{ color: home.text, textAlign: 'center', backgroundColor: hud.bg, borderRadius: 6, paddingHorizontal: 4, overflow: 'hidden' }} numberOfLines={1}>{name}</Text>
       </Pressable>
     );
   };
@@ -93,7 +94,8 @@ export default function CharacterScreen() {
   return (
     <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.screen, paddingTop: insets.top + space.l, paddingBottom: insets.bottom + 96, gap: space.l }}>
       {/* Full-bleed character box: place background, power on top, then name, title, class · level. */}
-      <View style={{ marginHorizontal: -space.screen, marginTop: -(insets.top + space.l), paddingTop: insets.top + space.m, paddingHorizontal: space.screen, paddingBottom: space.l, gap: space.s, overflow: 'hidden' }}>
+      {/* Background colour = the place's ground, so a tall box (long name, big text) never shows a pale gap. */}
+      <View style={{ marginHorizontal: -space.screen, marginTop: -(insets.top + space.l), paddingTop: insets.top + space.m, paddingHorizontal: space.screen, paddingBottom: space.l, gap: space.s, overflow: 'hidden', backgroundColor: placeOf(save.profile.background).bottom }}>
         <HomeScene place={save.profile.background} />
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: 'rgba(28,24,22,0.35)' }} />
         <View style={{ alignItems: 'center' }} accessible accessibilityLabel={`${powerOf(p)} power`}>
@@ -102,19 +104,22 @@ export default function CharacterScreen() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ gap: space.m }}>{LEFT.map(box)}</View>
-          <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
+          {/* The cog sits on the portrait's bottom-right, next to the familiar box. */}
+          <View>
+            <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Customize your character"
+              onPress={() => setCustomizing(true)}
+              style={({ pressed }) => ({ position: 'absolute', right: -6, bottom: 4, width: minTouch, height: minTouch, borderRadius: minTouch / 2, backgroundColor: hud.bg, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+            >
+              <CogIcon color={home.text} />
+            </Pressable>
+          </View>
           <View style={{ gap: space.m }}>{RIGHT.map(box)}</View>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Customize your character"
-          onPress={() => setCustomizing(true)}
-          style={({ pressed }) => ({ position: 'absolute', right: space.screen + 84, bottom: 168, width: minTouch, height: minTouch, borderRadius: minTouch / 2, backgroundColor: hud.bg, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
-        >
-          <CogIcon color={home.text} />
-        </Pressable>
         <View style={{ alignItems: 'center', gap: 2 }}>
-          <Text variant="display" accessibilityRole="header" style={{ color: home.text }}>{save.profile.name}</Text>
+          <Text variant="display" accessibilityRole="header" style={{ color: home.text, textAlign: 'center' }}>{save.profile.name.trim() || 'Adventurer'}</Text>
           <Text variant="bodyStrong" style={{ color: home.muted }}>{titleById(save.profile.titleId)?.name ?? 'the Wanderer'}</Text>
           <Text variant="caption" style={{ color: home.muted }}>{p.title} · Level {p.level}</Text>
         </View>

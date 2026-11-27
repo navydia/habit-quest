@@ -93,7 +93,8 @@ export const useGameStore = create<GameState>((set, get) => {
     async load() {
       try {
         const save = await loadSave();
-        setClockOffset(save.dev?.offsetMs ?? 0);
+        // Time skips are a testing aid: release builds always use the real clock.
+        setClockOffset(__DEV__ ? (save.dev?.offsetMs ?? 0) : 0);
         set({ save, loaded: true, persistBlocked: false });
       } catch {
         set({ save: newSave(), loaded: true, persistBlocked: true });

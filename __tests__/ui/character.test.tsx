@@ -79,3 +79,11 @@ test('a familiar can be made active', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Bring Bog Toad along' }));
   expect(g().save.familiars.active).toBe('bog-toad');
 });
+
+test('an empty name falls back to Adventurer when Customize closes', async () => {
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Customize your character' }));
+  await fireEvent.changeText(screen.getByLabelText('Name'), '   ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  expect(g().save.profile.name).toBe('Adventurer');
+});

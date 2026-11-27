@@ -1,7 +1,7 @@
 import { clockNow } from '@/src/game/clock';
 import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMinuteClock } from '../useMinuteClock';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -63,6 +63,7 @@ export function HomeScreen() {
   // Out on a trip: the region it happens in. Otherwise: home, or the region you travelled to.
   const scenePlace = save.activeRun ? (runRegion ?? region.id) : placeId(save);
   const pal = placeOf(scenePlace);
+  const appearance = useMemo(() => ({ look: save.profile.look, pronouns: save.profile.pronouns }), [save.profile.look, save.profile.pronouns]);
   const fam = save.familiars.active ? familiarById(save.familiars.active) : undefined;
   const revealBonus = { ...familiarBonus(save), label: fam ? `${fam.name}: +${fam.bonus.pct}% ${fam.bonus.kind === 'exp' ? 'EXP' : 'gold'}` : null };
 
@@ -115,6 +116,7 @@ export function HomeScreen() {
             <HeroSprite
               player={save.player}
               anim={mode === 'questing' ? 'fight' : 'idle'}
+              appearance={appearance}
               height={210}
               paused={!focused}
               accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : bossFight ? `Your hero, fighting ${bossFight.name}` : 'Your hero, out on an adventure'}
