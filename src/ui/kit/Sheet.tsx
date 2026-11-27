@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { Text } from './Text';
+
+/** 'padding' on both platforms: Expo apps are edge-to-edge, so Android no longer resizes for the keyboard. */
+export const sheetKeyboardBehavior = 'padding' as const;
 
 type Props = { visible: boolean; title: string; onClose: () => void; children: ReactNode };
 
@@ -12,7 +15,8 @@ export function Sheet({ visible, title, onClose, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.root}>
+      {/* Keeps inputs above the keyboard. 'padding' on both platforms (Android is edge-to-edge). */}
+      <KeyboardAvoidingView behavior={sheetKeyboardBehavior} style={styles.root} testID="sheet-keyboard-avoider">
         <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.backdrop} onPress={onClose} />
         <View
           style={[
@@ -26,7 +30,7 @@ export function Sheet({ visible, title, onClose, children }: Props) {
           </Text>
           <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
