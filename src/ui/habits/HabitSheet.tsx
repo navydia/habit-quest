@@ -1,3 +1,4 @@
+import { clockNow } from '@/src/game/clock';
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY, lifeAreaColor } from '@/src/content/habitOptions';
@@ -50,7 +51,7 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
   const [open, setOpen] = useState<'emoji' | 'area' | 'time' | 'repeat' | null>(null);
 
   // An every-N-days repeat counts from the day it is set, unless it is unchanged.
-  const from = start.kind === 'interval' && start.every === every && start.from ? start.from : dayKey(new Date());
+  const from = start.kind === 'interval' && start.every === every && start.from ? start.from : dayKey(clockNow());
   const schedule: Schedule =
     repeat === 'daily' ? { kind: 'daily' } : repeat === 'weekdays' ? { kind: 'weekdays', days: [...days].sort() } : { kind: 'interval', every, from };
   const valid = name.trim().length > 0 && (repeat !== 'weekdays' || days.length > 0);

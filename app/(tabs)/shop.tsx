@@ -1,3 +1,4 @@
+import { clockNow } from '@/src/game/clock';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -59,7 +60,7 @@ export default function ShopScreen() {
             title={sold ? 'Sold out' : `Buy · ${item.price} gold`}
             variant={sold ? 'secondary' : 'primary'}
             disabled={sold}
-            onPress={() => say(buyGear(item.slotId, new Date()), `${def.name} is yours. Find it on the Character tab.`)}
+            onPress={() => say(buyGear(item.slotId, clockNow()), `${def.name} is yours. Find it on the Character tab.`)}
           />
         </TactileCard>
       </View>
@@ -130,10 +131,10 @@ export default function ShopScreen() {
                 </View>
                 <View style={{ flexDirection: 'row', gap: space.s }}>
                   <View style={{ flex: 1 }}>
-                    <Button title={`Buy · ${p.price} gold`} onPress={() => say(buyPotion(p.id, new Date()), `Bought a ${p.name}.`)} />
+                    <Button title={`Buy · ${p.price} gold`} onPress={() => say(buyPotion(p.id, clockNow()), `Bought a ${p.name}.`)} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Button title="Drink" variant="secondary" disabled={owned < 1 || !!save.potions.active} onPress={() => say(drinkPotion(p.id, new Date()), `${p.name} will help on your next trip.`)} />
+                    <Button title="Drink" variant="secondary" disabled={owned < 1 || !!save.potions.active} onPress={() => say(drinkPotion(p.id, clockNow()), `${p.name} will help on your next trip.`)} />
                   </View>
                 </View>
               </TactileCard>

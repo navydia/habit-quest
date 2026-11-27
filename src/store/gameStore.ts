@@ -1,3 +1,4 @@
+import { clockNow, setClockOffset } from '../game/clock';
 import { create } from 'zustand';
 import { dayKey } from '../game/dates';
 import { canStartQuest } from '../game/gauge';
@@ -11,10 +12,10 @@ import { buyGear as buyFromArmory, buyPotion as buyFromApothecary, drinkPotion a
 import { moveHabit as reorder, type MoveTarget } from '../game/ordering';
 import { gearById } from '../content/gear';
 import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
-import type { BossDifficulty, DayKey, Habit, LifeArea, Player, SaveData, Schedule, Slot, StatKey, TimeOfDay } from '../game/types';
+import type { BossDifficulty, DayKey, Habit, LifeArea, Look, Player, Profile, SaveData, Schedule, Slot, StatKey, TimeOfDay } from '../game/types';
 import { setBossHabit as chooseBossHabit } from '../game/bosses';
 import { debugAction, type DebugAction } from '../game/debug';
-import { currentRegion, travel as travelTo } from '../game/world';
+import { currentRegion, goHome as goHomeRule, travel as travelTo } from '../game/world';
 import { cancelReturn, scheduleReturn } from '../notify/questNotifications';
 import { newSave } from '../save/migrate';
 import { loadSave, writeSave } from '../save/storage';
@@ -45,6 +46,8 @@ interface GameState {
   setActiveFamiliar(id: string | null): void;
   /** Development builds only. */
   debug(action: DebugAction, now?: Date): void;
+  goHome(): void;
+  setProfile(patch: Partial<Omit<Profile, 'look'>> & { look?: Partial<Look> }): void;
   tick(now?: Date): void;
   /** Collects the result; with `equipDrop`, also equips the dropped item. Returns levels gained. */
   collect(equipDrop?: boolean): number;
@@ -90,13 +93,14 @@ export const useGameStore = create<GameState>((set, get) => {
     async load() {
       try {
         const save = await loadSave();
+        setClockOffset(save.dev?.offsetMs ?? 0);
         set({ save, loaded: true, persistBlocked: false });
       } catch {
         set({ save: newSave(), loaded: true, persistBlocked: true });
       }
     },
 
-    addHabit(name, schedule, now = new Date(), details = {}) {
+    addHabit(name, schedule, now = clockNow(), details = {}) {
       const s = get().save;
       const habit: Habit = {
         id: newId(),
@@ -118,13 +122,13 @@ export const useGameStore = create<GameState>((set, get) => {
       commit({ ...s, habits: s.habits.map((h) => (h.id === id ? { ...h, ...details, name: (details.name ?? h.name).trim() } : h)) });
     },
 
-    completeHabit(habitId, key, now = new Date()) {
+    completeHabit(habitId, key, now = clockNow()) {
       if (!canLogDay(key, now) || isCompleted(get().save.completions, habitId, key)) return;
       get().toggleHabit(habitId, key, now);
       commit(syncHabitDaily(get().save, now));
     },
 
-    undoCompletion(habitId, key, now = new Date()) {
+    undoCompletion(habitId, key, now = clockNow()) {
       if (!isCompleted(get().save.completions, habitId, key)) return;
       get().toggleHabit(habitId, key, now);
       commit(syncHabitDaily(get().save, now));
@@ -139,7 +143,7 @@ export const useGameStore = create<GameState>((set, get) => {
       commit({ ...get().save, settings: { ...get().save.settings, groupBy } });
     },
 
-    startBossFight(bossId, difficulty, now = new Date()) {
+    startBossFight(bossId, difficulty, now = clockNow()) {
       const s = get().save;
       let next: SaveData;
       try {
@@ -152,7 +156,7 @@ export const useGameStore = create<GameState>((set, get) => {
       return true;
     },
 
-    archiveHabit(id, now = new Date()) {
+    archiveHabit(id, now = clockNow()) {
       const s = get().save;
       const habits = s.habits.map((h) => (h.id === id ? { ...h, archived: true } : h));
       // Archiving the boss habit clears it (tokens reset; the sheet warns first).
@@ -160,7 +164,7 @@ export const useGameStore = create<GameState>((set, get) => {
       commit({ ...s, habits, boss });
     },
 
-    toggleHabit(habitId, key, now = new Date()) {
+    toggleHabit(habitId, key, now = clockNow()) {
       if (!canLogDay(key, now)) return;
       get().tick(now); // a hero who is already home stays home
       const s = get().save;
@@ -172,14 +176,14 @@ export const useGameStore = create<GameState>((set, get) => {
       rescheduleReturn(next);
     },
 
-    ensureBoard(now = new Date()) {
+    ensureBoard(now = clockNow()) {
       const s = get().save;
       const today = dayKey(now);
       if (s.board?.dayKey === today) return;
       commit({ ...s, board: { dayKey: today, offers: generateBoard(today, s.player, seededRng(today), currentRegion(s).id) } });
     },
 
-    startQuest(offerId, now = new Date()) {
+    startQuest(offerId, now = clockNow()) {
       get().ensureBoard(now);
       const s = get().save;
       if (!canStartQuest(s, now) || !s.board?.offers.some((o) => o.id === offerId)) return;
@@ -188,7 +192,7 @@ export const useGameStore = create<GameState>((set, get) => {
       rescheduleReturn(next);
     },
 
-    tick(now = new Date()) {
+    tick(now = clockNow()) {
       const s = get().save;
       const next = resolveQuest(s, now, Math.random);
       if (next !== s) {
@@ -197,13 +201,13 @@ export const useGameStore = create<GameState>((set, get) => {
       }
     },
 
-    travel(regionId, now = new Date()) {
+    travel(regionId, now = clockNow()) {
       const s = get().save;
       const next = travelTo(s, regionId, now);
       if (next !== s) commit(next);
     },
 
-    setBossHabit(habitId, now = new Date()) {
+    setBossHabit(habitId, now = clockNow()) {
       commit(chooseBossHabit(get().save, habitId, now));
     },
 
@@ -213,8 +217,20 @@ export const useGameStore = create<GameState>((set, get) => {
       commit({ ...s, familiars: { ...s.familiars, active: id } });
     },
 
-    debug(action, now = new Date()) {
-      commit(debugAction(get().save, action, now));
+    debug(action, now = clockNow()) {
+      const next = debugAction(get().save, action, now);
+      setClockOffset(next.dev?.offsetMs ?? 0);
+      commit(next);
+      get().tick();
+    },
+
+    goHome() {
+      commit(goHomeRule(get().save));
+    },
+
+    setProfile(patch) {
+      const s = get().save;
+      commit({ ...s, profile: { ...s.profile, ...patch, look: { ...s.profile.look, ...(patch.look ?? {}) } } });
     },
 
     moveHabit(id, target) {
@@ -222,7 +238,7 @@ export const useGameStore = create<GameState>((set, get) => {
       commit({ ...s, habits: reorder(s.habits, id, target) });
     },
 
-    skipAdventure(now = new Date(), outcome) {
+    skipAdventure(now = clockNow(), outcome) {
       const s = get().save;
       // Forced dice: 0 wins every roll, 0.99 loses every roll.
       const rng = outcome === 'win' ? () => 0 : outcome === 'lose' ? () => 0.99 : Math.random;
@@ -250,11 +266,11 @@ export const useGameStore = create<GameState>((set, get) => {
       const next = spendPoint(p, stat);
       if (next !== p) {
         setPlayer(next);
-        progress('sp', new Date());
+        progress('sp', clockNow());
       }
     },
 
-    ensureDaily(now = new Date()) {
+    ensureDaily(now = clockNow()) {
       const s = get().save;
       const next = makeDaily(s, now);
       if (next !== s) commit(next);
@@ -266,21 +282,21 @@ export const useGameStore = create<GameState>((set, get) => {
       if (next !== s) commit(next);
     },
 
-    buyGear(slotId, now = new Date()) {
+    buyGear(slotId, now = clockNow()) {
       const r = buyFromArmory(get().save, slotId, now);
       if (r.error) return r.error;
       commit(r.save);
       progress('buy', now);
     },
 
-    buyPotion(id, now = new Date()) {
+    buyPotion(id, now = clockNow()) {
       const r = buyFromApothecary(get().save, id);
       if (r.error) return r.error;
       commit(r.save);
       progress('buy', now);
     },
 
-    drinkPotion(id, now = new Date()) {
+    drinkPotion(id, now = clockNow()) {
       const r = drink(get().save, id);
       if (r.error) return r.error;
       commit(r.save);
@@ -291,7 +307,7 @@ export const useGameStore = create<GameState>((set, get) => {
       setPlayer(resetPoints(get().save.player));
     },
 
-    equip(uid, now = new Date()) {
+    equip(uid, now = clockNow()) {
       const p = get().save.player;
       const def = gearById(p.inventory.find((i) => i.uid === uid)?.gearId ?? '');
       if (!def) return;

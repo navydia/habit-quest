@@ -58,7 +58,7 @@ export function travel(s: SaveData, regionId: string, now: Date): SaveData {
   return {
     ...s,
     board: null,
-    world: { currentRegion: regionId, regions: { ...s.world.regions, [regionId]: progressOf(s, regionId) } },
+    world: { currentRegion: regionId, regions: { ...s.world.regions, [regionId]: progressOf(s, regionId) }, atHome: false },
   };
 }
 
@@ -74,4 +74,14 @@ export function recordClear(s: SaveData, offer: QuestOffer): { save: SaveData; m
     save: { ...s, world: { ...s.world, regions: { ...s.world.regions, [region.id]: next } } },
     memento: { regionId: region.id, mementoId: adventure.memento.id },
   };
+}
+
+/** Back to the cottage. Adventures still come from the last region you travelled to. */
+export function goHome(s: SaveData): SaveData {
+  return s.world.atHome ? s : { ...s, world: { ...s.world, atHome: true } };
+}
+
+/** 'home' or the current region id: which scene to show. */
+export function placeId(s: SaveData): string {
+  return s.world.atHome === false ? currentRegion(s).id : 'home';
 }

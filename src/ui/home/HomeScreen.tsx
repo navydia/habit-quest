@@ -1,3 +1,4 @@
+import { clockNow } from '@/src/game/clock';
 import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -115,11 +116,11 @@ export function HomeScreen() {
               canStart={canStart}
               startedToday={save.lastQuestStartedDayKey === today}
               now={now}
-              onSkip={__DEV__ ? (outcome) => skipAdventure(new Date(), outcome) : undefined}
+              onSkip={__DEV__ ? (outcome) => skipAdventure(clockNow(), outcome) : undefined}
               onBossHabit={() => setBossSheet(true)}
               onBoss={() => setBossOpen(true)}
               onChoose={() => {
-                ensureBoard(new Date());
+                ensureBoard(clockNow());
                 setChoosing(true);
               }}
             />
@@ -128,7 +129,7 @@ export function HomeScreen() {
             save={save}
             today={today}
             onComplete={(h, key) => {
-              completeHabit(h.id, key, new Date());
+              completeHabit(h.id, key, clockNow());
               setUndo({ habitId: h.id, key, message: `${h.emoji} ${h.name} · done` });
             }}
             onEdit={(h) => setEditing(h)}
@@ -151,7 +152,7 @@ export function HomeScreen() {
         bottom={insets.bottom + 72}
         onDone={() => setUndo(null)}
         onUndo={() => {
-          if (undo) undoCompletion(undo.habitId, undo.key, new Date());
+          if (undo) undoCompletion(undo.habitId, undo.key, clockNow());
           setUndo(null);
         }}
       />
@@ -163,7 +164,7 @@ export function HomeScreen() {
         habit={editing === 'new' ? null : editing}
         preset={preset}
         onClose={() => setEditing(null)}
-        onSave={(d) => (editing && editing !== 'new' ? updateHabit(editing.id, d) : addHabit(d.name, d.schedule, new Date(), d))}
+        onSave={(d) => (editing && editing !== 'new' ? updateHabit(editing.id, d) : addHabit(d.name, d.schedule, clockNow(), d))}
         onArchive={archiveHabit}
       />
       )}
@@ -173,7 +174,7 @@ export function HomeScreen() {
         onClose={() => setBossOpen(false)}
         onAdventureInstead={() => {
           setBossOpen(false);
-          ensureBoard(new Date());
+          ensureBoard(clockNow());
           setChoosing(true);
         }}
         onFight={(bossId, difficulty) => {
@@ -181,7 +182,7 @@ export function HomeScreen() {
           ensurePermission()
             .catch(() => false)
             .then(() => {
-              if (!startBossFight(bossId, difficulty, new Date())) setNotice('The boss fight could not start. Check your tokens and try again.');
+              if (!startBossFight(bossId, difficulty, clockNow())) setNotice('The boss fight could not start. Check your tokens and try again.');
             });
         }}
       />
@@ -194,7 +195,7 @@ export function HomeScreen() {
           // Ask first, so the return notification is allowed when it gets scheduled.
           ensurePermission()
             .catch(() => false)
-            .then(() => startQuest(id, new Date()));
+            .then(() => startQuest(id, clockNow()));
         }}
       />
       <MapSheet
@@ -203,7 +204,7 @@ export function HomeScreen() {
         now={now}
         onClose={() => setMapOpen(false)}
         onTravel={(id) => {
-          travel(id, new Date());
+          travel(id, clockNow());
           setMapOpen(false);
         }}
         onScrapbook={(id) => {
@@ -218,15 +219,15 @@ export function HomeScreen() {
         currentId={save.boss.habitId}
         tokens={bossTokens(save)}
         onClose={() => setBossSheet(false)}
-        onChoose={(id) => setBossHabit(id, new Date())}
+        onChoose={(id) => setBossHabit(id, clockNow())}
       />
       {__DEV__ && (
         <DebugSheet
           visible={debugOpen}
           onClose={() => setDebugOpen(false)}
           onAction={(a) => {
-            if (a === 'skip') skipAdventure(new Date());
-            else debug(a, new Date());
+            if (a === 'skip') skipAdventure(clockNow());
+            else debug(a, clockNow());
             setDebugOpen(false);
           }}
         />

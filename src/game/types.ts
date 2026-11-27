@@ -133,8 +133,30 @@ export interface DailyQuest {
   claimed: boolean;
 }
 
+export type Skin = 'fair' | 'light' | 'tan' | 'brown' | 'deep';
+export type HairStyle = 'short' | 'long' | 'curly' | 'bun';
+export type HairColor = 'black' | 'brown' | 'auburn' | 'blonde' | 'silver' | 'teal';
+export type EyeColor = 'dark' | 'brown' | 'green' | 'blue' | 'violet';
+export type Ears = 'round' | 'pointed';
+export type Pronouns = 'he' | 'she' | 'they';
+export interface Look {
+  skin: Skin;
+  hairStyle: HairStyle;
+  hairColor: HairColor;
+  eyes: EyeColor;
+  ears: Ears;
+}
+export interface Profile {
+  name: string;
+  titleId: string;
+  pronouns: Pronouns;
+  look: Look;
+  /** 'home' or a region id: the picture behind the character box. */
+  background: string;
+}
+
 export interface SaveData {
-  version: 5;
+  version: 6;
   player: Player;
   habits: Habit[];
   completions: Completion[];
@@ -143,7 +165,11 @@ export interface SaveData {
   pendingResult: QuestResult | null;
   lastQuestStartedDayKey: DayKey | null;
   questLog: QuestResult[];
-  world: { currentRegion: string; regions: Record<string, RegionProgress> };
+  /** currentRegion: where adventures come from. atHome: whether the hero is shown at home or out in that region. */
+  world: { currentRegion: string; regions: Record<string, RegionProgress>; atHome?: boolean };
+  profile: Profile;
+  /** Development only: how far the Debug menu has moved the clock forward. */
+  dev: { offsetMs: number };
   boss: {
     habitId: string | null;
     tokenEpoch: string | null;

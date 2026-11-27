@@ -25,7 +25,7 @@ test('level up, gold, new day, all gear, familiars and regions', () => {
   const s = newSave();
   expect(debugAction(s, 'levelUp', now).player.level).toBe(2);
   expect(debugAction(s, 'gold', now).player.gold).toBe(500);
-  expect(debugAction({ ...s, lastQuestStartedDayKey: DAY }, 'newDay', now).lastQuestStartedDayKey).toBeNull();
+  expect(debugAction({ ...s, lastQuestStartedDayKey: DAY }, 'anotherAdventure', now).lastQuestStartedDayKey).toBeNull();
   expect(debugAction(s, 'allGear', now).player.inventory.length).toBe(s.player.inventory.length + GEAR.length);
   expect(debugAction(s, 'allFamiliars', now).familiars.owned).toHaveLength(REGIONS.length);
   const open = debugAction(s, 'unlockRegions', now);

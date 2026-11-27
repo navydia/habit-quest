@@ -2,7 +2,15 @@ import { classTitle } from '../game/classTitle';
 import { zeroStats } from '../game/stats';
 import type { Player, SaveData } from '../game/types';
 
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
+
+export const defaultProfile = () => ({
+  name: 'Adventurer',
+  titleId: 'wanderer',
+  pronouns: 'they' as const,
+  look: { skin: 'tan' as const, hairStyle: 'short' as const, hairColor: 'brown' as const, eyes: 'dark' as const, ears: 'round' as const },
+  background: 'home',
+});
 
 const shopDefaults = () => ({
   shop: { dayKey: null, bought: [] as string[] },
@@ -12,7 +20,7 @@ const shopDefaults = () => ({
 
 const START_REGION = 'thornwick-meadows';
 const worldDefaults = () => ({
-  world: { currentRegion: START_REGION, regions: {} },
+  world: { currentRegion: START_REGION, regions: {}, atHome: true },
   boss: { habitId: null, tokenEpoch: null },
   familiars: { owned: [] as string[], active: null },
 });
@@ -37,7 +45,9 @@ function withCharacter(p: { level: number; exp: number; gold: number; unspentSp:
 
 export function newSave(): SaveData {
   return {
-    version: 5,
+    version: 6,
+    profile: defaultProfile(),
+    dev: { offsetMs: 0 },
     ...shopDefaults(),
     settings: { groupBy: 'timeOfDay' },
     ...worldDefaults(),
@@ -54,6 +64,7 @@ export function newSave(): SaveData {
 
 /** MIGRATIONS[n] upgrades a version-n save to version n+1. */
 const MIGRATIONS: Record<number, (s: any) => any> = {
+  5: (s) => ({ ...s, version: 6, profile: defaultProfile(), dev: { offsetMs: 0 }, world: { ...s.world, atHome: s.world?.atHome ?? true } }),
   4: (s) => ({ ...s, ...shopDefaults(), version: 5 }),
   3: (s) => ({
     ...s,
@@ -77,6 +88,9 @@ function isValidCurrent(s: any): s is SaveData {
     Array.isArray(s.familiars?.owned) &&
     typeof s.settings?.groupBy === 'string' &&
     typeof s.potions?.owned === 'object' &&
+    typeof s.profile?.name === 'string' &&
+    typeof s.profile?.look === 'object' &&
+    typeof s.dev?.offsetMs === 'number' &&
     Array.isArray(s.shop?.bought) &&
     Array.isArray(s.daily?.quests) &&
     typeof s.boss === 'object' &&

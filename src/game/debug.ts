@@ -2,18 +2,30 @@ import { GEAR } from '../content/gear';
 import { REGIONS } from '../content/regions';
 import { newSave } from '../save/migrate';
 import { BOSS_TOKENS_NEEDED } from './config';
-import { dayKey } from './dates';
+import { dayKey, endOfDay } from './dates';
 import { complete, scheduledHabits } from './habits';
 import { addExp, expToNext } from './progression';
 import type { SaveData } from './types';
 import { emptyProgress } from './world';
 
 /** Testing shortcuts for the debug menu (development builds only). */
-export type DebugAction = 'fillGauge' | 'bossTokens' | 'levelUp' | 'gold' | 'newDay' | 'allGear' | 'allFamiliars' | 'unlockRegions' | 'reset';
+export type DebugAction = 'skip1' | 'skip3' | 'skip8' | 'newDay' | 'fillGauge' | 'bossTokens' | 'levelUp' | 'gold' | 'anotherAdventure' | 'allGear' | 'allFamiliars' | 'unlockRegions' | 'reset';
 
 export function debugAction(s: SaveData, action: DebugAction, now: Date): SaveData {
   const today = dayKey(now);
+  const shift = (ms: number): SaveData => ({ ...s, dev: { offsetMs: (s.dev?.offsetMs ?? 0) + ms } });
   switch (action) {
+    case 'skip1':
+      return shift(3600_000);
+    case 'skip3':
+      return shift(3 * 3600_000);
+    case 'skip8':
+      return shift(8 * 3600_000);
+    case 'newDay': {
+      // Jump to one minute past the start of tomorrow.
+      const next = endOfDay(today);
+      return shift(next.getTime() + 60_000 - now.getTime());
+    }
     case 'fillGauge': {
       let completions = s.completions;
       for (const h of scheduledHabits(s.habits, today)) completions = complete(completions, h.id, today, now);
@@ -29,7 +41,7 @@ export function debugAction(s: SaveData, action: DebugAction, now: Date): SaveDa
       return { ...s, player: addExp(s.player, expToNext(s.player.level) - s.player.exp).player };
     case 'gold':
       return { ...s, player: { ...s.player, gold: s.player.gold + 500 } };
-    case 'newDay':
+    case 'anotherAdventure':
       return { ...s, lastQuestStartedDayKey: null, board: null };
     case 'allGear':
       return {
