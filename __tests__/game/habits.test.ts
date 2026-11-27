@@ -31,3 +31,9 @@ test('only today and yesterday can be logged', () => {
   expect(canLogDay('2026-11-25', now)).toBe(false);
   expect(canLogDay('2026-11-28', now)).toBe(false);
 });
+
+test('a habit is not scheduled on days before it was created', () => {
+  const h = { ...habit('a'), createdAt: at('2026-11-27', 10).toISOString() };
+  expect(isScheduledOn(h, '2026-11-26')).toBe(false);
+  expect(isScheduledOn(h, '2026-11-27')).toBe(true);
+});

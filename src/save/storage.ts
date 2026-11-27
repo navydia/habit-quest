@@ -1,4 +1,4 @@
-import Storage from 'expo-sqlite/kv-store';
+import Storage from './kvStore';
 import type { SaveData } from '../game/types';
 import { migrate } from './migrate';
 

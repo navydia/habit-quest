@@ -3,6 +3,7 @@ import type { Completion, DayKey, Habit } from './types';
 
 export function isScheduledOn(h: Habit, key: DayKey): boolean {
   if (h.archived) return false;
+  if (key < dayKey(new Date(h.createdAt))) return false; // didn't exist yet
   if (h.schedule.kind === 'daily') return true;
   return h.schedule.days.includes(weekdayOf(key));
 }
