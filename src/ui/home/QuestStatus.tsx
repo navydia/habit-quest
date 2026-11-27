@@ -4,6 +4,7 @@ import { bossTokens } from '@/src/game/bosses';
 import { questEndTime } from '@/src/game/questRun';
 import type { SaveData } from '@/src/game/types';
 import { home, radius, space } from '@/src/theme/tokens';
+import { DragonToken } from '../icons/Icons';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
 import { formatRemaining } from '../format';
@@ -29,7 +30,7 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
   const bossHabit = save.habits.find((h) => h.id === save.boss.habitId && !h.archived);
   const run = save.activeRun;
 
-  // Boss tokens as little devils: lit when earned, faded when not. Tap to choose or change the boss habit.
+  // Boss tokens as red dragon coins: lit when earned, faded when not. Tap to choose or change the boss habit.
   const devils = save.habits.length > 0 ? (
     <Pressable
       accessibilityRole="button"
@@ -39,9 +40,7 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
       style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.s, opacity: pressed ? 0.7 : 1 })}
     >
       {Array.from({ length: 6 }, (_, i) => (
-        <Text key={i} style={{ fontSize: 22, lineHeight: 28, opacity: bossHabit && i < tokens ? 1 : 0.28 }} accessibilityElementsHidden importantForAccessibility="no">
-          😈
-        </Text>
+        <DragonToken key={i} earned={!!bossHabit && i < tokens} />
       ))}
       {!bossHabit && <Text variant="label" style={{ color: home.muted }}>Choose a boss habit</Text>}
     </Pressable>
@@ -83,14 +82,15 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
 
   return panel(
     <>
+      <Text variant="label" style={{ color: home.muted }}>Adventure gauge</Text>
       <Gauge
         value={gauge.done / gauge.target}
         fill={gauge.full ? home.fill.gold : home.fill.moss}
         label="Adventure gauge"
         text={`${Math.min(gauge.done, gauge.target)} / ${gauge.target}`}
       />
-      {devils}
       {hint && <Text variant="caption" style={{ color: home.muted, textAlign: 'center' }}>{hint}</Text>}
+      {devils}
       {canStart && (tokens >= 6 && bossHabit ? (
         <Button title="Boss fight" variant="reward" onPress={onBoss} accessibilityHint="Your 6 boss tokens are ready" />
       ) : (

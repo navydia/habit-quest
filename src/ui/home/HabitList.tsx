@@ -11,6 +11,7 @@ import { useTheme } from '@/src/theme/useTheme';
 import { Card } from '../kit/Card';
 import { Text } from '../kit/Text';
 import { HabitCard } from './HabitCard';
+import { SlidersIcon } from '../icons/Icons';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function describeSchedule(s: Schedule): string {
@@ -145,13 +146,13 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
 
   const left = todo.length;
   return (
-    <View style={{ gap: space.l }}>
+    <View style={{ gap: space.s }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text variant="title" accessibilityRole="header" style={{ color: home.text, flex: 1 }}>
+        <Text variant="heading" accessibilityRole="header" style={{ color: home.text, flex: 1 }}>
           {scheduled.length === 0 ? 'Today' : left === 0 ? 'All done for today' : `${left} ${left === 1 ? 'habit' : 'habits'} left for today`}
         </Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Sort habits" onPress={onSort} hitSlop={6} style={({ pressed }) => ({ minHeight: minTouch, minWidth: minTouch, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-          <Text variant="title" style={{ color: home.text }}>⇅</Text>
+          <SlidersIcon color={home.text} />
         </Pressable>
       </View>
 
@@ -162,7 +163,7 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
       <View {...responder.panHandlers} style={{ gap: space.m }}>
         {visible.flatMap((s) => [
           groupBy !== 'custom' ? (
-            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.xl, marginBottom: space.xs }}>
+            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.l, marginBottom: 0 }}>
               <Text variant="bodyStrong" style={{ color: home.text }}>{s.title}</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: home.line }} />
               <Pressable

@@ -2,7 +2,8 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, View } from 'react-native';
 import { lifeAreaColor } from '@/src/content/habitOptions';
 import type { Habit } from '@/src/game/types';
-import { lipHeight, minTouch, radius, space } from '@/src/theme/tokens';
+import { home, lipHeight, minTouch, radius, space } from '@/src/theme/tokens';
+import { CheckIcon } from '../icons/Icons';
 import { useTheme } from '@/src/theme/useTheme';
 import { Text } from '../kit/Text';
 
@@ -42,8 +43,8 @@ export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongP
         borderRadius: 24,
         borderTopWidth: 1.5,
         borderTopColor: 'rgba(255,255,255,0.9)',
-        paddingHorizontal: space.l,
-        paddingVertical: space.l,
+        paddingHorizontal: space.m,
+        paddingVertical: space.s,
         gap: space.m,
       }}
     >
@@ -58,8 +59,8 @@ export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongP
         delayLongPress={250}
         style={({ pressed }) => ({ flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.m, opacity: pressed ? 0.8 : 1 })}
       >
-        <View style={{ width: 56, height: 56, borderRadius: 20, backgroundColor: lifeAreaColor(habit.lifeArea), alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-4deg' }] }}>
-          <Text style={{ fontSize: 28, lineHeight: 34 }}>{habit.emoji}</Text>
+        <View style={{ width: 48, height: 48, borderRadius: 17, backgroundColor: lifeAreaColor(habit.lifeArea), alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-4deg' }] }}>
+          <Text style={{ fontSize: 24, lineHeight: 30 }}>{habit.emoji}</Text>
         </View>
         <View style={{ flex: 1 }}>
           <Text variant="heading" numberOfLines={2}>{habit.name}</Text>
@@ -78,9 +79,10 @@ export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongP
         hitSlop={4}
       >
         {({ pressed }) => (
-          <View style={{ width: minTouch + 12, height: minTouch + 8, borderRadius: radius.button, backgroundColor: c.line, paddingBottom: pressed ? 1 : lipHeight }}>
-            <View style={{ flex: 1, borderRadius: radius.button, backgroundColor: c.surfaceSunk, alignItems: 'center', justifyContent: 'center', marginTop: pressed ? lipHeight - 1 : 0 }}>
-              <Text variant="title" color="primary">✓</Text>
+          // Same moss as the adventure gauge, so completing a habit visibly feeds it.
+          <View style={{ width: minTouch + 8, height: minTouch + 4, borderRadius: radius.button, backgroundColor: '#2C4D38', paddingBottom: pressed ? 1 : lipHeight }}>
+            <View style={{ flex: 1, borderRadius: radius.button, backgroundColor: home.fill.moss, alignItems: 'center', justifyContent: 'center', marginTop: pressed ? lipHeight - 1 : 0 }}>
+              <CheckIcon color={home.text} />
             </View>
           </View>
         )}
