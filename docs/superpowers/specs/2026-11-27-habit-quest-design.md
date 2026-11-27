@@ -323,3 +323,29 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
   - **Apothecary:** one-use potions you drink before your next trip. Fortune Draught: +10 Luck. Swift Tonic: −15% time. Courage Brew: +40 power. One active at a time.
   - **Cosmetics** and **Housing:** coming soon.
 - **Daily quests:** 3 a day from a pool of 7 (an adventure, 3 or 5 habits, buy an item, drink a potion, equip gear, spend a skill point). Rewards are 40–80 gold, claimed in the Log.
+
+## 17. Customization, places and Home polish *(creator decisions, built in Plan 7)*
+
+- **Habit editor:** a full-screen page with **Cancel · New habit · Add/Save** in the header, so the keyboard never hides the action.
+- **Places:** the hero is either at **home** (the cottage) or in a **region** (that region's scene).
+  - The Home page background is the place's floor or ground colour.
+  - Pulling down shows the wall or sky colour, feathered into the background.
+  - A **map button** at the top right reads "Home" or the region name. The map has **Go home**.
+  - Adventures come from the last region you travelled to.
+- **Home:**
+  - Gold and power are removed. **Level** and a small EXP bar sit under the character.
+  - The adventure panel has an "Adventure gauge" subtitle, then the hint, then the **boss tokens: red dragon coins**.
+  - Habit cards are more compact, with **moss check buttons** that match the gauge and a rounded check.
+  - The header is smaller, with a sliders icon.
+- **Debug menu** lives in the **Log** (dev builds only). It adds **Skip 1/3/8 hours** and **Start a new day**, done with a dev clock offset.
+- **Return screens:** four distinct looks.
+  - Adventure win: gold rays and a chest.
+  - Adventure loss: a dusk lantern.
+  - Boss win: red and gold, "Victory!".
+  - Boss loss: dark, with the boss looming.
+- **Character:**
+  - A **name** (editable).
+  - **Titles** earned through adventures, bosses, events and milestones. One is shown.
+  - The box runs full-bleed over a **place background**, showing in order: **power** (large, at the top), name, title, class · level.
+  - The familiar card is removed (the familiar has an equipment slot).
+- **Customize** (the cog by the portrait): name, title, pronouns (he / she / they), skin tone, hairstyle, hair colour, eye colour, ears (round / pointed) and background. Every look has art in the layered format.
