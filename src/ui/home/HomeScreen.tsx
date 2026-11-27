@@ -9,12 +9,13 @@ import { powerOf } from '@/src/game/stats';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
 import { hud, radius, space } from '@/src/theme/tokens';
-import { useTheme } from '@/src/theme/useTheme';
+import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
 import { AddHabitSheet } from './AddHabitSheet';
 import { HabitList } from './HabitList';
-import { HeroPlaceholder } from './HeroPlaceholder';
+import { HeroSprite } from '../hero/HeroSprite';
+import { Slime } from './Slime';
 import { HomeScene } from './HomeScene';
 import { QuestBoardSheet } from './QuestBoardSheet';
 import { QuestStatus } from './QuestStatus';
@@ -25,6 +26,7 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const now = useMinuteClock();
+  const reduced = useReducedMotion();
   const save = useGameStore((s) => s.save);
   const { toggleHabit, addHabit, ensureBoard, startQuest, collect, skipAdventure } = useGameStore.getState();
   const [adding, setAdding] = useState(false);
@@ -51,7 +53,15 @@ export function HomeScreen() {
             <Chip text={`${save.player.gold} gold`} />
             <Chip text={`${powerOf(save.player)} power`} />
           </View>
-          <HeroPlaceholder mode={mode} />
+          <View style={styles.heroWrap}>
+            {mode === 'questing' && <Slime reduced={reduced} />}
+            <HeroSprite
+              player={save.player}
+              anim={mode === 'questing' ? 'fight' : 'idle'}
+              height={210}
+              accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : 'Your hero, out on an adventure'}
+            />
+          </View>
         </View>
 
         <View style={styles.body}>
@@ -90,9 +100,9 @@ export function HomeScreen() {
       <ReturnReveal
         result={save.pendingResult}
         player={save.player}
-        onCollect={() => {
+        onCollect={(equipDrop) => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-          collect();
+          collect(equipDrop);
         }}
       />
     </View>
@@ -109,6 +119,7 @@ function Chip({ text }: { text: string }) {
 
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
+  heroWrap: { width: 250, alignItems: 'center', justifyContent: 'flex-end' },
   hud: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },

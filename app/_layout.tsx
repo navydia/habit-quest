@@ -40,6 +40,7 @@ export default function RootLayout() {
       <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="art-preview" options={{ headerShown: true, title: "Art preview", presentation: "modal" }} />
       </Stack>
     </>
   );

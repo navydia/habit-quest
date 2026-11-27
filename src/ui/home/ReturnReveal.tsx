@@ -3,10 +3,12 @@ import { ScrollView , Animated, Easing, Modal, StyleSheet, View } from 'react-na
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { addExp } from '@/src/game/progression';
 import type { Player, QuestResult } from '@/src/game/types';
-import { space } from '@/src/theme/tokens';
+import { space , rarity as rarityColors } from '@/src/theme/tokens';
 import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Card } from '../kit/Card';
+import { gearById, RARITY_LABEL } from '@/src/content/gear';
+import { statLine } from '../character/gearText';
 import { Text } from '../kit/Text';
 
 const SUCCESS_LINES = ['Back before supper. Not bad, adventurer.', 'The job is done, and done properly.', 'The town owes you one. They will pay in gold.'];
@@ -19,7 +21,7 @@ export function pickLine(resolvedAt: string, lines: string[]): string {
   return lines[h % lines.length];
 }
 
-type Props = { result: QuestResult | null; player: Player; onCollect: () => void };
+type Props = { result: QuestResult | null; player: Player; onCollect: (equipDrop: boolean) => void };
 
 export function ReturnReveal({ result, player, onCollect }: Props) {
   const { c } = useTheme();
@@ -45,10 +47,11 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
   const lines = result.success ? SUCCESS_LINES : FAIL_LINES;
   const line = pickLine(result.resolvedAt, lines);
   const levelsGained = addExp(player, result.exp).levelsGained;
+  const drop = result.drop ? gearById(result.drop.gearId) : undefined;
 
   return (
-    <Modal visible animationType="fade" onRequestClose={onCollect}>
-      <View style={[styles.root, { backgroundColor: c.bg }]}>
+    <Modal visible animationType="fade" onRequestClose={() => onCollect(false)}>
+      <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={styles.root}>
         <Text variant="label" color={result.success ? 'primary' : 'textMuted'}>
           {result.success ? 'Adventure complete' : 'Adventure not completed'}
         </Text>
@@ -92,13 +95,21 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
           <Reward value={`+${result.exp}`} label="EXP" />
           <Reward value={`+${result.gold}`} label="Gold" />
         </View>
+        {drop && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: rarityColors[drop.rarity] }]}>
+            <Text variant="label" color="textMuted">Found on the road · {RARITY_LABEL[drop.rarity]}</Text>
+            <Text variant="heading">{drop.name}</Text>
+            <Text variant="caption" color="textMuted">{statLine(drop)}</Text>
+          </Card>
+        )}
         {levelsGained > 0 && (
           <View style={[styles.banner, { backgroundColor: c.primary }]}>
             <Text variant="bodyStrong" color="onPrimary">Level up · you are now level {player.level + levelsGained}</Text>
           </View>
         )}
         <View style={styles.actions}>
-          <Button title="Collect" variant="reward" onPress={onCollect} />
+          <Button title="Collect" variant="reward" onPress={() => onCollect(false)} />
+          {drop && <Button title="Collect and equip" variant="secondary" onPress={() => onCollect(true)} />}
           {result.story ? (
             <Button
               title={showLog ? 'Hide adventure log' : 'Read adventure log'}
@@ -107,7 +118,7 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
             />
           ) : null}
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
@@ -122,7 +133,8 @@ function Reward({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xxxl, gap: space.l },
+  // flexGrow centres short content and lets long content (drop + level-up) scroll instead of clipping.
+  root: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: space.xxl, paddingVertical: space.huge, gap: space.l },
   art: { width: 240, height: 200, alignItems: 'center', justifyContent: 'center' },
   rewards: { flexDirection: 'row', gap: space.huge },
   log: { alignSelf: 'stretch', gap: space.s },

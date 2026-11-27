@@ -131,3 +131,23 @@ test('in development builds a running adventure shows a Skip button for testing'
   await fireEvent.press(screen.getByRole('button', { name: 'Skip (testing)' }));
   expect(useGameStore.getState().save.pendingResult).not.toBeNull();
 });
+
+test('a gear drop shows on the return screen and can be equipped right away', async () => {
+  const s = newSave();
+  s.player = { ...s.player, exp: 0 };
+  s.pendingResult = {
+    offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 80, rewardExp: 40, rewardGold: 20 },
+    success: true,
+    exp: 40,
+    gold: 20,
+    resolvedAt: '2026-11-27T18:00:00.000Z',
+    drop: { gearId: 'leather-cap' },
+  };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  expect(screen.getByText('Leather Cap')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Collect and equip' }));
+  const p = useGameStore.getState().save.player;
+  const cap = p.inventory.find((i) => i.gearId === 'leather-cap')!;
+  expect(p.equipped.head).toBe(cap.uid);
+});

@@ -25,7 +25,8 @@ interface GameState {
   ensureBoard(now?: Date): void;
   startQuest(offerId: string, now?: Date): void;
   tick(now?: Date): void;
-  collect(): number;
+  /** Collects the result; with `equipDrop`, also equips the dropped item. Returns levels gained. */
+  collect(equipDrop?: boolean): number;
   /** Testing only: finish the running adventure now. */
   skipAdventure(now?: Date): void;
   allocateSp(stat: StatKey): void;
@@ -112,9 +113,15 @@ export const useGameStore = create<GameState>((set, get) => {
       if (next !== s) commit(next);
     },
 
-    collect() {
+    collect(equipDrop = false) {
+      const drop = get().save.pendingResult?.drop;
+      const before = new Set(get().save.player.inventory.map((i) => i.uid));
       const { save, levelsGained } = collectResult(get().save);
       commit(save);
+      if (equipDrop && drop) {
+        const added = save.player.inventory.find((i) => !before.has(i.uid));
+        if (added) get().equip(added.uid);
+      }
       return levelsGained;
     },
 
