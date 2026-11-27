@@ -1,6 +1,8 @@
-# Habit Quest — Design
+# Guildmark — Design
 
-*"Habit Quest" is a placeholder name. Date: 2026-11-27. Status: approved.*
+*Name: Guildmark (formerly the placeholder "Habit Quest"). Date: 2026-11-27. Status: approved.*
+
+**About the name:** guilds stamped a mark on finished work to show it met the guild's standard. In the game, each completed habit earns that mark, and the hero is a member of the guild whose Guild Master writes the letters (§10). A web search of the App Store and Google Play on 2026-11-27 found no app with this name. A trademark (USPTO) and domain check is still to do before a public release.
 
 ## 1. Intent
 

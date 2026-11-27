@@ -1,4 +1,4 @@
-# Habit Quest — Plan 1: Core Loop Implementation Plan
+# Guildmark — Plan 1: Core Loop Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Expo (latest stable SDK, via `create-expo-app`), TypeScript (strict), Expo Router, Zustand, `expo-sqlite/kv-store` for persistence, `expo-notifications`, Jest with `jest-expo`, `@testing-library/react-native`.
 
-**Spec:** `docs/superpowers/specs/2026-11-27-habit-quest-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-27-guildmark-design.md`
 
 ## Global Constraints
 
