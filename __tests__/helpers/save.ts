@@ -1,21 +1,12 @@
 import type { Habit, SaveData, Schedule } from '@/src/game/types';
+import { newSave } from '@/src/save/migrate';
 
 export function emptySave(): SaveData {
-  return {
-    version: 1,
-    player: { level: 1, exp: 0, gold: 0, unspentSp: 0 },
-    habits: [],
-    completions: [],
-    board: null,
-    activeRun: null,
-    pendingResult: null,
-    lastQuestStartedDayKey: null,
-    questLog: [],
-  };
+  return newSave();
 }
 
 export function habit(id: string, schedule: Schedule = { kind: 'daily' }): Habit {
-  return { id, name: id, schedule, createdAt: '2026-01-01T00:00:00.000Z', archived: false };
+  return { id, name: id, schedule, createdAt: '2026-01-01T00:00:00.000Z', archived: false, emoji: '✨', lifeArea: 'other', timeOfDay: 'anytime' };
 }
 
 export const at = (day: string, h: number, m = 0) => {

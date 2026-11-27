@@ -3,10 +3,13 @@ import { ScrollView , Animated, Easing, Modal, StyleSheet, View } from 'react-na
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { addExp } from '@/src/game/progression';
 import type { Player, QuestResult } from '@/src/game/types';
-import { space } from '@/src/theme/tokens';
+import { space , rarity as rarityColors } from '@/src/theme/tokens';
 import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Card } from '../kit/Card';
+import { gearById, RARITY_LABEL } from '@/src/content/gear';
+import { statLine } from '../character/gearText';
+import { bossById, familiarById, regionById } from '@/src/content/regions';
 import { Text } from '../kit/Text';
 
 const SUCCESS_LINES = ['Back before supper. Not bad, adventurer.', 'The job is done, and done properly.', 'The town owes you one. They will pay in gold.'];
@@ -19,9 +22,12 @@ export function pickLine(resolvedAt: string, lines: string[]): string {
   return lines[h % lines.length];
 }
 
-type Props = { result: QuestResult | null; player: Player; onCollect: () => void };
+type Bonus = { exp: number; gold: number; label: string | null };
+type Props = { result: QuestResult | null; player: Player; bonus?: Bonus; onCollect: (equipDrop: boolean) => void };
 
-export function ReturnReveal({ result, player, onCollect }: Props) {
+const NO_BONUS: Bonus = { exp: 1, gold: 1, label: null };
+
+export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Props) {
   const { c } = useTheme();
   const reduced = useReducedMotion();
   const scale = useState(() => new Animated.Value(0.6))[0];
@@ -42,22 +48,37 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
   }, [result, reduced, scale, spin]);
 
   if (!result) return null;
-  const lines = result.success ? SUCCESS_LINES : FAIL_LINES;
+  const lines =
+    result.kind === 'boss'
+      ? result.success
+        ? ['A fight for the ages. The road is quieter for it.']
+        : ['The boss held its ground. Rest up, then try again.']
+      : result.success
+        ? SUCCESS_LINES
+        : FAIL_LINES;
   const line = pickLine(result.resolvedAt, lines);
-  const levelsGained = addExp(player, result.exp).levelsGained;
+  // Same maths as collectResult, so the numbers and the level-up banner match what you get.
+  const totalExp = Math.round((result.exp + (result.boss?.exp ?? 0)) * bonus.exp);
+  const levelsGained = addExp(player, totalExp).levelsGained;
+  const drop = result.drop ? gearById(result.drop.gearId) : undefined;
+  const memento = result.memento ? regionById(result.memento.regionId)?.adventures.find((a) => a.memento.id === result.memento!.mementoId)?.memento : undefined;
+  const bossResult = result.boss;
+  const bossDef = bossResult ? bossById(bossResult.bossId) : undefined;
+  const bossDrop = bossResult?.drop ? gearById(bossResult.drop.gearId) : undefined;
+  const familiar = bossResult?.familiarId ? familiarById(bossResult.familiarId) : undefined;
 
   return (
-    <Modal visible animationType="fade" onRequestClose={onCollect}>
-      <View style={[styles.root, { backgroundColor: c.bg }]}>
+    <Modal visible animationType="fade" onRequestClose={() => onCollect(false)}>
+      <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={styles.root}>
         <Text variant="label" color={result.success ? 'primary' : 'textMuted'}>
-          {result.success ? 'Quest complete' : 'Quest not completed'}
+          {result.kind === 'boss' ? 'Boss fight' : result.success ? 'Adventure complete' : 'Adventure not completed'}
         </Text>
         <Text variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>Your hero has returned!</Text>
         <Text variant="heading" color="textMuted">{result.offer.name}</Text>
 
         {showLog && result.story ? (
           <Card style={styles.log}>
-            <Text variant="label" color="textMuted">From the quest log</Text>
+            <Text variant="label" color="textMuted">From the adventure log</Text>
             <ScrollView style={{ maxHeight: 220 }}>
               <Text>{result.story}</Text>
             </ScrollView>
@@ -86,28 +107,66 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
         )}
         <Text style={{ textAlign: 'center' }}>
           {line}
-          {!result.success ? ` You still came back with ${result.gold} gold.` : ''}
+          {!result.success && result.kind !== 'boss' ? ` You still came back with ${result.gold} gold.` : ''}
         </Text>
+        {result.kind !== 'boss' && (
         <View style={styles.rewards}>
-          <Reward value={`+${result.exp}`} label="EXP" />
-          <Reward value={`+${result.gold}`} label="Gold" />
+          <Reward value={`+${Math.round(result.exp * bonus.exp)}`} label="EXP" />
+          <Reward value={`+${Math.round(result.gold * bonus.gold)}`} label="Gold" />
         </View>
+        )}
+        {bonus.label && <Text variant="caption" color="textMuted">{bonus.label}</Text>}
+        {drop && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: rarityColors[drop.rarity] }]}>
+            <Text variant="label" color="textMuted">Found on the road · {RARITY_LABEL[drop.rarity]}</Text>
+            <Text variant="heading">{drop.name}</Text>
+            <Text variant="caption" color="textMuted">{statLine(drop)}</Text>
+          </Card>
+        )}
+        {memento && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: c.accent }]}>
+            <Text variant="label" color="textMuted">New memento for your scrapbook</Text>
+            <Text variant="heading">{memento.name}</Text>
+            <Text variant="caption" color="textMuted">{memento.description}</Text>
+          </Card>
+        )}
+        {bossResult && bossDef && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: c.ember }]}>
+            <Text variant="label" color="ember">{bossResult.success ? 'Boss defeated' : 'The boss held on'}</Text>
+            <Text variant="heading">{bossDef.name}</Text>
+            <Text variant="caption" color="textMuted">
+              {bossResult.success
+                ? `+${bossResult.exp} EXP · +${bossResult.gold} gold${bossDrop ? ` · ${bossDrop.name} (${RARITY_LABEL[bossDrop.rarity]})` : ''}`
+                : bossResult.tokensKept === false
+                  ? 'You switched boss habit during the trip, so these tokens are gone.'
+                  : 'Your 6 tokens are safe. Try again tomorrow.'}
+            </Text>
+          </Card>
+        )}
+        {familiar && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: c.primary }]}>
+            <Text variant="label" color="primary">A familiar joins you</Text>
+            <Text variant="heading">{familiar.name}</Text>
+            <Text variant="caption" color="textMuted">{familiar.description}</Text>
+          </Card>
+        )}
         {levelsGained > 0 && (
           <View style={[styles.banner, { backgroundColor: c.primary }]}>
             <Text variant="bodyStrong" color="onPrimary">Level up · you are now level {player.level + levelsGained}</Text>
           </View>
         )}
         <View style={styles.actions}>
-          <Button title="Collect" variant="reward" onPress={onCollect} />
+          <Button title="Collect" variant="reward" onPress={() => onCollect(false)} />
+          {drop && <Button title="Collect and equip" variant="secondary" onPress={() => onCollect(true)} />}
           {result.story ? (
             <Button
-              title={showLog ? 'Hide quest log' : 'Read quest log'}
+              title={showLog ? 'Hide adventure log' : 'Read adventure log'}
               variant="secondary"
               onPress={() => setLogFor(showLog ? null : result.resolvedAt)}
             />
           ) : null}
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
@@ -122,7 +181,8 @@ function Reward({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xxxl, gap: space.l },
+  // flexGrow centres short content and lets long content (drop + level-up) scroll instead of clipping.
+  root: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: space.xxl, paddingVertical: space.huge, gap: space.l },
   art: { width: 240, height: 200, alignItems: 'center', justifyContent: 'center' },
   rewards: { flexDirection: 'row', gap: space.huge },
   log: { alignSelf: 'stretch', gap: space.s },

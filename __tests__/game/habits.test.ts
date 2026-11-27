@@ -1,4 +1,4 @@
-import { canLogDay, complete, isCompleted, isScheduledOn, scheduledHabits, uncomplete } from '@/src/game/habits';
+import { canLogDay, complete, hideCompletion, isCompleted, isScheduledOn, scheduledHabits, uncomplete } from '@/src/game/habits';
 import { at, habit } from '../helpers/save';
 
 test('daily habit is scheduled every day', () => {
@@ -36,4 +36,20 @@ test('a habit is not scheduled on days before it was created', () => {
   const h = { ...habit('a'), createdAt: at('2026-11-27', 10).toISOString() };
   expect(isScheduledOn(h, '2026-11-26')).toBe(false);
   expect(isScheduledOn(h, '2026-11-27')).toBe(true);
+});
+
+test('an every-3-days habit repeats from the day it was created', () => {
+  const h = { ...habit('a', { kind: 'interval', every: 3 }), createdAt: at('2026-11-20', 15).toISOString() };
+  expect(['2026-11-20', '2026-11-21', '2026-11-23', '2026-11-26', '2026-11-27'].map((d) => isScheduledOn(h, d))).toEqual([true, false, true, true, false]);
+});
+
+test('hiding a completion keeps it done', () => {
+  const c = hideCompletion(complete([], 'a', '2026-11-27', at('2026-11-27', 9)), 'a', '2026-11-27');
+  expect(c[0].hidden).toBe(true);
+  expect(isCompleted(c, 'a', '2026-11-27')).toBe(true);
+});
+
+test('an every-N-days repeat counts from the day it was set, not the day the habit was made', () => {
+  const h = { ...habit('a', { kind: 'interval', every: 3, from: '2026-11-26' }), createdAt: at('2026-01-01', 9).toISOString() };
+  expect(['2026-11-26', '2026-11-27', '2026-11-29'].map((d) => isScheduledOn(h, d))).toEqual([true, false, true]);
 });

@@ -5,10 +5,6 @@ export function expToNext(level: number): number {
   return 100 * level;
 }
 
-/** Stat and gear terms are added in Plan 2. */
-export function powerRating(level: number): number {
-  return 100 + 15 * (level - 1);
-}
 
 export function addExp(p: Player, exp: number): { player: Player; levelsGained: number } {
   let { level, exp: current, unspentSp } = p;

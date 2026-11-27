@@ -1,10 +1,16 @@
 import { FAIL_REWARD_FRACTION, QUEST_BASE_MS, QUEST_CUT_MS, QUEST_FLOOR_MS } from './config';
 import { dayKey } from './dates';
 import { canStartQuest } from './gauge';
-import { addExp, powerRating } from './progression';
+import { addExp } from './progression';
+import { powerOf, speedFactor } from './stats';
+import { rollDrop } from './drops';
+import { recordClear } from './world';
+import { attachBoss, resolveBoss } from './bosses';
+import { bossById, regionOfBoss } from '../content/regions';
+import { familiarBonus } from './familiars';
+import type { BossDifficulty , Completion, QuestRun, SaveData } from './types';
 import { successChance } from './quests';
 import { QUEST_TEMPLATES } from '../content/quests';
-import type { Completion, QuestRun, SaveData } from './types';
 
 const completionKey = (c: Completion) => `${c.habitId}|${c.dayKey}`;
 
@@ -19,8 +25,43 @@ export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
       offer,
       dayKey: today,
       startedAt: now.toISOString(),
-      successChance: successChance(powerRating(s.player.level), offer.requiredPower),
+      successChance: successChance(powerOf(s.player), offer.requiredPower),
       preStartKeys: s.completions.map(completionKey),
+      speedFactor: speedFactor(s.player),
+    },
+    lastQuestStartedDayKey: today,
+  };
+}
+
+/** A boss fight takes the place of the day's adventure: same gauge, timer and once-a-day rule. */
+export function startBossFight(s: SaveData, now: Date, boss: { bossId: string; difficulty: BossDifficulty }): SaveData {
+  if (!canStartQuest(s, now)) throw new Error('A boss fight cannot be started right now.');
+  const def = bossById(boss.bossId);
+  if (!def) throw new Error(`Unknown boss: ${boss.bossId}`);
+  const { save, runBoss } = attachBoss(s, boss, now);
+  const today = dayKey(now);
+  const offer = {
+    id: `${today}-boss`,
+    templateId: def.id,
+    name: def.name,
+    flavour: def.flavour,
+    difficulty: 'hard' as const,
+    requiredPower: def.requiredPower,
+    rewardExp: 0,
+    rewardGold: 0,
+    regionId: regionOfBoss(def.id)?.id,
+  };
+  return {
+    ...save,
+    activeRun: {
+      kind: 'boss',
+      offer,
+      dayKey: today,
+      startedAt: now.toISOString(),
+      successChance: runBoss.successChance,
+      preStartKeys: s.completions.map(completionKey),
+      speedFactor: speedFactor(s.player),
+      boss: runBoss,
     },
     lastQuestStartedDayKey: today,
   };
@@ -31,17 +72,33 @@ export function questEndTime(run: QuestRun, completions: Completion[]): Date {
   const start = new Date(run.startedAt).getTime();
   const pre = new Set(run.preStartKeys ?? []);
   const cuts = completions.filter((c) => new Date(c.at).getTime() >= start && !pre.has(completionKey(c))).length;
-  return new Date(start + Math.max(QUEST_FLOOR_MS, QUEST_BASE_MS - cuts * QUEST_CUT_MS));
+  const duration = Math.max(QUEST_FLOOR_MS, QUEST_BASE_MS - cuts * QUEST_CUT_MS) * (run.speedFactor ?? 1);
+  return new Date(start + Math.round(duration));
 }
 
 export function isReturned(run: QuestRun, completions: Completion[], now: Date): boolean {
   return now.getTime() >= questEndTime(run, completions).getTime();
 }
 
-export function resolveQuest(s: SaveData, now: Date, rng: () => number): SaveData {
+/** `force` resolves immediately (the testing Skip button). */
+export function resolveQuest(s: SaveData, now: Date, rng: () => number, force = false): SaveData {
   const run = s.activeRun;
-  if (!run || !isReturned(run, s.completions, now)) return s;
+  if (!run || (!force && !isReturned(run, s.completions, now))) return s;
+  if (run.kind === 'boss') {
+    const bossed = resolveBoss(s, run, rng);
+    const result = {
+      kind: 'boss' as const,
+      offer: run.offer,
+      success: !!bossed.result?.success,
+      exp: 0,
+      gold: 0,
+      resolvedAt: now.toISOString(),
+      ...(bossed.result ? { boss: bossed.result } : {}),
+    };
+    return { ...bossed.save, activeRun: null, pendingResult: result, questLog: [...s.questLog, result] };
+  }
   const success = rng() < run.successChance;
+  const drop = success ? rollDrop(run.offer.difficulty, s.player, rng) : null;
   const share = success ? 1 : FAIL_REWARD_FRACTION;
   const result = {
     offer: run.offer,
@@ -50,8 +107,16 @@ export function resolveQuest(s: SaveData, now: Date, rng: () => number): SaveDat
     gold: Math.round(run.offer.rewardGold * share),
     resolvedAt: now.toISOString(),
     story: storyFor(run.offer.templateId, success),
+    ...(drop ? { drop: { gearId: drop.id } } : {}),
   };
-  return { ...s, activeRun: null, pendingResult: result, questLog: [...s.questLog, result] };
+  const cleared = success ? recordClear(s, run.offer) : { save: s };
+  const bossed = resolveBoss(cleared.save, run, rng);
+  const final = {
+    ...result,
+    ...(cleared.memento ? { memento: cleared.memento } : {}),
+    ...(bossed.result ? { boss: bossed.result } : {}),
+  };
+  return { ...bossed.save, activeRun: null, pendingResult: final, questLog: [...s.questLog, final] };
 }
 
 function storyFor(templateId: string, success: boolean): string | undefined {
@@ -62,6 +127,16 @@ function storyFor(templateId: string, success: boolean): string | undefined {
 export function collectResult(s: SaveData): { save: SaveData; levelsGained: number } {
   const r = s.pendingResult;
   if (!r) return { save: s, levelsGained: 0 };
-  const { player, levelsGained } = addExp({ ...s.player, gold: s.player.gold + r.gold }, r.exp);
-  return { save: { ...s, player, pendingResult: null }, levelsGained };
+  const inventory = [...s.player.inventory];
+  if (r.drop) inventory.push({ uid: `${r.resolvedAt}-${r.drop.gearId}`, gearId: r.drop.gearId, obtainedAt: r.resolvedAt });
+  if (r.boss?.drop) inventory.push({ uid: `${r.resolvedAt}-boss-${r.boss.drop.gearId}`, gearId: r.boss.drop.gearId, obtainedAt: r.resolvedAt });
+  const bonus = familiarBonus(s);
+  const gold = Math.round((r.gold + (r.boss?.gold ?? 0)) * bonus.gold);
+  const exp = Math.round((r.exp + (r.boss?.exp ?? 0)) * bonus.exp);
+  const familiars =
+    r.boss?.familiarId && !s.familiars.owned.includes(r.boss.familiarId)
+      ? { owned: [...s.familiars.owned, r.boss.familiarId], active: s.familiars.active ?? r.boss.familiarId }
+      : s.familiars;
+  const { player, levelsGained } = addExp({ ...s.player, inventory, gold: s.player.gold + gold }, exp);
+  return { save: { ...s, player, familiars, pendingResult: null }, levelsGained };
 }

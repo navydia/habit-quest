@@ -33,6 +33,18 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 - Stats becoming a min-maxing puzzle. Stats are light flavor; random SP allocation must still be fine.
 - The app feeling like a spreadsheet with a sprite glued on. The character is front and center.
 
+## 1a. Terminology *(creator decision)*
+
+- **Adventure** is the daily outing your hero goes on when the gauge fills: the adventure board, the adventure gauge, "On an adventure", and the adventure log.
+- **Quest** is reserved for the **daily quests in the City** (Tavern and similar), which are designed later. Older parts of this spec still say "quest" where they mean adventure.
+- Code identifiers keep their `quest…` names for now (for example `startQuest`, `QuestRun`). City quests will use distinct names, such as `cityQuest`.
+
+## 1b. Testing aids
+
+- **Development builds only** (`__DEV__`, which is true in Expo Go): a **"Skip (testing)"** button finishes a running adventure immediately. **Bosses get the same Skip** when they're built.
+- A **Debug menu** ("Debug" chip on the Home screen) offers testing shortcuts: fill the gauge, skip, allow another adventure today, 6 boss tokens, level up, +500 gold, one of every item, every familiar, unlock every region, and reset all progress (needs a second tap).
+- Release builds never show either.
+
 ## 2a. Look and feel
 
 The visual style, tokens and **UI rules for every screen** live in `docs/design/style-guide.md` (§9 lists the 18 rules). Every new screen and feature follows it, so the app stays consistent as it grows. The most important rules:
@@ -43,6 +55,7 @@ The visual style, tokens and **UI rules for every screen** live in `docs/design/
 - sentence case, generous whitespace, and tokens only
 - every action gives feedback, and every list has an empty state
 - respect Reduce Motion and large text
+- inputs always stay visible above the keyboard
 
 ## 3. Tabs
 
@@ -241,7 +254,7 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - An **art spec doc** (canvas sizes, anchors, frame counts, layer order, naming) is written early, so the creator can start drawing in parallel.
 - A hidden **art preview screen** in the app to view any character/gear combination and animation, for checking new art.
 
-## 13. Regions *(agreed direction, still being designed; replaces the random daily board and the F–S boss tiers once built)*
+## 13. Regions *(built in Plan 3; replaces the random daily board (§5.2) and the F–S boss tiers (§6.3))*
 
 **Agreed with the creator:**
 - **The world is made of regions.** Each region needs a minimum **power rating** to enter. **Event regions** can appear alongside event bosses.
@@ -252,8 +265,29 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - **Region complete:** a region is *complete* when all its quests are completed **and its region boss is defeated**.
 - **Bosses belong to regions** instead of F–S tiers. Bosses get a **difficulty picker: Normal, Hard, Extreme**. Any boss can be attempted from any region, wherever your hero currently is.
 
-**Still open** (to settle before planning):
+**Settled in Plan 3:**
+- Three fixed adventures per region.
+- You can fight the boss of any unlocked region.
+- One boss per region.
+- You can travel back any time, except during an adventure.
+- A lost boss fight pays nothing but keeps your 6 tokens.
+- The boss fight is optional on the board ("Not today").
+- Region list, numbers and content: see `docs/superpowers/plans/2026-11-27-plan-3-regions-bosses.md` and `src/content/regions.ts`.
+
+**Previously open (now settled as above):**
 - Whether a region's three quests are the same every day or rotate from a larger pool.
 - Which bosses are available. Every boss in the game, or only those of regions you've reached?
-- What Hard and Extreme change: odds, rewards, tokens needed, familiar drop chance.
+- *(settled)* Hard and Extreme always need **6 boss tokens**, the same as Normal. Proposed effects: your effective power is −30 (Hard) or −60 (Extreme); rewards are ×1.75 or ×3; the familiar drop chance is ×2 or ×4.
 - How many bosses each region has, and whether you can travel back to earlier regions.
+
+## 14. Habits, history and boss fights *(creator decisions, built in Plan 4; amends §4, §5.6, §6.2)*
+
+- **Completing a habit removes it from today's list.** There is no untick on Home. An **Undo** popup (~6 s) catches accidents; it reverses the completion under the §5.6 rule (rewards already used stay used).
+- **History** lives in the **Log** tab and lists every completed habit by day. **Removing** an entry only tidies the history: the habit still counts as done that day and never returns to Home.
+- **Habit properties:** emoji, life area (Health, Mind, Work, Home, Social, Learning, Fun, Other), time of day (Morning, Afternoon, Evening, Anytime) and repeat (every day, chosen weekdays, every N days). Today's list can be **grouped by time of day or life area**. Each habit has a ⋯ button to edit or archive it.
+- **Boss fights are their own trip and replace the day's adventure.**
+  - When the gauge is full and you have 6 tokens, "Choose an adventure" becomes **"Boss fight"**.
+  - The boss menu picks the boss and difficulty, and has a "Go adventuring instead" link that keeps your tokens.
+  - Home shows the hero fighting a big boss.
+  - Only one trip (adventure or boss) per day.
+- **The Board tab is now the Log.** It holds mail (Guild Master letters, later), daily quests (City, later), the scrapbooks, and History.

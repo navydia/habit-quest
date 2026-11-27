@@ -7,7 +7,7 @@ import { newSave } from '@/src/save/migrate';
 beforeEach(() => store.clear());
 
 test('a written save loads back', async () => {
-  const s = { ...newSave(), player: { level: 2, exp: 0, gold: 9, unspentSp: 3 } };
+  const s = { ...newSave(), player: { ...newSave().player, level: 2, gold: 9, unspentSp: 3 } };
   await writeSave(s);
   expect(await loadSave()).toEqual(s);
 });

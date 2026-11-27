@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { QUEST_BASE_MS } from '@/src/game/config';
-import { powerRating } from '@/src/game/progression';
-import { successChance } from '@/src/game/quests';
+import { powerOf, speedFactor } from '@/src/game/stats';
+import { currentRegion, progressOf } from '@/src/game/world';
 import type { QuestOffer, SaveData } from '@/src/game/types';
+import { formatDuration } from '../format';
+import { successChance } from '@/src/game/quests';
 import type { ColorTokens } from '@/src/theme/tokens';
 import { radius, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
@@ -24,10 +26,11 @@ type Props = { visible: boolean; save: SaveData; onClose: () => void; onStart: (
 export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   const { c } = useTheme();
   const [selected, setSelected] = useState<string | null>(null);
-  const power = powerRating(save.player.level);
+  const power = powerOf(save.player);
   const offers = save.board?.offers ?? [];
   const chosen = offers.find((o) => o.id === selected);
-
+  const region = currentRegion(save);
+  const cleared = progressOf(save, region.id).cleared;
   const card = (o: QuestOffer) => {
     const chance = successChance(power, o.requiredPower);
     const isSel = o.id === selected;
@@ -50,7 +53,7 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
         })}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text variant="label" color="textMuted">{DIFF_LABEL[o.difficulty]} · {QUEST_BASE_MS / 3600_000} hours</Text>
+          <Text variant="label" color="textMuted">{DIFF_LABEL[o.difficulty]} · {formatDuration(QUEST_BASE_MS * speedFactor(save.player))}</Text>
           <View style={{ backgroundColor: c[chanceTone(chance)], borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: 2 }}>
             <Text variant="label" color={ON_TONE[chanceTone(chance)]}>
               {Math.round(chance * 100)}%
@@ -58,8 +61,11 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
           </View>
         </View>
         <Text variant="heading">{o.name}</Text>
+        <Text variant="caption" color={cleared.includes(o.templateId) ? 'textMuted' : 'accent'}>
+          {cleared.includes(o.templateId) ? 'Memento found' : 'First clear: memento'}
+        </Text>
         <Text color="textMuted">{o.flavour}</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: space.m }}>
           <Text variant="caption" color="textMuted">Needs {o.requiredPower} power · you have {power}</Text>
           <Text variant="caption" color="text">+{o.rewardExp} EXP · +{o.rewardGold} gold</Text>
         </View>
@@ -68,11 +74,13 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   };
 
   return (
-    <Sheet visible={visible} title="Choose today's quest" onClose={onClose}>
-      <View style={{ gap: space.m }} accessibilityRole="radiogroup">
-        {offers.map(card)}
+    <Sheet visible={visible} title={`Adventures in ${region.name}`} onClose={onClose}>
+      <View style={{ gap: space.m }}>
+        <View style={{ gap: space.m }} accessibilityRole="radiogroup" accessibilityLabel="Adventures">
+          {offers.map(card)}
+        </View>
         <Button
-          title={chosen ? `Set out: ${chosen.name}` : 'Choose a quest above'}
+          title={chosen ? `Set out: ${chosen.name}` : 'Choose an adventure above'}
           disabled={!chosen}
           onPress={() => {
             if (chosen) onStart(chosen.id);

@@ -2,7 +2,10 @@ import { generateBoard, successChance } from '@/src/game/quests';
 import { seededRng } from '@/src/game/rng';
 import { QUEST_TEMPLATES } from '@/src/content/quests';
 
-const lvl1 = { level: 1, exp: 0, gold: 0, unspentSp: 0 };
+import { newSave } from '@/src/save/migrate';
+
+// No gear, so power is exactly the level-1 base of 100.
+const lvl1 = { ...newSave().player, inventory: [], equipped: {} };
 
 describe('successChance (creator rules)', () => {
   test('power meets or exceeds requirement → 100%', () => {
@@ -45,13 +48,15 @@ describe('generateBoard', () => {
   test('same seed gives the same board', () => {
     expect(generateBoard('2026-11-27', lvl1, seededRng('2026-11-27'))).toEqual(board);
   });
-  test('hard quests are sometimes a 60% gamble and sometimes a 20% long shot', () => {
-    const chances = new Set<number>();
-    for (let i = 0; i < 200; i++) {
-      const hard = generateBoard('d', lvl1, seededRng(`s${i}`))[2];
-      chances.add(successChance(100, hard.requiredPower));
-    }
-    expect(chances).toEqual(new Set([0.6, 0.2]));
+  test('the board is the current region\'s three fixed adventures', () => {
+    expect(board.map((o) => o.templateId)).toEqual(['slime-patrol', 'herb-gathering', 'missing-goat']);
+    expect(board.map((o) => o.requiredPower)).toEqual([90, 120, 160]);
+    expect(board.every((o) => o.regionId === 'thornwick-meadows')).toBe(true);
+  });
+  test('a later region scales rewards and power', () => {
+    const marsh = generateBoard('2026-11-27', lvl1, seededRng('x'), 'willowmere-marsh');
+    expect(marsh.map((o) => o.requiredPower)).toEqual([150, 185, 225]);
+    expect(marsh.map((o) => o.rewardExp)).toEqual([60, 96, 180]);
   });
 });
 
