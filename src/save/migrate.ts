@@ -2,7 +2,14 @@ import { classTitle } from '../game/classTitle';
 import { zeroStats } from '../game/stats';
 import type { Player, SaveData } from '../game/types';
 
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
+
+const START_REGION = 'thornwick-meadows';
+const worldDefaults = () => ({
+  world: { currentRegion: START_REGION, regions: {} },
+  boss: { habitId: null, tokenEpoch: null },
+  familiars: { owned: [] as string[], active: null },
+});
 
 const STARTING_GEAR = [
   { uid: 'start-weapon', gearId: 'wooden-sword', obtainedAt: '2026-01-01T00:00:00.000Z' },
@@ -24,7 +31,8 @@ function withCharacter(p: { level: number; exp: number; gold: number; unspentSp:
 
 export function newSave(): SaveData {
   return {
-    version: 2,
+    version: 3,
+    ...worldDefaults(),
     player: withCharacter({ level: 1, exp: 0, gold: 0, unspentSp: 0 }),
     habits: [],
     completions: [],
@@ -38,6 +46,7 @@ export function newSave(): SaveData {
 
 /** MIGRATIONS[n] upgrades a version-n save to version n+1. */
 const MIGRATIONS: Record<number, (s: any) => any> = {
+  2: (s) => ({ ...s, ...worldDefaults(), version: 3, board: null }),
   1: (s) => (typeof s.player?.level === 'number' ? { ...s, version: 2, player: withCharacter(s.player) } : { ...s, version: 2 }),
 };
 
@@ -48,6 +57,10 @@ function isValidCurrent(s: any): s is SaveData {
     Array.isArray(s.player?.inventory) &&
     typeof s.player?.stats === 'object' &&
     typeof s.player?.equipped === 'object' &&
+    typeof s.world?.currentRegion === 'string' &&
+    typeof s.world?.regions === 'object' &&
+    Array.isArray(s.familiars?.owned) &&
+    typeof s.boss === 'object' &&
     s.player?.equipped !== null &&
     Array.isArray(s.habits) &&
     Array.isArray(s.completions) &&

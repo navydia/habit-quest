@@ -27,7 +27,10 @@ export interface QuestOffer {
   requiredPower: number;
   rewardExp: number;
   rewardGold: number;
+  regionId?: string;
 }
+
+export type BossDifficulty = 'normal' | 'hard' | 'extreme';
 
 export interface QuestRun {
   offer: QuestOffer;
@@ -38,6 +41,8 @@ export interface QuestRun {
   preStartKeys?: string[];
   /** Speed multiplier fixed at start, so later stat changes don't move the return time. */
   speedFactor?: number;
+  /** A boss fight added to this trip (6 tokens spent at start). */
+  boss?: { bossId: string; difficulty: BossDifficulty; successChance: number; prevEpoch: string | null };
 }
 
 export interface QuestResult {
@@ -49,6 +54,8 @@ export interface QuestResult {
   /** Quest-log anecdote. Optional so older saves still load. */
   story?: string;
   drop?: { gearId: string };
+  memento?: { regionId: string; mementoId: string };
+  boss?: { bossId: string; difficulty: BossDifficulty; success: boolean; exp: number; gold: number; drop?: { gearId: string }; familiarId?: string };
 }
 
 export type StatKey = 'power' | 'defense' | 'luck' | 'speed';
@@ -77,8 +84,14 @@ export interface Player {
   title: string;
 }
 
+export interface RegionProgress {
+  cleared: string[];
+  mementos: string[];
+  bossDefeated: boolean;
+}
+
 export interface SaveData {
-  version: 2;
+  version: 3;
   player: Player;
   habits: Habit[];
   completions: Completion[];
@@ -87,4 +100,7 @@ export interface SaveData {
   pendingResult: QuestResult | null;
   lastQuestStartedDayKey: DayKey | null;
   questLog: QuestResult[];
+  world: { currentRegion: string; regions: Record<string, RegionProgress> };
+  boss: { habitId: string | null; tokenEpoch: string | null };
+  familiars: { owned: string[]; active: string | null };
 }
