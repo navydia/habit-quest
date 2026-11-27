@@ -18,3 +18,11 @@ test('unreadable stored text is backed up and a fresh save is returned', async (
   const backup = [...store.entries()].find(([k]) => k.startsWith('save-backup-'));
   expect(backup?.[1]).toBe('{not json');
 });
+
+test('a failing backup write does not stop the save from loading', async () => {
+  const Storage = require('../helpers/memoryKv').default;
+  store.set('save', '{not json');
+  const spy = jest.spyOn(Storage, 'setItem').mockRejectedValueOnce(new Error('full'));
+  expect(await loadSave()).toEqual(newSave());
+  spy.mockRestore();
+});

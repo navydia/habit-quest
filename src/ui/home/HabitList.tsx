@@ -19,7 +19,9 @@ export function HabitList({ save, today, onToggle }: Props) {
   const [showYesterday, setShowYesterday] = useState(false);
   const todays = scheduledHabits(save.habits, today);
   const yesterday = addDays(today, -1);
-  const missedYesterday = scheduledHabits(save.habits, yesterday).filter((h) => !isCompleted(save.completions, h.id, yesterday));
+  // All of yesterday's habits stay listed, so an accidental tick can be undone.
+  const yesterdays = scheduledHabits(save.habits, yesterday);
+  const anyMissed = yesterdays.some((h) => !isCompleted(save.completions, h.id, yesterday));
 
   const row = (h: Habit, key: DayKey) => (
     <Checkbox
@@ -39,7 +41,7 @@ export function HabitList({ save, today, onToggle }: Props) {
       ) : save.habits.length > 0 ? (
         <Text color="textMuted">Nothing scheduled today. Enjoy the quiet.</Text>
       ) : null}
-      {missedYesterday.length > 0 && (
+      {yesterdays.length > 0 && (anyMissed || showYesterday) && (
         <View>
           <Pressable
             accessibilityRole="button"
@@ -51,7 +53,7 @@ export function HabitList({ save, today, onToggle }: Props) {
               {showYesterday ? '▾' : '▸'} FORGOT TO LOG YESTERDAY?
             </Text>
           </Pressable>
-          {showYesterday && <Card style={{ paddingVertical: space.s }}>{missedYesterday.map((h) => row(h, yesterday))}</Card>}
+          {showYesterday && <Card style={{ paddingVertical: space.s }}>{yesterdays.map((h) => row(h, yesterday))}</Card>}
         </View>
       )}
     </View>

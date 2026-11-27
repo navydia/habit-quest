@@ -95,3 +95,35 @@ test('load reads the stored save', async () => {
   expect(g().loaded).toBe(true);
   expect(g().save.player.level).toBe(3);
 });
+
+test('a double-tap on Set out does not throw and starts only one quest', () => {
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-easy`, at(DAY, 9));
+  expect(() => g().startQuest(`${DAY}-easy`, at(DAY, 9))).not.toThrow();
+  expect(() => g().startQuest('stale-offer', at(DAY, 9))).not.toThrow();
+  expect(g().save.activeRun?.offer.id).toBe(`${DAY}-easy`);
+});
+
+test('unchecking a habit just after the return time does not send the hero back out', () => {
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-easy`, at(DAY, 9));
+  g().toggleHabit(g().save.habits[0].id, DAY, at(DAY, 17, 0));
+  expect(g().save.activeRun).toBeNull();
+  expect(g().save.pendingResult).not.toBeNull();
+});
+
+test('if storage fails to load, the app still opens and never overwrites the stored save', async () => {
+  const Storage = require('../helpers/memoryKv').default;
+  const getItem = jest.spyOn(Storage, 'getItem').mockRejectedValueOnce(new Error('disk'));
+  const setItem = jest.spyOn(Storage, 'setItem');
+  useGameStore.setState({ loaded: false });
+  await g().load();
+  expect(g().loaded).toBe(true);
+  g().addHabit('Read', { kind: 'daily' }, at(DAY, 7));
+  await new Promise((r) => setTimeout(r, 0));
+  expect(setItem).not.toHaveBeenCalled();
+  getItem.mockRestore();
+  setItem.mockRestore();
+});

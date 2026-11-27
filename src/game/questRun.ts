@@ -5,6 +5,8 @@ import { addExp, powerRating } from './progression';
 import { successChance } from './quests';
 import type { Completion, QuestRun, SaveData } from './types';
 
+const completionKey = (c: Completion) => `${c.habitId}|${c.dayKey}`;
+
 export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
   if (!canStartQuest(s, now)) throw new Error('A quest cannot be started right now.');
   const offer = s.board?.offers.find((o) => o.id === offerId);
@@ -17,6 +19,7 @@ export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
       dayKey: today,
       startedAt: now.toISOString(),
       successChance: successChance(powerRating(s.player.level), offer.requiredPower),
+      preStartKeys: s.completions.map(completionKey),
     },
     lastQuestStartedDayKey: today,
   };
@@ -25,7 +28,8 @@ export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
 /** Derived from timestamps, so it stays correct while the app is closed. */
 export function questEndTime(run: QuestRun, completions: Completion[]): Date {
   const start = new Date(run.startedAt).getTime();
-  const cuts = completions.filter((c) => new Date(c.at).getTime() >= start).length;
+  const pre = new Set(run.preStartKeys ?? []);
+  const cuts = completions.filter((c) => new Date(c.at).getTime() >= start && !pre.has(completionKey(c))).length;
   return new Date(start + Math.max(QUEST_FLOOR_MS, QUEST_BASE_MS - cuts * QUEST_CUT_MS));
 }
 

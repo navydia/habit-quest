@@ -34,6 +34,8 @@ export interface QuestRun {
   dayKey: DayKey;
   startedAt: string;
   successChance: number;
+  /** habitId|dayKey of completions that existed at start; re-checking them gives no time cut. */
+  preStartKeys?: string[];
 }
 
 export interface QuestResult {

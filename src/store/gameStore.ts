@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { dayKey } from '../game/dates';
+import { canStartQuest } from '../game/gauge';
 import { canLogDay, complete, isCompleted, uncomplete } from '../game/habits';
 import { collectResult, questEndTime, resolveQuest, startQuest as startRun } from '../game/questRun';
 import { generateBoard } from '../game/quests';
@@ -12,6 +13,8 @@ import { loadSave, writeSave } from '../save/storage';
 interface GameState {
   save: SaveData;
   loaded: boolean;
+  /** True when the stored save could not be read; we then never write, so it is not overwritten. */
+  persistBlocked: boolean;
   load(): Promise<void>;
   addHabit(name: string, schedule: Schedule, now?: Date): void;
   archiveHabit(id: string): void;
@@ -27,7 +30,7 @@ const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).sli
 export const useGameStore = create<GameState>((set, get) => {
   const commit = (save: SaveData) => {
     set({ save });
-    writeSave(save).catch(() => {});
+    if (!get().persistBlocked) writeSave(save).catch(() => {});
   };
   const rescheduleReturn = (s: SaveData) => {
     if (s.activeRun) scheduleReturn(questEndTime(s.activeRun, s.completions)).catch(() => {});
@@ -36,10 +39,15 @@ export const useGameStore = create<GameState>((set, get) => {
   return {
     save: newSave(),
     loaded: false,
+    persistBlocked: false,
 
     async load() {
-      const save = await loadSave();
-      set({ save, loaded: true });
+      try {
+        const save = await loadSave();
+        set({ save, loaded: true, persistBlocked: false });
+      } catch {
+        set({ save: newSave(), loaded: true, persistBlocked: true });
+      }
     },
 
     addHabit(name, schedule, now = new Date()) {
@@ -55,6 +63,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     toggleHabit(habitId, key, now = new Date()) {
       if (!canLogDay(key, now)) return;
+      get().tick(now); // a hero who is already home stays home
       const s = get().save;
       const completions = isCompleted(s.completions, habitId, key)
         ? uncomplete(s.completions, habitId, key)
@@ -73,7 +82,9 @@ export const useGameStore = create<GameState>((set, get) => {
 
     startQuest(offerId, now = new Date()) {
       get().ensureBoard(now);
-      const next = startRun(get().save, offerId, now);
+      const s = get().save;
+      if (!canStartQuest(s, now) || !s.board?.offers.some((o) => o.id === offerId)) return;
+      const next = startRun(s, offerId, now);
       commit(next);
       rescheduleReturn(next);
     },

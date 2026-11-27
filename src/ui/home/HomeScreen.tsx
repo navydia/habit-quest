@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
+import { useMinuteClock } from '../useMinuteClock';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dayKey } from '@/src/game/dates';
@@ -18,15 +19,6 @@ import { HomeScene } from './HomeScene';
 import { QuestBoardSheet } from './QuestBoardSheet';
 import { QuestStatus } from './QuestStatus';
 import { ReturnReveal } from './ReturnReveal';
-
-function useMinuteClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-}
 
 export function HomeScreen() {
   const { c } = useTheme();
@@ -88,8 +80,10 @@ export function HomeScreen() {
         onClose={() => setChoosing(false)}
         onStart={(id) => {
           setChoosing(false);
-          startQuest(id, new Date());
-          ensurePermission().catch(() => {});
+          // Ask first, so the return notification is allowed when it gets scheduled.
+          ensurePermission()
+            .catch(() => false)
+            .then(() => startQuest(id, new Date()));
         }}
       />
       <ReturnReveal

@@ -100,3 +100,16 @@ test('collectResult adds gold and exp and reports level-ups', () => {
   expect(levelsGained).toBe(1);
   expect(save.pendingResult).toBeNull();
 });
+
+test('unchecking and re-checking a habit done before the start gives no free cut', () => {
+  const s = started();
+  const pre = s.completions[0];
+  const rechecked = [...s.completions.filter((c) => c !== pre), { ...pre, at: at(DAY, 10).toISOString() }];
+  expect(questEndTime(s.activeRun!, rechecked).getTime()).toBe(at(DAY, 17).getTime());
+});
+
+test('runs saved before preStartKeys existed still compute an end time', () => {
+  const run = { ...started().activeRun! } as any;
+  delete run.preStartKeys;
+  expect(questEndTime(run, after(3)).getTime()).toBe(at(DAY, 16).getTime());
+});

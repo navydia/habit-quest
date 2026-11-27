@@ -12,7 +12,9 @@ jest.mock('@/src/notify/questNotifications', () => ({
   ensurePermission: jest.fn(async () => true),
 }));
 
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { ensurePermission, scheduleReturn } from '@/src/notify/questNotifications';
+import { addDays } from '@/src/game/dates';
 import HomeScreen from '@/app/(tabs)/index';
 import { dayKey } from '@/src/game/dates';
 import { newSave } from '@/src/save/migrate';
@@ -58,4 +60,33 @@ test('today\'s habits are listed as checkboxes', async () => {
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
   expect(screen.getByRole('checkbox', { name: 'Read 20 min' })).toBeTruthy();
+});
+
+test('notification permission is asked before the return is scheduled', async () => {
+  const s = newSave();
+  s.habits = [habit('Read')];
+  s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Choose a quest' }));
+  await fireEvent.press(screen.getAllByRole('radio')[0]);
+  await fireEvent.press(screen.getByRole('button', { name: /Set out/ }));
+  await new Promise((r) => setTimeout(r, 0));
+  const perm = (ensurePermission as jest.Mock).mock.invocationCallOrder[0];
+  const sched = (scheduleReturn as jest.Mock).mock.invocationCallOrder[0];
+  expect(perm).toBeLessThan(sched);
+});
+
+test('a habit backfilled for yesterday can still be unchecked', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Walk'), createdAt: new Date(2020, 0, 1).toISOString() }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: /yesterday/i }));
+  const boxes = () => screen.getAllByRole('checkbox', { name: 'Walk' });
+  await fireEvent.press(boxes()[1]); // log yesterday
+  expect(boxes()).toHaveLength(2);
+  expect(boxes()[1].props.accessibilityState.checked).toBe(true);
+  await fireEvent.press(boxes()[1]); // undo the accidental tick
+  expect(boxes()[1].props.accessibilityState.checked).toBe(false);
 });

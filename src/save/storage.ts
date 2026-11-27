@@ -15,7 +15,9 @@ export async function loadSave(): Promise<SaveData> {
     }
   }
   const { save, recovered } = migrate(raw);
-  if (recovered && text !== null) await Storage.setItem(`${KEY}-backup-${new Date().toISOString()}`, text);
+  if (recovered && text !== null) {
+    await Storage.setItem(`${KEY}-backup-${new Date().toISOString()}`, text).catch(() => {});
+  }
   return save;
 }
 

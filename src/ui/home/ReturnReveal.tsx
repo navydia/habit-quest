@@ -11,6 +11,13 @@ import { Text } from '../kit/Text';
 const SUCCESS_LINES = ['Back before supper. Not bad, adventurer.', 'The job is done, and done properly.', 'The town owes you one. They will pay in gold.'];
 const FAIL_LINES = ['The slimes had numbers today.', 'Not every road goes your way.', 'A tough one. You came back in one piece.'];
 
+/** Varies the line by return time, so it isn't the same every day. */
+export function pickLine(resolvedAt: string, lines: string[]): string {
+  let h = 0;
+  for (const ch of resolvedAt) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return lines[h % lines.length];
+}
+
 type Props = { result: QuestResult | null; player: Player; onCollect: () => void };
 
 export function ReturnReveal({ result, player, onCollect }: Props) {
@@ -32,7 +39,7 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
 
   if (!result) return null;
   const lines = result.success ? SUCCESS_LINES : FAIL_LINES;
-  const line = lines[result.resolvedAt.length % lines.length];
+  const line = pickLine(result.resolvedAt, lines);
   const levelsGained = addExp(player, result.exp).levelsGained;
 
   return (
