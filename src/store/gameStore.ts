@@ -5,7 +5,10 @@ import { canLogDay, complete, isCompleted, uncomplete } from '../game/habits';
 import { collectResult, questEndTime, resolveQuest, startQuest as startRun } from '../game/questRun';
 import { generateBoard } from '../game/quests';
 import { seededRng } from '../game/rng';
-import type { DayKey, SaveData, Schedule } from '../game/types';
+import { classTitle } from '../game/classTitle';
+import { gearById } from '../content/gear';
+import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
+import type { DayKey, Player, SaveData, Schedule, Slot, StatKey } from '../game/types';
 import { scheduleReturn } from '../notify/questNotifications';
 import { newSave } from '../save/migrate';
 import { loadSave, writeSave } from '../save/storage';
@@ -23,6 +26,10 @@ interface GameState {
   startQuest(offerId: string, now?: Date): void;
   tick(now?: Date): void;
   collect(): number;
+  allocateSp(stat: StatKey): void;
+  respec(): void;
+  equip(uid: string): void;
+  unequip(slot: Slot): void;
 }
 
 const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -32,6 +39,8 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ save });
     if (!get().persistBlocked) writeSave(save).catch(() => {});
   };
+  /** Character changes never touch the active run, so odds and return time stay fixed. */
+  const setPlayer = (p: Player) => commit({ ...get().save, player: { ...p, title: classTitle(p) } });
   const rescheduleReturn = (s: SaveData) => {
     if (s.activeRun) scheduleReturn(questEndTime(s.activeRun, s.completions)).catch(() => {});
   };
@@ -99,6 +108,30 @@ export const useGameStore = create<GameState>((set, get) => {
       const { save, levelsGained } = collectResult(get().save);
       commit(save);
       return levelsGained;
+    },
+
+    allocateSp(stat) {
+      const p = get().save.player;
+      const next = spendPoint(p, stat);
+      if (next !== p) setPlayer(next);
+    },
+
+    respec() {
+      setPlayer(resetPoints(get().save.player));
+    },
+
+    equip(uid) {
+      const p = get().save.player;
+      const def = gearById(p.inventory.find((i) => i.uid === uid)?.gearId ?? '');
+      if (!def) return;
+      setPlayer({ ...p, equipped: { ...p.equipped, [def.slot]: uid } });
+    },
+
+    unequip(slot) {
+      const p = get().save.player;
+      const equipped = { ...p.equipped };
+      delete equipped[slot];
+      setPlayer({ ...p, equipped });
     },
   };
 });

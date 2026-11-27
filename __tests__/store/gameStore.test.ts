@@ -127,3 +127,45 @@ test('if storage fails to load, the app still opens and never overwrites the sto
   getItem.mockRestore();
   setItem.mockRestore();
 });
+
+describe('character actions', () => {
+  const addItem = (gearId: string, uid = gearId) =>
+    useGameStore.setState({ save: { ...g().save, player: { ...g().save.player, inventory: [...g().save.player.inventory, { uid, gearId, obtainedAt: '' }] } } });
+
+  test('spending and resetting SP', () => {
+    useGameStore.setState({ save: { ...g().save, player: { ...g().save.player, unspentSp: 2 } } });
+    g().allocateSp('luck');
+    expect(g().save.player.stats.luck).toBe(1);
+    g().respec();
+    expect(g().save.player.unspentSp).toBe(2);
+  });
+
+  test('equipping a bow swaps the weapon and changes the title', () => {
+    addItem('hunting-bow');
+    g().equip('hunting-bow');
+    expect(g().save.player.equipped.weapon).toBe('hunting-bow');
+    expect(g().save.player.title).toBe('Warden'); // bow +1 speed ties tunic +1 defense → defense comes first
+  });
+
+  test('unequipping the weapon makes you a Wanderer', () => {
+    g().unequip('weapon');
+    expect(g().save.player.equipped.weapon).toBeUndefined();
+    expect(g().save.player.title).toBe('Wanderer');
+  });
+
+  test('changing gear mid-quest does not change the odds or the return time', () => {
+    twoHabitsDone();
+    g().ensureBoard(at(DAY, 9));
+    g().startQuest(`${DAY}-hard`, at(DAY, 9));
+    const before = { ...g().save.activeRun! };
+    addItem('emberforged-blade');
+    g().equip('emberforged-blade');
+    expect(g().save.activeRun).toEqual(before);
+  });
+
+  test('equipping an unknown uid does nothing', () => {
+    const before = g().save;
+    g().equip('nope');
+    expect(g().save).toBe(before);
+  });
+});
