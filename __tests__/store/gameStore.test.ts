@@ -89,7 +89,7 @@ test('changes are persisted', async () => {
 });
 
 test('load reads the stored save', async () => {
-  memoryStore.set('save', JSON.stringify({ ...newSave(), player: { level: 3, exp: 0, gold: 5, unspentSp: 0 } }));
+  memoryStore.set('save', JSON.stringify({ ...newSave(), player: { ...newSave().player, level: 3, gold: 5 } }));
   useGameStore.setState({ loaded: false });
   await g().load();
   expect(g().loaded).toBe(true);

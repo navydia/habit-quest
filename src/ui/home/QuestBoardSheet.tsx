@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { QUEST_BASE_MS } from '@/src/game/config';
-import { powerRating } from '@/src/game/progression';
+import { powerOf } from '@/src/game/stats';
 import { successChance } from '@/src/game/quests';
 import type { QuestOffer, SaveData } from '@/src/game/types';
 import type { ColorTokens } from '@/src/theme/tokens';
@@ -24,7 +24,7 @@ type Props = { visible: boolean; save: SaveData; onClose: () => void; onStart: (
 export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   const { c } = useTheme();
   const [selected, setSelected] = useState<string | null>(null);
-  const power = powerRating(save.player.level);
+  const power = powerOf(save.player);
   const offers = save.board?.offers ?? [];
   const chosen = offers.find((o) => o.id === selected);
 

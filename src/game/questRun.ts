@@ -1,7 +1,8 @@
 import { FAIL_REWARD_FRACTION, QUEST_BASE_MS, QUEST_CUT_MS, QUEST_FLOOR_MS } from './config';
 import { dayKey } from './dates';
 import { canStartQuest } from './gauge';
-import { addExp, powerRating } from './progression';
+import { addExp } from './progression';
+import { powerOf } from './stats';
 import { successChance } from './quests';
 import { QUEST_TEMPLATES } from '../content/quests';
 import type { Completion, QuestRun, SaveData } from './types';
@@ -19,7 +20,7 @@ export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
       offer,
       dayKey: today,
       startedAt: now.toISOString(),
-      successChance: successChance(powerRating(s.player.level), offer.requiredPower),
+      successChance: successChance(powerOf(s.player), offer.requiredPower),
       preStartKeys: s.completions.map(completionKey),
     },
     lastQuestStartedDayKey: today,

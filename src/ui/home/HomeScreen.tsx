@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
-import { powerRating } from '@/src/game/progression';
+import { powerOf } from '@/src/game/stats';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
 import { hud, radius, space } from '@/src/theme/tokens';
@@ -49,7 +49,7 @@ export function HomeScreen() {
           <View style={[styles.hud, { top: insets.top + space.s }]}>
             <Chip text={`Lv ${save.player.level}`} />
             <Chip text={`${save.player.gold} gold`} />
-            <Chip text={`${powerRating(save.player.level)} power`} />
+            <Chip text={`${powerOf(save.player)} power`} />
           </View>
           <HeroPlaceholder mode={mode} />
         </View>

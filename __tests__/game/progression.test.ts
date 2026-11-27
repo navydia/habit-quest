@@ -1,19 +1,15 @@
-import { addExp, expToNext, powerRating } from '@/src/game/progression';
+import { addExp, expToNext } from '@/src/game/progression';
+import { newSave } from '@/src/save/migrate';
 
-const p = (level: number, exp: number) => ({ level, exp, gold: 0, unspentSp: 0 });
+const p = (level: number, exp: number) => ({ ...newSave().player, level, exp, gold: 0, unspentSp: 0 });
 
 test('expToNext is 100 x level', () => {
   expect(expToNext(1)).toBe(100);
   expect(expToNext(4)).toBe(400);
 });
 
-test('power rating is 100 at level 1 and +15 per level', () => {
-  expect(powerRating(1)).toBe(100);
-  expect(powerRating(3)).toBe(130);
-});
-
 test('adding exp levels up, carries the overflow and grants 3 SP', () => {
-  expect(addExp(p(1, 90), 30)).toEqual({ player: { level: 2, exp: 20, gold: 0, unspentSp: 3 }, levelsGained: 1 });
+  expect(addExp(p(1, 90), 30)).toMatchObject({ player: { level: 2, exp: 20, gold: 0, unspentSp: 3 }, levelsGained: 1 });
 });
 
 test('a big reward can cross two levels', () => {

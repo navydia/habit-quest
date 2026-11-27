@@ -1,17 +1,8 @@
 import type { Habit, SaveData, Schedule } from '@/src/game/types';
+import { newSave } from '@/src/save/migrate';
 
 export function emptySave(): SaveData {
-  return {
-    version: 1,
-    player: { level: 1, exp: 0, gold: 0, unspentSp: 0 },
-    habits: [],
-    completions: [],
-    board: null,
-    activeRun: null,
-    pendingResult: null,
-    lastQuestStartedDayKey: null,
-    questLog: [],
-  };
+  return newSave();
 }
 
 export function habit(id: string, schedule: Schedule = { kind: 'daily' }): Habit {

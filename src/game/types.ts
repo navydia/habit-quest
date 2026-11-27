@@ -48,15 +48,34 @@ export interface QuestResult {
   story?: string;
 }
 
+export type StatKey = 'power' | 'defense' | 'luck' | 'speed';
+export type Stats = Record<StatKey, number>;
+export type Slot = 'weapon' | 'head' | 'body' | 'feet' | 'accessory';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type WeaponType = 'sword' | 'bow' | 'staff';
+
+/** One owned copy of a catalog item. */
+export interface GearItem {
+  uid: string;
+  gearId: string;
+  obtainedAt: string;
+}
+
 export interface Player {
   level: number;
   exp: number;
   gold: number;
   unspentSp: number;
+  spentSp: number;
+  stats: Stats;
+  inventory: GearItem[];
+  /** Slot → uid of the equipped item. */
+  equipped: Partial<Record<Slot, string>>;
+  title: string;
 }
 
 export interface SaveData {
-  version: 1;
+  version: 2;
   player: Player;
   habits: Habit[];
   completions: Completion[];

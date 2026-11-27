@@ -1,6 +1,6 @@
 import { QUEST_TEMPLATES } from '../content/quests';
 import { BOARD_SIZE, SUCCESS_BANDS } from './config';
-import { powerRating } from './progression';
+import { powerOf } from './stats';
 import type { DayKey, Difficulty, Player, QuestOffer } from './types';
 
 export const DIFFICULTY: Record<Difficulty, { offsetMin: number; offsetMax: number; rewardMult: number }> = {
@@ -31,7 +31,7 @@ export function generateBoard(key: DayKey, player: Player, rng: () => number): Q
       name: template.name,
       flavour: template.flavour,
       difficulty,
-      requiredPower: powerRating(player.level) + intBetween(rng, d.offsetMin, d.offsetMax),
+      requiredPower: powerOf(player) + intBetween(rng, d.offsetMin, d.offsetMax),
       rewardExp: Math.round(40 * d.rewardMult * levelMult),
       rewardGold: Math.round(20 * d.rewardMult * levelMult),
     };

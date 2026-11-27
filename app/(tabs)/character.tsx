@@ -1,6 +1,7 @@
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { expToNext, powerRating } from '@/src/game/progression';
+import { expToNext } from '@/src/game/progression';
+import { powerOf } from '@/src/game/stats';
 import { useGameStore } from '@/src/store/gameStore';
 import { space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
@@ -22,7 +23,7 @@ export default function CharacterScreen() {
         <Text variant="caption" color="textMuted">{p.exp} / {need} EXP</Text>
       </Card>
       <Card style={{ gap: space.m }}>
-        <Stat label="Power rating" value={powerRating(p.level)} />
+        <Stat label="Power rating" value={powerOf(p)} />
         <Stat label="Gold" value={p.gold} />
         <Stat label="Unspent skill points" value={p.unspentSp} />
       </Card>

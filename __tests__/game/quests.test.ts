@@ -2,7 +2,10 @@ import { generateBoard, successChance } from '@/src/game/quests';
 import { seededRng } from '@/src/game/rng';
 import { QUEST_TEMPLATES } from '@/src/content/quests';
 
-const lvl1 = { level: 1, exp: 0, gold: 0, unspentSp: 0 };
+import { newSave } from '@/src/save/migrate';
+
+// No gear, so power is exactly the level-1 base of 100.
+const lvl1 = { ...newSave().player, inventory: [], equipped: {} };
 
 describe('successChance (creator rules)', () => {
   test('power meets or exceeds requirement → 100%', () => {

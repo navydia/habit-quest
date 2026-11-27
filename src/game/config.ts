@@ -15,3 +15,8 @@ export const SUCCESS_BANDS = {
   close: 0.6, // ...gives this chance
   far: 0.2, // anything further short
 };
+
+// Stats (Plan 2)
+export const POWER_PER_POINT = 3;
+export const SPEED_CUT_PER_POINT = 0.015;
+export const SPEED_CUT_MAX = 0.2;
