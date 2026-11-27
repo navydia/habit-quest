@@ -1,6 +1,7 @@
 import { clockNow } from '@/src/game/clock';
 import React, { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY, lifeAreaColor } from '@/src/content/habitOptions';
 import { dayKey } from '@/src/game/dates';
 import type { Habit, LifeArea, Schedule, TimeOfDay, Weekday } from '@/src/game/types';
@@ -8,7 +9,6 @@ import type { HabitDetails } from '@/src/store/gameStore';
 import { minTouch, radius, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
-import { Sheet } from '../kit/Sheet';
 import { Text } from '../kit/Text';
 
 const DAYS: { d: Weekday; label: string; name: string }[] = [
@@ -38,6 +38,7 @@ type Props = {
 
 export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTokens = 0, isBossHabit = false, preset = {} }: Props) {
   const { c, t } = useTheme();
+  const insets = useSafeAreaInsets();
   // Mounted fresh each time it opens (see HomeScreen), so state starts from the habit being edited.
   const start = habit?.schedule ?? { kind: 'daily' as const };
   const [name, setName] = useState(habit?.name ?? '');
@@ -108,12 +109,28 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
   const repeatLabel = repeat === 'daily' ? 'Every day' : repeat === 'weekdays' ? `On ${days.length} ${days.length === 1 ? 'day' : 'days'} a week` : `Every ${every} days`;
 
   return (
-    <Sheet
-      visible={visible}
-      title={habit ? 'Edit habit' : 'New habit'}
-      onClose={onClose}
-      footer={<Button title={habit ? 'Save changes' : 'Add habit'} onPress={submit} disabled={!valid} />}
-    >
+    // A full-screen page, not a sheet: the Add/Save action lives in the header bar, so the keyboard can
+    // never hide it (style rule 17a), and nothing has to be squeezed up when the keyboard opens.
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.s, minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.line }}>
+          <Pressable accessibilityRole="button" onPress={onClose} style={{ minWidth: 72, minHeight: minTouch, justifyContent: 'center', paddingHorizontal: space.m }}>
+            <Text variant="bodyStrong" color="textMuted">Cancel</Text>
+          </Pressable>
+          <Text variant="heading" accessibilityRole="header">{habit ? 'Edit habit' : 'New habit'}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={habit ? 'Save changes' : 'Add habit'}
+            accessibilityState={{ disabled: !valid }}
+            disabled={!valid}
+            onPress={submit}
+            style={({ pressed }) => ({ minWidth: 72, minHeight: minTouch, alignItems: 'flex-end', justifyContent: 'center', paddingHorizontal: space.m, opacity: !valid ? 0.4 : pressed ? 0.6 : 1 })}
+          >
+            <Text variant="bodyStrong" color="primary">{habit ? 'Save' : 'Add'}</Text>
+          </Pressable>
+        </View>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.screen, paddingBottom: insets.bottom + space.xxl }}>
       <View style={{ gap: space.m }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.l }}>
           <Pressable
@@ -143,7 +160,6 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
           placeholder="e.g. Read for 20 minutes"
           placeholderTextColor={c.textMuted}
           accessibilityLabel="Habit name"
-          autoFocus={!habit}
           returnKeyType="done"
           onSubmitEditing={submit}
           style={[t.heading, { color: c.text, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.card, paddingHorizontal: space.l, minHeight: minTouch + 24 }]}
@@ -190,6 +206,9 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
           </View>
         )}
       </View>
-    </Sheet>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
   );
 }
