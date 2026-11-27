@@ -6,6 +6,8 @@ import { collectResult, questEndTime, resolveQuest, startBossFight as startBoss,
 import { generateBoard } from '../game/quests';
 import { seededRng } from '../game/rng';
 import { classTitle } from '../game/classTitle';
+import { claimDaily as claimQuest, ensureDaily as makeDaily, progressDaily } from '../game/daily';
+import { buyGear as buyFromArmory, buyPotion as buyFromApothecary, drinkPotion as drink } from '../game/shop';
 import { moveHabit as reorder, type MoveTarget } from '../game/ordering';
 import { gearById } from '../content/gear';
 import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
@@ -51,7 +53,13 @@ interface GameState {
   moveHabit(id: string, target: MoveTarget): void;
   allocateSp(stat: StatKey): void;
   respec(): void;
-  equip(uid: string): void;
+  equip(uid: string, now?: Date): void;
+  ensureDaily(now?: Date): void;
+  claimDaily(id: string): void;
+  /** Returns an error message, or undefined on success. */
+  buyGear(slotId: string, now?: Date): string | undefined;
+  buyPotion(id: string, now?: Date): string | undefined;
+  drinkPotion(id: string, now?: Date): string | undefined;
   unequip(slot: Slot): void;
 }
 
@@ -61,6 +69,12 @@ export const useGameStore = create<GameState>((set, get) => {
   const commit = (save: SaveData) => {
     set({ save });
     if (!get().persistBlocked) writeSave(save).catch(() => {});
+  };
+  const progress = (event: string, now: Date) => commit(progressDaily(get().save, event, now));
+  /** Counts a successful adventure that just came back (for the daily quest). */
+  const afterResolve = (before: SaveData, now: Date) => {
+    const r = get().save.pendingResult;
+    if (r && r !== before.pendingResult && r.success && r.kind !== 'boss') progress('adventure', now);
   };
   /** Character changes never touch the active run, so odds and return time stay fixed. */
   const setPlayer = (p: Player) => commit({ ...get().save, player: { ...p, title: classTitle(p) } });
@@ -107,6 +121,7 @@ export const useGameStore = create<GameState>((set, get) => {
     completeHabit(habitId, key, now = new Date()) {
       if (!canLogDay(key, now) || isCompleted(get().save.completions, habitId, key)) return;
       get().toggleHabit(habitId, key, now);
+      progress('habit', now);
     },
 
     undoCompletion(habitId, key, now = new Date()) {
@@ -175,7 +190,10 @@ export const useGameStore = create<GameState>((set, get) => {
     tick(now = new Date()) {
       const s = get().save;
       const next = resolveQuest(s, now, Math.random);
-      if (next !== s) commit(next);
+      if (next !== s) {
+        commit(next);
+        afterResolve(s, now);
+      }
     },
 
     travel(regionId, now = new Date()) {
@@ -210,6 +228,7 @@ export const useGameStore = create<GameState>((set, get) => {
       const next = resolveQuest(s, now, rng, true);
       if (next === s) return;
       commit(next);
+      afterResolve(s, now);
       cancelReturn().catch(() => {});
     },
 
@@ -228,18 +247,55 @@ export const useGameStore = create<GameState>((set, get) => {
     allocateSp(stat) {
       const p = get().save.player;
       const next = spendPoint(p, stat);
-      if (next !== p) setPlayer(next);
+      if (next !== p) {
+        setPlayer(next);
+        progress('sp', new Date());
+      }
+    },
+
+    ensureDaily(now = new Date()) {
+      const s = get().save;
+      const next = makeDaily(s, now);
+      if (next !== s) commit(next);
+    },
+
+    claimDaily(id) {
+      const s = get().save;
+      const next = claimQuest(s, id);
+      if (next !== s) commit(next);
+    },
+
+    buyGear(slotId, now = new Date()) {
+      const r = buyFromArmory(get().save, slotId, now);
+      if (r.error) return r.error;
+      commit(r.save);
+      progress('buy', now);
+    },
+
+    buyPotion(id, now = new Date()) {
+      const r = buyFromApothecary(get().save, id);
+      if (r.error) return r.error;
+      commit(r.save);
+      progress('buy', now);
+    },
+
+    drinkPotion(id, now = new Date()) {
+      const r = drink(get().save, id);
+      if (r.error) return r.error;
+      commit(r.save);
+      progress('potion', now);
     },
 
     respec() {
       setPlayer(resetPoints(get().save.player));
     },
 
-    equip(uid) {
+    equip(uid, now = new Date()) {
       const p = get().save.player;
       const def = gearById(p.inventory.find((i) => i.uid === uid)?.gearId ?? '');
       if (!def) return;
       setPlayer({ ...p, equipped: { ...p.equipped, [def.slot]: uid } });
+      progress('equip', now);
     },
 
     unequip(slot) {
