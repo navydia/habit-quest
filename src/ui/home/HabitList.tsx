@@ -27,7 +27,7 @@ export function HabitList({ save, today, onToggle }: Props) {
     <Checkbox
       key={`${key}-${h.id}`}
       label={h.name}
-      detail={describeSchedule(h.schedule)}
+      detail={`${describeSchedule(h.schedule)}${h.id === save.boss.habitId ? ' · ◆ Boss habit' : ''}`}
       checked={isCompleted(save.completions, h.id, key)}
       onToggle={() => onToggle(h.id, key)}
     />

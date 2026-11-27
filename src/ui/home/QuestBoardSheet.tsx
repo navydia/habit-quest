@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { QUEST_BASE_MS } from '@/src/game/config';
+import { QUEST_BASE_MS , BOSS_TOKENS_NEEDED } from '@/src/game/config';
 import { powerOf, speedFactor } from '@/src/game/stats';
+import { availableBosses, bossChance, bossTokens } from '@/src/game/bosses';
+import { currentRegion, progressOf } from '@/src/game/world';
+import type { BossDifficulty , QuestOffer, SaveData } from '@/src/game/types';
 import { formatDuration } from '../format';
 import { successChance } from '@/src/game/quests';
-import type { QuestOffer, SaveData } from '@/src/game/types';
 import type { ColorTokens } from '@/src/theme/tokens';
 import { radius, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
@@ -20,7 +22,14 @@ function chanceTone(chance: number): keyof ColorTokens {
 
 const ON_TONE: Record<string, keyof ColorTokens> = { primary: 'onPrimary', accent: 'onAccent', ember: 'onEmber' };
 
-type Props = { visible: boolean; save: SaveData; onClose: () => void; onStart: (offerId: string) => void };
+type BossPick = { bossId: string; difficulty: BossDifficulty };
+type Props = { visible: boolean; save: SaveData; onClose: () => void; onStart: (offerId: string, boss?: BossPick) => void };
+
+const BOSS_DIFF: { d: BossDifficulty; label: string }[] = [
+  { d: 'normal', label: 'Normal' },
+  { d: 'hard', label: 'Hard' },
+  { d: 'extreme', label: 'Extreme' },
+];
 
 export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   const { c } = useTheme();
@@ -28,6 +37,38 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   const power = powerOf(save.player);
   const offers = save.board?.offers ?? [];
   const chosen = offers.find((o) => o.id === selected);
+  const region = currentRegion(save);
+  const cleared = progressOf(save, region.id).cleared;
+  const bossReady = bossTokens(save) >= BOSS_TOKENS_NEEDED;
+  const bosses = availableBosses(save);
+  const [bossId, setBossId] = useState<string | null>(bosses[0]?.id ?? null);
+  const [difficulty, setDifficulty] = useState<BossDifficulty>('normal');
+  const boss = bossReady ? bosses.find((b) => b.id === bossId) : undefined;
+
+  const choice = (label: string, selectedNow: boolean, onPress: () => void, detail?: string) => (
+    <Pressable
+      key={label}
+      accessibilityRole="radio"
+      accessibilityLabel={detail ? `${label}, ${detail}` : label}
+      accessibilityState={{ checked: selectedNow }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexGrow: 1,
+        minHeight: 44,
+        paddingHorizontal: space.m,
+        paddingVertical: space.s,
+        borderRadius: radius.button,
+        borderWidth: selectedNow ? 2 : 1,
+        borderColor: selectedNow ? c.ember : c.line,
+        backgroundColor: c.surface,
+        justifyContent: 'center',
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Text variant="bodyStrong">{label}</Text>
+      {detail ? <Text variant="caption" color="textMuted">{detail}</Text> : null}
+    </Pressable>
+  );
 
   const card = (o: QuestOffer) => {
     const chance = successChance(power, o.requiredPower);
@@ -59,8 +100,11 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
           </View>
         </View>
         <Text variant="heading">{o.name}</Text>
+        <Text variant="caption" color={cleared.includes(o.templateId) ? 'textMuted' : 'accent'}>
+          {cleared.includes(o.templateId) ? 'Memento found' : 'First clear: memento'}
+        </Text>
         <Text color="textMuted">{o.flavour}</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: space.m }}>
           <Text variant="caption" color="textMuted">Needs {o.requiredPower} power · you have {power}</Text>
           <Text variant="caption" color="text">+{o.rewardExp} EXP · +{o.rewardGold} gold</Text>
         </View>
@@ -69,14 +113,31 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   };
 
   return (
-    <Sheet visible={visible} title="Choose today's adventure" onClose={onClose}>
+    <Sheet visible={visible} title={`Adventures in ${region.name}`} onClose={onClose}>
       <View style={{ gap: space.m }} accessibilityRole="radiogroup">
         {offers.map(card)}
+        {bossReady && (
+          <View style={{ gap: space.s, marginTop: space.s }}>
+            <Text variant="heading" accessibilityRole="header">A boss awaits</Text>
+            <Text variant="caption" color="textMuted">You have 6 boss tokens. Add a boss fight to this trip, or save it for later.</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }} accessibilityRole="radiogroup">
+              {bosses.map((b) => choice(b.name, bossId === b.id, () => setBossId(b.id)))}
+              {choice('Not today', bossId === null, () => setBossId(null))}
+            </View>
+            {boss && (
+              <View style={{ flexDirection: 'row', gap: space.s }} accessibilityRole="radiogroup">
+                {BOSS_DIFF.map(({ d, label }) =>
+                  choice(label, difficulty === d, () => setDifficulty(d), `${Math.round(bossChance(save.player, boss, d) * 100)}%`),
+                )}
+              </View>
+            )}
+          </View>
+        )}
         <Button
-          title={chosen ? `Set out: ${chosen.name}` : 'Choose an adventure above'}
+          title={chosen ? `Set out: ${chosen.name}${boss ? ` + ${boss.name} (${BOSS_DIFF.find((x) => x.d === difficulty)!.label})` : ''}` : 'Choose an adventure above'}
           disabled={!chosen}
           onPress={() => {
-            if (chosen) onStart(chosen.id);
+            if (chosen) onStart(chosen.id, boss ? { bossId: boss.id, difficulty } : undefined);
             setSelected(null);
           }}
         />

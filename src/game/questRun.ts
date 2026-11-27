@@ -7,10 +7,9 @@ import { rollDrop } from './drops';
 import { recordClear } from './world';
 import { attachBoss, resolveBoss } from './bosses';
 import { familiarBonus } from './familiars';
-import type { BossDifficulty } from './types';
+import type { BossDifficulty , Completion, QuestRun, SaveData } from './types';
 import { successChance } from './quests';
 import { QUEST_TEMPLATES } from '../content/quests';
-import type { Completion, QuestRun, SaveData } from './types';
 
 const completionKey = (c: Completion) => `${c.habitId}|${c.dayKey}`;
 

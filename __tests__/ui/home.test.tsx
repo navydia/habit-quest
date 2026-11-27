@@ -163,3 +163,68 @@ test('the adventure board shows the length after Speed', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
   expect(screen.getAllByText(/6h 48m/).length).toBeGreaterThan(0);
 });
+
+describe('regions, bosses and debug', () => {
+  const withHabit = () => {
+    const s = newSave();
+    s.habits = [habit('Read')];
+    s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+    return s;
+  };
+
+  test('the region chip opens the map, which explains why a region is locked', async () => {
+    useGameStore.setState({ save: withHabit() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Map: Thornwick Meadows' }));
+    expect(screen.getByText('Clear every adventure in Thornwick Meadows first.')).toBeTruthy();
+  });
+
+  test('the adventure board is titled with the region', async () => {
+    useGameStore.setState({ save: withHabit() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+    expect(screen.getByText('Adventures in Thornwick Meadows')).toBeTruthy();
+  });
+
+  test('without a boss habit, Home offers to choose one; with one, it shows tokens', async () => {
+    useGameStore.setState({ save: withHabit() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Read' }));
+    expect(useGameStore.getState().save.boss.habitId).toBe('Read');
+    expect(screen.getByText('Boss tokens 0 / 6')).toBeTruthy();
+  });
+
+  test('with 6 tokens the board offers a boss fight with a difficulty choice', async () => {
+    useGameStore.setState({ save: withHabit() });
+    useGameStore.getState().debug('bossTokens');
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+    expect(screen.getByText('A boss awaits')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: /Extreme/ }));
+    await fireEvent.press(screen.getAllByRole('radio')[0]);
+    expect(screen.getByRole('button', { name: /Set out: .* \+ Old Bramblehide \(Extreme\)/ })).toBeTruthy();
+  });
+
+  test('a first clear shows its memento on the return screen', async () => {
+    const s = newSave();
+    s.pendingResult = {
+      offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 90, rewardExp: 40, rewardGold: 20, regionId: 'thornwick-meadows' },
+      success: true, exp: 40, gold: 20, resolvedAt: '2026-11-27T18:00:00.000Z',
+      memento: { regionId: 'thornwick-meadows', mementoId: 'plum-jam-jar' },
+    };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.getByText('Empty Jam Jar')).toBeTruthy();
+  });
+
+  test('the debug menu can fill the gauge', async () => {
+    const s = newSave();
+    s.habits = [habit('Read'), habit('Walk')];
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Debug menu' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Fill adventure gauge' }));
+    expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
+  });
+});

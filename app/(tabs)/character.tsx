@@ -8,6 +8,7 @@ import { radius, scene, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { EquipmentCard } from '@/src/ui/character/EquipmentCard';
 import { StatsCard } from '@/src/ui/character/StatsCard';
+import { FamiliarsCard } from '@/src/ui/character/FamiliarsCard';
 import { HeroSprite } from '@/src/ui/hero/HeroSprite';
 import { Button } from '@/src/ui/kit/Button';
 import { Card } from '@/src/ui/kit/Card';
@@ -18,7 +19,8 @@ export default function CharacterScreen() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const p = useGameStore((s) => s.save.player);
-  const { allocateSp, respec, equip, unequip } = useGameStore.getState();
+  const familiars = useGameStore((s) => s.save.familiars);
+  const { allocateSp, respec, equip, unequip, setActiveFamiliar } = useGameStore.getState();
   const need = expToNext(p.level);
 
   return (
@@ -36,6 +38,7 @@ export default function CharacterScreen() {
       </Card>
       <StatsCard player={p} onAdd={allocateSp} onReset={respec} />
       <EquipmentCard player={p} onEquip={equip} onUnequip={unequip} />
+      <FamiliarsCard owned={familiars.owned} active={familiars.active} onSetActive={setActiveFamiliar} />
       {__DEV__ && <Button title="Art preview (testing)" variant="secondary" onPress={() => router.push('/art-preview')} />}
     </ScrollView>
   );

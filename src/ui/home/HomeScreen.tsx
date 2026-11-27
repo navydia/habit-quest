@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useMinuteClock } from '../useMinuteClock';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
@@ -20,6 +20,13 @@ import { Slime } from './Slime';
 import { HomeScene } from './HomeScene';
 import { QuestBoardSheet } from './QuestBoardSheet';
 import { QuestStatus } from './QuestStatus';
+import { DebugSheet } from './DebugSheet';
+import { MapSheet } from '../world/MapSheet';
+import { ScrapbookSheet } from '../world/ScrapbookSheet';
+import { BossHabitSheet } from '../world/BossHabitSheet';
+import { bossTokens } from '@/src/game/bosses';
+import { currentRegion } from '@/src/game/world';
+import { familiarById } from '@/src/content/regions';
 import { ReturnReveal } from './ReturnReveal';
 
 export function HomeScreen() {
@@ -30,9 +37,14 @@ export function HomeScreen() {
   const reduced = useReducedMotion();
   const focused = useIsFocused();
   const save = useGameStore((s) => s.save);
-  const { toggleHabit, addHabit, ensureBoard, startQuest, collect, skipAdventure } = useGameStore.getState();
+  const { toggleHabit, addHabit, ensureBoard, startQuest, collect, skipAdventure, travel, setBossHabit, debug } = useGameStore.getState();
   const [adding, setAdding] = useState(false);
   const [choosing, setChoosing] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [scrapbook, setScrapbook] = useState<string | null>(null);
+  const [bossSheet, setBossSheet] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const region = currentRegion(save);
 
   const today = dayKey(now);
   const gauge = gaugeProgress(save, today);
@@ -55,8 +67,19 @@ export function HomeScreen() {
             <Chip text={`${save.player.gold} gold`} />
             <Chip text={`${powerOf(save.player)} power`} />
           </View>
+          <View style={[styles.hudRow2, { top: insets.top + space.s + 36 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Map: ${region.name}`} hitSlop={6} onPress={() => setMapOpen(true)} style={({ pressed }) => [styles.chip, styles.tapChip, { opacity: pressed ? 0.75 : 1 }]}>
+              <Text variant="label" style={{ color: hud.text }}>⌖ {region.name}</Text>
+            </Pressable>
+            {__DEV__ && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Debug menu" hitSlop={6} onPress={() => setDebugOpen(true)} style={({ pressed }) => [styles.chip, styles.tapChip, { opacity: pressed ? 0.75 : 1 }]}>
+                <Text variant="label" style={{ color: hud.text }}>Debug</Text>
+              </Pressable>
+            )}
+          </View>
           <View style={styles.heroWrap}>
             {mode === 'questing' && <Slime reduced={reduced} />}
+            {save.familiars.active && <FamiliarBuddy id={save.familiars.active} />}
             <HeroSprite
               player={save.player}
               anim={mode === 'questing' ? 'fight' : 'idle'}
@@ -76,6 +99,7 @@ export function HomeScreen() {
               startedToday={save.lastQuestStartedDayKey === today}
               now={now}
               onSkip={__DEV__ ? () => skipAdventure(new Date()) : undefined}
+              onBossHabit={() => setBossSheet(true)}
               onChoose={() => {
                 ensureBoard(new Date());
                 setChoosing(true);
@@ -92,14 +116,48 @@ export function HomeScreen() {
         visible={choosing}
         save={save}
         onClose={() => setChoosing(false)}
-        onStart={(id) => {
+        onStart={(id, boss) => {
           setChoosing(false);
           // Ask first, so the return notification is allowed when it gets scheduled.
           ensurePermission()
             .catch(() => false)
-            .then(() => startQuest(id, new Date()));
+            .then(() => startQuest(id, new Date(), boss));
         }}
       />
+      <MapSheet
+        visible={mapOpen}
+        save={save}
+        now={now}
+        onClose={() => setMapOpen(false)}
+        onTravel={(id) => {
+          travel(id, new Date());
+          setMapOpen(false);
+        }}
+        onScrapbook={(id) => {
+          setMapOpen(false);
+          setScrapbook(id);
+        }}
+      />
+      <ScrapbookSheet regionId={scrapbook} save={save} onClose={() => setScrapbook(null)} />
+      <BossHabitSheet
+        visible={bossSheet}
+        habits={save.habits}
+        currentId={save.boss.habitId}
+        tokens={bossTokens(save)}
+        onClose={() => setBossSheet(false)}
+        onChoose={(id) => setBossHabit(id, new Date())}
+      />
+      {__DEV__ && (
+        <DebugSheet
+          visible={debugOpen}
+          onClose={() => setDebugOpen(false)}
+          onAction={(a) => {
+            if (a === 'skip') skipAdventure(new Date());
+            else debug(a, new Date());
+            setDebugOpen(false);
+          }}
+        />
+      )}
       <ReturnReveal
         result={save.pendingResult}
         player={save.player}
@@ -108,6 +166,20 @@ export function HomeScreen() {
           collect(equipDrop);
         }}
       />
+    </View>
+  );
+}
+
+/** Placeholder familiar sitting beside the hero (art comes later). */
+function FamiliarBuddy({ id }: { id: string }) {
+  const f = familiarById(id);
+  if (!f) return null;
+  return (
+    <View accessible accessibilityLabel={`${f.name}, your familiar`} style={styles.buddy}>
+      <View style={styles.buddyEyes}>
+        <View style={styles.eye} />
+        <View style={styles.eye} />
+      </View>
     </View>
   );
 }
@@ -124,6 +196,11 @@ const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
   heroWrap: { width: 250, alignItems: 'center', justifyContent: 'flex-end' },
   hud: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
+  buddy: { position: 'absolute', left: 10, bottom: 14, width: 42, height: 36, borderTopLeftRadius: 21, borderTopRightRadius: 21, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#C79A5B', alignItems: 'center', justifyContent: 'center' },
+  buddyEyes: { flexDirection: 'row', gap: 8, marginTop: -2 },
+  eye: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#2A2623' },
+  hudRow2: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
+  tapChip: { minHeight: 32, justifyContent: 'center' },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },
 });

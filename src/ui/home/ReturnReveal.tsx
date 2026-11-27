@@ -9,6 +9,7 @@ import { Button } from '../kit/Button';
 import { Card } from '../kit/Card';
 import { gearById, RARITY_LABEL } from '@/src/content/gear';
 import { statLine } from '../character/gearText';
+import { bossById, familiarById, regionById } from '@/src/content/regions';
 import { Text } from '../kit/Text';
 
 const SUCCESS_LINES = ['Back before supper. Not bad, adventurer.', 'The job is done, and done properly.', 'The town owes you one. They will pay in gold.'];
@@ -46,8 +47,13 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
   if (!result) return null;
   const lines = result.success ? SUCCESS_LINES : FAIL_LINES;
   const line = pickLine(result.resolvedAt, lines);
-  const levelsGained = addExp(player, result.exp).levelsGained;
+  const levelsGained = addExp(player, result.exp + (result.boss?.exp ?? 0)).levelsGained;
   const drop = result.drop ? gearById(result.drop.gearId) : undefined;
+  const memento = result.memento ? regionById(result.memento.regionId)?.adventures.find((a) => a.memento.id === result.memento!.mementoId)?.memento : undefined;
+  const bossResult = result.boss;
+  const bossDef = bossResult ? bossById(bossResult.bossId) : undefined;
+  const bossDrop = bossResult?.drop ? gearById(bossResult.drop.gearId) : undefined;
+  const familiar = bossResult?.familiarId ? familiarById(bossResult.familiarId) : undefined;
 
   return (
     <Modal visible animationType="fade" onRequestClose={() => onCollect(false)}>
@@ -100,6 +106,31 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
             <Text variant="label" color="textMuted">Found on the road · {RARITY_LABEL[drop.rarity]}</Text>
             <Text variant="heading">{drop.name}</Text>
             <Text variant="caption" color="textMuted">{statLine(drop)}</Text>
+          </Card>
+        )}
+        {memento && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: c.accent }]}>
+            <Text variant="label" color="textMuted">New memento for your scrapbook</Text>
+            <Text variant="heading">{memento.name}</Text>
+            <Text variant="caption" color="textMuted">{memento.description}</Text>
+          </Card>
+        )}
+        {bossResult && bossDef && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: c.ember }]}>
+            <Text variant="label" color="ember">{bossResult.success ? 'Boss defeated' : 'The boss held on'}</Text>
+            <Text variant="heading">{bossDef.name}</Text>
+            <Text variant="caption" color="textMuted">
+              {bossResult.success
+                ? `+${bossResult.exp} EXP · +${bossResult.gold} gold${bossDrop ? ` · ${bossDrop.name} (${RARITY_LABEL[bossDrop.rarity]})` : ''}`
+                : 'Your 6 tokens are safe. Try again tomorrow.'}
+            </Text>
+          </Card>
+        )}
+        {familiar && (
+          <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: c.primary }]}>
+            <Text variant="label" color="primary">A familiar joins you</Text>
+            <Text variant="heading">{familiar.name}</Text>
+            <Text variant="caption" color="textMuted">{familiar.description}</Text>
           </Card>
         )}
         {levelsGained > 0 && (
