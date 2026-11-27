@@ -8,9 +8,9 @@ import { Text } from './Text';
 /** 'padding' on both platforms: Expo apps are edge-to-edge, so Android no longer resizes for the keyboard. */
 export const sheetKeyboardBehavior = 'padding' as const;
 
-type Props = { visible: boolean; title: string; onClose: () => void; children: ReactNode };
+type Props = { visible: boolean; title: string; onClose: () => void; children: ReactNode; /** Pinned under the scrolling content, above the keyboard. */ footer?: ReactNode };
 
-export function Sheet({ visible, title, onClose, children }: Props) {
+export function Sheet({ visible, title, onClose, children, footer }: Props) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   return (
@@ -29,6 +29,7 @@ export function Sheet({ visible, title, onClose, children }: Props) {
             {title}
           </Text>
           <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
+          {footer ? <View style={{ paddingTop: space.m }}>{footer}</View> : null}
         </View>
       </KeyboardAvoidingView>
     </Modal>

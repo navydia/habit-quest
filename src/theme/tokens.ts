@@ -55,6 +55,12 @@ export const scene = {
 /** Chips drawn over the scene; same in both modes because the scene is. */
 export const hud = { bg: 'rgba(28,24,22,0.6)', text: '#FFF8EC' };
 
+/** The Home page sits on a deep warm dusk (like Finch tints the page with its scene). Same in both modes. */
+export const home = { bg: '#4A3B3A', text: '#FFF8EC', muted: '#E8DCCB', line: 'rgba(255,248,236,0.25)', dash: 'rgba(255,248,236,0.35)' };
+
+/** The adventure quest board: a physical cork board with paper notes, same in both modes. */
+export const board = { cork: '#A97C50', corkEdge: '#7E5A38', paper: '#FFF6E3', paperSelected: '#FFFDF6', ink: '#2A2623', inkMuted: '#5E554D', pin: '#B5543A' };
+
 export const rarity = {
   common: '#8C877F',
   uncommon: '#5E9A6B',

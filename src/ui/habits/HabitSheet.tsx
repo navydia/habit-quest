@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY } from '@/src/content/habitOptions';
+import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY, lifeAreaColor } from '@/src/content/habitOptions';
 import { dayKey } from '@/src/game/dates';
 import type { Habit, LifeArea, Schedule, TimeOfDay, Weekday } from '@/src/game/types';
 import type { HabitDetails } from '@/src/store/gameStore';
@@ -31,20 +31,23 @@ type Props = {
   /** Boss tokens to warn about when archiving the boss habit. */
   bossTokens?: number;
   isBossHabit?: boolean;
+  /** Starting section for a new habit (from a section's + button). */
+  preset?: { timeOfDay?: TimeOfDay; lifeArea?: LifeArea };
 };
 
-export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTokens = 0, isBossHabit = false }: Props) {
+export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTokens = 0, isBossHabit = false, preset = {} }: Props) {
   const { c, t } = useTheme();
   // Mounted fresh each time it opens (see HomeScreen), so state starts from the habit being edited.
   const start = habit?.schedule ?? { kind: 'daily' as const };
   const [name, setName] = useState(habit?.name ?? '');
   const [emoji, setEmoji] = useState(habit?.emoji ?? '✨');
-  const [lifeArea, setLifeArea] = useState<LifeArea>(habit?.lifeArea ?? 'other');
-  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(habit?.timeOfDay ?? 'anytime');
+  const [lifeArea, setLifeArea] = useState<LifeArea>(habit?.lifeArea ?? preset.lifeArea ?? 'other');
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(habit?.timeOfDay ?? preset.timeOfDay ?? 'anytime');
   const [repeat, setRepeat] = useState<Repeat>(start.kind);
   const [days, setDays] = useState<Weekday[]>(start.kind === 'weekdays' ? start.days : [1, 2, 3, 4, 5]);
   const [every, setEvery] = useState(start.kind === 'interval' ? start.every : 2);
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [open, setOpen] = useState<'emoji' | 'area' | 'time' | 'repeat' | null>(null);
 
   // An every-N-days repeat counts from the day it is set, unless it is unchanged.
   const from = start.kind === 'interval' && start.every === every && start.from ? start.from : dayKey(new Date());
@@ -80,67 +83,100 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
       <Text variant="bodyStrong" color={selected ? 'onPrimary' : 'text'}>{label}</Text>
     </Pressable>
   );
-  const section = (title: string) => <Text variant="label" color="textMuted" style={{ marginTop: space.s }}>{title}</Text>;
   const wrap = { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: space.s };
 
+  const row = (key: 'area' | 'time' | 'repeat', label: string, value: string, icon: string, body: React.ReactNode) => (
+    <View style={{ backgroundColor: c.surface, borderRadius: radius.card, borderWidth: 1, borderColor: c.line }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${value}`}
+        accessibilityState={{ expanded: open === key }}
+        onPress={() => setOpen(open === key ? null : key)}
+        style={({ pressed }) => ({ minHeight: minTouch + 20, flexDirection: 'row', alignItems: 'center', gap: space.m, paddingHorizontal: space.l, opacity: pressed ? 0.8 : 1 })}
+      >
+        <Text style={{ fontSize: 22 }}>{icon}</Text>
+        <View style={{ flex: 1 }}>
+          <Text variant="label" color="textMuted">{label}</Text>
+          <Text variant="bodyStrong">{value}</Text>
+        </View>
+        <Text color="textMuted">{open === key ? '⌃' : '⌄'}</Text>
+      </Pressable>
+      {open === key && <View style={{ padding: space.l, paddingTop: 0, gap: space.s }}>{body}</View>}
+    </View>
+  );
+  const repeatLabel = repeat === 'daily' ? 'Every day' : repeat === 'weekdays' ? `On ${days.length} ${days.length === 1 ? 'day' : 'days'} a week` : `Every ${every} days`;
+
   return (
-    <Sheet visible={visible} title={habit ? 'Edit habit' : 'New habit'} onClose={onClose}>
+    <Sheet
+      visible={visible}
+      title={habit ? 'Edit habit' : 'New habit'}
+      onClose={onClose}
+      footer={<Button title={habit ? 'Save changes' : 'Add habit'} onPress={submit} disabled={!valid} />}
+    >
       <View style={{ gap: space.m }}>
-        <View style={{ flexDirection: 'row', gap: space.s }}>
-          <TextInput
-            value={emoji}
-            onChangeText={(v) => setEmoji([...v].slice(-2).join(''))}
-            accessibilityLabel="Emoji"
-            style={[t.title, { width: 60, textAlign: 'center', color: c.text, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.button, minHeight: minTouch + 8 }]}
-          />
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Read for 20 minutes"
-            placeholderTextColor={c.textMuted}
-            accessibilityLabel="Habit name"
-            autoFocus={!habit}
-            returnKeyType="done"
-            onSubmitEditing={submit}
-            style={[t.body, { flex: 1, color: c.text, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.button, paddingHorizontal: space.l, minHeight: minTouch + 8 }]}
-          />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.l }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Emoji ${emoji}. Change`}
+            onPress={() => setOpen(open === 'emoji' ? null : 'emoji')}
+            style={{ width: 84, height: 84, borderRadius: 28, backgroundColor: lifeAreaColor(lifeArea), alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-4deg' }] }}
+          >
+            <Text style={{ fontSize: 44, lineHeight: 52 }}>{emoji}</Text>
+          </Pressable>
+          <Text variant="caption" color="textMuted" style={{ flex: 1 }}>Tap the picture to pick an emoji.</Text>
         </View>
-        {/* Kept right under the name field so it stays visible above the keyboard (style rule 17a). */}
-        <Button title={habit ? 'Save changes' : 'Add habit'} onPress={submit} disabled={!valid} />
-        <View style={wrap}>
-          {EMOJI_CHOICES.map((e) => chip(e, emoji === e, () => setEmoji(e), `Emoji ${e}`))}
-        </View>
-
-        {section('Life area')}
-        <View style={wrap}>{LIFE_AREAS.map((a) => chip(`${a.emoji} ${a.label}`, lifeArea === a.id, () => setLifeArea(a.id), a.label))}</View>
-
-        {section('Time of day')}
-        <View style={wrap}>{TIMES_OF_DAY.map((x) => chip(x.label, timeOfDay === x.id, () => setTimeOfDay(x.id)))}</View>
-
-        {section('Repeat')}
-        <View style={wrap}>
-          {chip('Every day', repeat === 'daily', () => setRepeat('daily'))}
-          {chip('Some days', repeat === 'weekdays', () => setRepeat('weekdays'))}
-          {chip('Every few days', repeat === 'interval', () => setRepeat('interval'))}
-        </View>
-        {repeat === 'weekdays' && (
-          <View style={wrap}>
-            {DAYS.map(({ d, label, name: full }) => chip(label, days.includes(d), () => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d])), full))}
+        {open === 'emoji' && (
+          <View style={{ gap: space.s }}>
+            <View style={wrap}>{EMOJI_CHOICES.map((e) => chip(e, emoji === e, () => setEmoji(e), `Emoji ${e}`))}</View>
+            <TextInput
+              value={emoji}
+              onChangeText={(v) => setEmoji([...v].slice(-2).join(''))}
+              accessibilityLabel="Type an emoji"
+              style={[t.title, { width: 72, textAlign: 'center', color: c.text, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.button, minHeight: minTouch + 8 }]}
+            />
           </View>
         )}
-        {repeat === 'interval' && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-            {chip('−', false, () => setEvery((n) => Math.max(2, n - 1)), 'Fewer days')}
-            <Text variant="bodyStrong" accessibilityLiveRegion="polite">Every {every} days</Text>
-            {chip('+', false, () => setEvery((n) => Math.min(30, n + 1)), 'More days')}
-          </View>
-        )}
-
-        <View style={{ marginTop: space.m, gap: space.s }}>
-          {habit && onArchive && confirmArchive && isBossHabit && (
-            <Text color="ember">This is your boss habit. Archiving it resets your {bossTokens} boss tokens.</Text>
-          )}
-          {habit && onArchive && (
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="e.g. Read for 20 minutes"
+          placeholderTextColor={c.textMuted}
+          accessibilityLabel="Habit name"
+          autoFocus={!habit}
+          returnKeyType="done"
+          onSubmitEditing={submit}
+          style={[t.heading, { color: c.text, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.card, paddingHorizontal: space.l, minHeight: minTouch + 24 }]}
+        />
+        {row('area', 'Life area', `${LIFE_AREAS.find((a) => a.id === lifeArea)?.emoji} ${LIFE_AREAS.find((a) => a.id === lifeArea)?.label}`, '🧭', (
+          <View style={wrap}>{LIFE_AREAS.map((a) => chip(`${a.emoji} ${a.label}`, lifeArea === a.id, () => setLifeArea(a.id), a.label))}</View>
+        ))}
+        {row('time', 'Time of day', TIMES_OF_DAY.find((x) => x.id === timeOfDay)?.label ?? '', '🕒', (
+          <View style={wrap}>{TIMES_OF_DAY.map((x) => chip(x.label, timeOfDay === x.id, () => setTimeOfDay(x.id)))}</View>
+        ))}
+        {row('repeat', 'Repeat', repeatLabel, '🔁', (
+          <>
+            <View style={wrap}>
+              {chip('Every day', repeat === 'daily', () => setRepeat('daily'))}
+              {chip('Some days', repeat === 'weekdays', () => setRepeat('weekdays'))}
+              {chip('Every few days', repeat === 'interval', () => setRepeat('interval'))}
+            </View>
+            {repeat === 'weekdays' && (
+              <View style={wrap}>
+                {DAYS.map(({ d, label, name: full }) => chip(label, days.includes(d), () => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d])), full))}
+              </View>
+            )}
+            {repeat === 'interval' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+                {chip('−', false, () => setEvery((n) => Math.max(2, n - 1)), 'Fewer days')}
+                <Text variant="bodyStrong" accessibilityLiveRegion="polite">Every {every} days</Text>
+                {chip('+', false, () => setEvery((n) => Math.min(30, n + 1)), 'More days')}
+              </View>
+            )}
+          </>
+        ))}
+        {habit && onArchive && (
+          <View style={{ marginTop: space.m, gap: space.s }}>
+            {confirmArchive && isBossHabit && <Text color="ember">This is your boss habit. Archiving it resets your {bossTokens} boss tokens.</Text>}
             <Button
               title={confirmArchive ? 'Tap again to archive' : 'Archive habit'}
               variant="secondary"
@@ -150,8 +186,8 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
                 onClose();
               }}
             />
-          )}
-        </View>
+          </View>
+        )}
       </View>
     </Sheet>
   );

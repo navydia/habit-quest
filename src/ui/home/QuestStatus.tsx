@@ -19,7 +19,7 @@ type Props = {
   now: Date;
   onChoose: () => void;
   /** Only passed in development builds. */
-  onSkip?: () => void;
+  onSkip?: (outcome: 'win' | 'lose') => void;
   onBossHabit: () => void;
   onBoss: () => void;
 };
@@ -57,13 +57,27 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
     const total = Math.max(1, end - start);
     return (
       <Card floating style={{ gap: space.s }}>
-        <Text variant="label" color={run.kind === 'boss' ? 'ember' : 'info'}>{run.kind === 'boss' ? 'Boss fight' : 'On an adventure'}</Text>
-        <Text variant="heading">{run.offer.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <IconBlob emoji={run.kind === 'boss' ? '👹' : '⚔️'} color={run.kind === 'boss' ? c.ember : c.info} />
+          <View style={{ flex: 1 }}>
+            <Text variant="label" color={run.kind === 'boss' ? 'ember' : 'info'}>{run.kind === 'boss' ? 'Boss fight' : 'On an adventure'}</Text>
+            <Text variant="heading">{run.offer.name}</Text>
+          </View>
+        </View>
         <ProgressBar value={(now.getTime() - start) / total} tone="info" label="Adventure progress" />
         <Text variant="body" color="textMuted">
           Returns in {formatRemaining(end - now.getTime())}. Each habit you finish brings them home sooner.
         </Text>
-        {onSkip && <Button title="Skip (testing)" variant="secondary" onPress={onSkip} />}
+        {onSkip && (
+          <View style={{ flexDirection: 'row', gap: space.s }}>
+            <View style={{ flex: 1 }}>
+              <Button title="Skip: win" variant="secondary" onPress={() => onSkip('win')} accessibilityHint="Testing only" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button title="Skip: lose" variant="secondary" onPress={() => onSkip('lose')} accessibilityHint="Testing only" />
+            </View>
+          </View>
+        )}
       </Card>
     );
   }
@@ -77,8 +91,9 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
 
   return (
     <Card floating style={{ gap: space.s }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Text variant="label" color="textMuted">Adventure gauge</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+        <IconBlob emoji="🧭" color={c.accent} />
+        <Text variant="label" color="textMuted" style={{ flex: 1 }}>Adventure gauge</Text>
         <Text variant="label" color="textMuted">
           {Math.min(gauge.done, gauge.target)} / {gauge.target}
         </Text>
@@ -92,5 +107,14 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
       ))}
       {bossRow}
     </Card>
+  );
+}
+
+/** Round tinted icon, like the bolt on Finch's adventure bar. */
+function IconBlob({ emoji, color }: { emoji: string; color: string }) {
+  return (
+    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no">
+      <Text style={{ fontSize: 22, lineHeight: 28 }}>{emoji}</Text>
+    </View>
   );
 }

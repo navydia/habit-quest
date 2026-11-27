@@ -291,3 +291,21 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
   - Home shows the hero fighting a big boss.
   - Only one trip (adventure or boss) per day.
 - **The Board tab is now the Log.** It holds mail (Guild Master letters, later), daily quests (City, later), the scrapbooks, and History.
+
+## 15. Home redesign, ordering, boss odds *(creator decisions, built in Plan 5; amends §6 and §14)*
+
+- **Home** follows Finch's layout with our own palette:
+  - A deep warm dusk page under the scene.
+  - An adventure panel with an icon.
+  - A "N habits left for today" header with a sort button.
+  - Section headers with "+".
+  - Large habit cards with a coloured emoji blob and a tactile check button.
+- **Tapping a card** opens it for editing. The habit sheet is made of rows (Life area, Time of day, Repeat), with Save pinned to the bottom.
+- **Long-press and drag** reorders habits. Dropping into another time-of-day or life-area section changes that property. **Custom** sort shows one list in your own order. Screen readers get Move up / Move down actions.
+- **Boss odds:**
+  - Each difficulty has a required power: Normal = the boss's power, Hard +30, Extreme +60. Defense adds 2 per point.
+  - **Normal always wins.** Hard and Extreme win if you meet their requirement, otherwise 50% and 5%.
+  - **A lost boss fight spends the tokens.**
+- **Boss preview:** the boss large on a backdrop coloured by risk (moss = safe, gold = a gamble, ember = a long shot), with small difficulty buttons showing the required power and chance.
+- **Adventure board:** a cork board with paper notes pinned on, each showing required power, chance, rewards and memento status.
+- **Skip (testing)** has **Win** and **Lose** buttons.

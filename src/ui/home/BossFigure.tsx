@@ -10,7 +10,8 @@ const TINTS: Record<string, { body: string; shade: string; eye: string }> = {
 };
 
 /** Placeholder boss: a big looming silhouette tinted per boss. Real boss art comes later. */
-export function BossFigure({ bossId, name, reduced }: { bossId: string; name: string; reduced: boolean }) {
+/** `inline`: drawn in normal layout at `size` (the boss preview), instead of looming at the right of the scene. */
+export function BossFigure({ bossId, name, reduced, inline = false, size = 200 }: { bossId: string; name: string; reduced: boolean; inline?: boolean; size?: number }) {
   const tint = TINTS[bossId] ?? TINTS['old-bramblehide'];
   const [sway] = useState(() => new Animated.Value(0));
   useEffect(() => {
@@ -24,9 +25,9 @@ export function BossFigure({ bossId, name, reduced }: { bossId: string; name: st
     <Animated.View
       accessible
       accessibilityLabel={`${name}, the boss`}
-      style={{ position: 'absolute', right: -10, bottom: 0, transform: [{ translateY: sway.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }] }}
+      style={[inline ? { alignSelf: 'center' } : { position: 'absolute', right: -10, bottom: 0 }, { transform: [{ translateY: sway.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }] }]}
     >
-      <Svg width={200} height={230} viewBox="0 0 200 230">
+      <Svg width={size} height={size * 1.15} viewBox="0 0 200 230">
         <Ellipse cx="100" cy="222" rx="80" ry="8" fill="#000" opacity="0.2" />
         <Path d="M20 220 Q10 120 60 70 Q100 30 140 70 Q190 120 180 220 Z" fill={tint.body} />
         <Path d="M40 220 Q40 150 70 120 L70 220 Z M160 220 Q160 150 130 120 L130 220 Z" fill={tint.shade} opacity="0.6" />

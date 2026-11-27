@@ -9,8 +9,8 @@ import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
 import { powerOf } from '@/src/game/stats';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
-import { hud, radius, space } from '@/src/theme/tokens';
-import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
+import { home, hud, radius, space } from '@/src/theme/tokens';
+import { useReducedMotion } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
 import { HabitSheet } from '../habits/HabitSheet';
@@ -18,7 +18,8 @@ import { UndoToast } from './UndoToast';
 import { BossSheet } from '../world/BossSheet';
 import { BossFigure } from './BossFigure';
 import { bossById , familiarById } from '@/src/content/regions';
-import type { Habit } from '@/src/game/types';
+import type { Habit, LifeArea, TimeOfDay } from '@/src/game/types';
+import { SortSheet } from './SortSheet';
 import { HabitList } from './HabitList';
 import { HeroSprite } from '../hero/HeroSprite';
 import { Slime } from './Slime';
@@ -35,20 +36,22 @@ import { familiarBonus } from '@/src/game/familiars';
 import { ReturnReveal } from './ReturnReveal';
 
 export function HomeScreen() {
-  const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const now = useMinuteClock();
   const reduced = useReducedMotion();
   const focused = useIsFocused();
   const save = useGameStore((s) => s.save);
-  const { addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit, debug } =
+  const { moveHabit, addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit, debug } =
     useGameStore.getState();
   // Habit sheet: null = closed, 'new' = add, otherwise the habit being edited.
   const [editing, setEditing] = useState<Habit | 'new' | null>(null);
   const [undo, setUndo] = useState<{ habitId: string; key: string; message: string } | null>(null);
   const [bossOpen, setBossOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [preset, setPreset] = useState<{ timeOfDay?: TimeOfDay; lifeArea?: LifeArea }>({});
   const [choosing, setChoosing] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
@@ -71,8 +74,8 @@ export function HomeScreen() {
   }, [gauge.full]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
+    <View style={{ flex: 1, backgroundColor: home.bg }}>
+      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
         <View style={[styles.stage, { height: Math.max(300, height * 0.45) }]}>
           <HomeScene mode={mode} />
           <View style={[styles.hud, { top: insets.top + space.s }]}>
@@ -112,7 +115,7 @@ export function HomeScreen() {
               canStart={canStart}
               startedToday={save.lastQuestStartedDayKey === today}
               now={now}
-              onSkip={__DEV__ ? () => skipAdventure(new Date()) : undefined}
+              onSkip={__DEV__ ? (outcome) => skipAdventure(new Date(), outcome) : undefined}
               onBossHabit={() => setBossSheet(true)}
               onBoss={() => setBossOpen(true)}
               onChoose={() => {
@@ -129,12 +132,19 @@ export function HomeScreen() {
               setUndo({ habitId: h.id, key, message: `${h.emoji} ${h.name} · done` });
             }}
             onEdit={(h) => setEditing(h)}
-            onGroupBy={setGroupBy}
+            onAdd={(preset) => {
+              setPreset(preset);
+              setEditing('new');
+            }}
+            onSort={() => setSortOpen(true)}
+            onMove={moveHabit}
+            onDragging={setDragging}
           />
-          <Button title="+ Add habit" variant="secondary" onPress={() => setEditing('new')} />
+          <Button title="+ New habit" variant="secondary" onPress={() => { setPreset({}); setEditing('new'); }} />
         </View>
       </ScrollView>
 
+      <SortSheet visible={sortOpen} value={save.settings.groupBy} onClose={() => setSortOpen(false)} onChoose={setGroupBy} />
       <UndoToast message={notice} bottom={insets.bottom + 72} onDone={() => setNotice(null)} />
       <UndoToast
         message={undo?.message ?? null}
@@ -151,6 +161,7 @@ export function HomeScreen() {
         isBossHabit={editing !== 'new' && editing?.id === save.boss.habitId}
         visible
         habit={editing === 'new' ? null : editing}
+        preset={preset}
         onClose={() => setEditing(null)}
         onSave={(d) => (editing && editing !== 'new' ? updateHabit(editing.id, d) : addHabit(d.name, d.schedule, new Date(), d))}
         onArchive={archiveHabit}
