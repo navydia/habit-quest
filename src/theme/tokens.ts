@@ -56,7 +56,16 @@ export const scene = {
 export const hud = { bg: 'rgba(28,24,22,0.6)', text: '#FFF8EC' };
 
 /** The Home page sits on a deep warm dusk (like Finch tints the page with its scene). Same in both modes. */
-export const home = { bg: '#4A3B3A', text: '#FFF8EC', muted: '#E8DCCB', line: 'rgba(255,248,236,0.25)', dash: 'rgba(255,248,236,0.35)' };
+export const home = {
+  bg: '#4A3B3A',
+  text: '#FFF8EC',
+  muted: '#E8DCCB',
+  line: 'rgba(255,248,236,0.25)',
+  dash: 'rgba(255,248,236,0.35)',
+  /** Gauge fills and accents on the dark Home panel (fixed, so cream text stays readable in both modes). */
+  fill: { moss: '#3F6B4F', gold: '#8A5C1A', slate: '#4D6A8A', ember: '#9E4630' },
+  bossText: '#F2A48E',
+};
 
 /** The adventure quest board: a physical cork board with paper notes, same in both modes. */
 export const board = { cork: '#A97C50', corkEdge: '#7E5A38', paper: '#FFF6E3', paperSelected: '#FFFDF6', ink: '#2A2623', inkMuted: '#5E554D', pin: '#B5543A' };

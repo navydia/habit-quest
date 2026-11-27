@@ -19,3 +19,9 @@ describe.each(['light', 'dark'] as const)('%s mode text meets 4.5:1', (mode) => 
     expect(contrastRatio(c[fg], c[bg])).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+test('cream text on the Home gauge fills and the boss label meet 4.5:1', () => {
+  const { home } = require('@/src/theme/tokens');
+  for (const fill of Object.values(home.fill) as string[]) expect(contrastRatio(home.text, fill)).toBeGreaterThanOrEqual(4.5);
+  expect(contrastRatio(home.bossText, home.bg)).toBeGreaterThanOrEqual(4.5);
+});

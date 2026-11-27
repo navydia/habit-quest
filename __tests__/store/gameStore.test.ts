@@ -346,3 +346,15 @@ describe('shop and daily quests', () => {
     expect(g().save.daily.quests[0].claimed).toBe(true);
   });
 });
+
+test('habit daily quests count today\'s completions, so undo-and-redo cannot farm them', () => {
+  useGameStore.setState({ save: { ...g().save, daily: { dayKey: DAY, quests: [{ id: 'h', kind: 'habit3', event: 'habit', title: 'Complete 3 habits', target: 3, progress: 0, reward: 40, claimed: false }] } } });
+  g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+  const a = g().save.habits[0];
+  for (let i = 0; i < 4; i++) {
+    g().completeHabit(a.id, DAY, at(DAY, 9, i));
+    g().undoCompletion(a.id, DAY, at(DAY, 9, i));
+  }
+  g().completeHabit(a.id, DAY, at(DAY, 10));
+  expect(g().save.daily.quests[0].progress).toBe(1);
+});

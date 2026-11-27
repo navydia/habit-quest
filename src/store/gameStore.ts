@@ -6,7 +6,7 @@ import { collectResult, questEndTime, resolveQuest, startBossFight as startBoss,
 import { generateBoard } from '../game/quests';
 import { seededRng } from '../game/rng';
 import { classTitle } from '../game/classTitle';
-import { claimDaily as claimQuest, ensureDaily as makeDaily, progressDaily } from '../game/daily';
+import { claimDaily as claimQuest, ensureDaily as makeDaily, progressDaily, syncHabitDaily } from '../game/daily';
 import { buyGear as buyFromArmory, buyPotion as buyFromApothecary, drinkPotion as drink } from '../game/shop';
 import { moveHabit as reorder, type MoveTarget } from '../game/ordering';
 import { gearById } from '../content/gear';
@@ -121,12 +121,13 @@ export const useGameStore = create<GameState>((set, get) => {
     completeHabit(habitId, key, now = new Date()) {
       if (!canLogDay(key, now) || isCompleted(get().save.completions, habitId, key)) return;
       get().toggleHabit(habitId, key, now);
-      progress('habit', now);
+      commit(syncHabitDaily(get().save, now));
     },
 
     undoCompletion(habitId, key, now = new Date()) {
       if (!isCompleted(get().save.completions, habitId, key)) return;
       get().toggleHabit(habitId, key, now);
+      commit(syncHabitDaily(get().save, now));
     },
 
     hideFromHistory(habitId, key) {

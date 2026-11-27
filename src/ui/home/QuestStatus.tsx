@@ -1,7 +1,6 @@
 import type React from 'react';
 import { Pressable, View } from 'react-native';
 import { bossTokens } from '@/src/game/bosses';
-import { useTheme } from '@/src/theme/useTheme';
 import { questEndTime } from '@/src/game/questRun';
 import type { SaveData } from '@/src/game/types';
 import { home, radius, space } from '@/src/theme/tokens';
@@ -26,7 +25,6 @@ type Props = {
 
 /** The card under the scene: quest gauge, or the running quest's countdown. */
 export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose, onSkip, onBossHabit, onBoss }: Props) {
-  const { c } = useTheme();
   const tokens = bossTokens(save);
   const bossHabit = save.habits.find((h) => h.id === save.boss.habitId && !h.archived);
   const run = save.activeRun;
@@ -59,10 +57,10 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
     const total = Math.max(1, end - start);
     return panel(
       <>
-        <Text variant="label" style={{ color: run.kind === 'boss' ? c.ember : home.muted }}>
+        <Text variant="label" style={{ color: run.kind === 'boss' ? home.bossText : home.muted }}>
           {run.kind === 'boss' ? 'Boss fight' : 'On an adventure'} · {run.offer.name}
         </Text>
-        <Gauge value={(now.getTime() - start) / total} fill={run.kind === 'boss' ? c.ember : c.info} label="Adventure progress" text={`Back in ${formatRemaining(end - now.getTime())}`} />
+        <Gauge value={(now.getTime() - start) / total} fill={run.kind === 'boss' ? home.fill.ember : home.fill.slate} label="Adventure progress" text={`Back in ${formatRemaining(end - now.getTime())}`} />
         <Text variant="caption" style={{ color: home.muted }}>Each habit you finish brings them home sooner.</Text>
         {onSkip && (
           <View style={{ flexDirection: 'row', gap: space.s }}>
@@ -87,7 +85,7 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
     <>
       <Gauge
         value={gauge.done / gauge.target}
-        fill={gauge.full ? c.accentLip : c.primary}
+        fill={gauge.full ? home.fill.gold : home.fill.moss}
         label="Adventure gauge"
         text={`${Math.min(gauge.done, gauge.target)} / ${gauge.target}`}
       />

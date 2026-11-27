@@ -65,7 +65,8 @@ export function buyGear(s: SaveData, slotId: string, now: Date): Result {
   const bought = boughtToday(s, key);
   // The premium slot is per week, so it stays sold out after buying.
   const premiumSold = slotId.startsWith('premium-') && s.player.inventory.some((i) => i.obtainedAt === slotId);
-  if (bought.includes(slotId) || premiumSold) return { save: s, error: 'Sold out today. New stock tomorrow.' };
+  if (premiumSold) return { save: s, error: 'Sold out. A new special arrives on Monday.' };
+  if (bought.includes(slotId)) return { save: s, error: 'Sold out today. New stock tomorrow.' };
   if (s.player.gold < item.price) return { save: s, error: `You need ${item.price - s.player.gold} more gold.` };
   return {
     save: {

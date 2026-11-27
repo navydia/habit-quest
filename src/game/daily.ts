@@ -34,3 +34,11 @@ export function claimDaily(s: SaveData, id: string): SaveData {
     daily: { ...s.daily, quests: s.daily.quests.map((x) => (x.id === id ? { ...x, claimed: true } : x)) },
   };
 }
+
+/** Habit quests track how many habits are done today, so undoing takes progress back too. */
+export function syncHabitDaily(s: SaveData, now: Date): SaveData {
+  const t = ensureDaily(s, now);
+  const done = t.completions.filter((c) => c.dayKey === t.daily.dayKey).length;
+  const quests = t.daily.quests.map((q) => (q.event === 'habit' && !q.claimed ? { ...q, progress: Math.min(q.target, done) } : q));
+  return { ...t, daily: { ...t.daily, quests } };
+}
