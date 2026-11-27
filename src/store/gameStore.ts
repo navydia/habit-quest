@@ -9,7 +9,7 @@ import { classTitle } from '../game/classTitle';
 import { gearById } from '../content/gear';
 import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
 import type { DayKey, Player, SaveData, Schedule, Slot, StatKey } from '../game/types';
-import { scheduleReturn } from '../notify/questNotifications';
+import { cancelReturn, scheduleReturn } from '../notify/questNotifications';
 import { newSave } from '../save/migrate';
 import { loadSave, writeSave } from '../save/storage';
 
@@ -110,7 +110,9 @@ export const useGameStore = create<GameState>((set, get) => {
     skipAdventure(now = new Date()) {
       const s = get().save;
       const next = resolveQuest(s, now, Math.random, true);
-      if (next !== s) commit(next);
+      if (next === s) return;
+      commit(next);
+      cancelReturn().catch(() => {});
     },
 
     collect(equipDrop = false) {

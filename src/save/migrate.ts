@@ -47,6 +47,8 @@ function isValidCurrent(s: any): s is SaveData {
     typeof s.player?.level === 'number' &&
     Array.isArray(s.player?.inventory) &&
     typeof s.player?.stats === 'object' &&
+    typeof s.player?.equipped === 'object' &&
+    s.player?.equipped !== null &&
     Array.isArray(s.habits) &&
     Array.isArray(s.completions) &&
     Array.isArray(s.questLog)

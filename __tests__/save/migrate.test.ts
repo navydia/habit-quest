@@ -53,3 +53,9 @@ test('a version 1 save mid-quest upgrades to version 2 without losing anything',
   expect(save.player.stats).toEqual({ power: 0, defense: 0, luck: 0, speed: 0 });
   expect(Object.keys(save.player.equipped).sort()).toEqual(['body', 'weapon']);
 });
+
+test('a v2 save missing its equipment is treated as corrupt, not crashed on', () => {
+  const s: any = newSave();
+  delete s.player.equipped;
+  expect(migrate(s).recovered).toBe(true);
+});

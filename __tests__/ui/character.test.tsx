@@ -46,3 +46,12 @@ test('resetting points asks for confirmation first', async () => {
   expect(g().save.player.spentSp).toBe(0);
   expect(g().save.player.unspentSp).toBe(2);
 });
+
+test('an equipped item that no longer exists shows as Unknown item and can be taken off', async () => {
+  const s = g().save;
+  useGameStore.setState({ save: { ...s, player: { ...s.player, inventory: [...s.player.inventory, { uid: 'gone', gearId: 'removed-item', obtainedAt: '' }], equipped: { ...s.player.equipped, accessory: 'gone' } } } });
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: /Accessory: Unknown item/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Take off' }));
+  expect(g().save.player.equipped.accessory).toBeUndefined();
+});

@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useMinuteClock } from '../useMinuteClock';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -27,6 +28,7 @@ export function HomeScreen() {
   const { height } = useWindowDimensions();
   const now = useMinuteClock();
   const reduced = useReducedMotion();
+  const focused = useIsFocused();
   const save = useGameStore((s) => s.save);
   const { toggleHabit, addHabit, ensureBoard, startQuest, collect, skipAdventure } = useGameStore.getState();
   const [adding, setAdding] = useState(false);
@@ -59,6 +61,7 @@ export function HomeScreen() {
               player={save.player}
               anim={mode === 'questing' ? 'fight' : 'idle'}
               height={210}
+              paused={!focused}
               accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : 'Your hero, out on an adventure'}
             />
           </View>

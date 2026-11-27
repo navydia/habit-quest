@@ -184,3 +184,13 @@ test('skip does nothing when no adventure is running', () => {
   g().skipAdventure(at(DAY, 9));
   expect(g().save).toBe(before);
 });
+
+test('skipping cancels the pending return notification', () => {
+  const { cancelReturn } = require('@/src/notify/questNotifications');
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-easy`, at(DAY, 9));
+  (cancelReturn as jest.Mock).mockClear();
+  g().skipAdventure(at(DAY, 9, 5));
+  expect(cancelReturn).toHaveBeenCalled();
+});

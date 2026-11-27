@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { QUEST_BASE_MS } from '@/src/game/config';
-import { powerOf } from '@/src/game/stats';
+import { powerOf, speedFactor } from '@/src/game/stats';
+import { formatDuration } from '../format';
 import { successChance } from '@/src/game/quests';
 import type { QuestOffer, SaveData } from '@/src/game/types';
 import type { ColorTokens } from '@/src/theme/tokens';
@@ -50,7 +51,7 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
         })}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text variant="label" color="textMuted">{DIFF_LABEL[o.difficulty]} · {QUEST_BASE_MS / 3600_000} hours</Text>
+          <Text variant="label" color="textMuted">{DIFF_LABEL[o.difficulty]} · {formatDuration(QUEST_BASE_MS * speedFactor(save.player))}</Text>
           <View style={{ backgroundColor: c[chanceTone(chance)], borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: 2 }}>
             <Text variant="label" color={ON_TONE[chanceTone(chance)]}>
               {Math.round(chance * 100)}%

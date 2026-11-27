@@ -25,7 +25,8 @@ export function EquipmentCard({ player, onEquip, onUnequip }: Props) {
   const [open, setOpen] = useState<Slot | null>(null);
   const defFor = (uid?: string): GearDef | undefined => (uid ? gearById(player.inventory.find((i) => i.uid === uid)?.gearId ?? '') : undefined);
   const openSlot = SLOTS.find((s) => s.slot === open);
-  const owned = open ? player.inventory.filter((i) => gearById(i.gearId)?.slot === open) : [];
+  // Items in this slot, plus whatever is equipped there even if it's no longer in the catalog.
+  const owned = open ? player.inventory.filter((i) => gearById(i.gearId)?.slot === open || player.equipped[open] === i.uid) : [];
 
   return (
     <Card style={{ gap: space.m }}>
@@ -33,11 +34,12 @@ export function EquipmentCard({ player, onEquip, onUnequip }: Props) {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }}>
         {SLOTS.map(({ slot, name }) => {
           const def = defFor(player.equipped[slot]);
+          const unknown = !!player.equipped[slot] && !def;
           return (
             <Pressable
               key={slot}
               accessibilityRole="button"
-              accessibilityLabel={`${name}: ${def ? `${def.name}, ${RARITY_LABEL[def.rarity]}` : 'empty'}`}
+              accessibilityLabel={`${name}: ${def ? `${def.name}, ${RARITY_LABEL[def.rarity]}` : unknown ? 'Unknown item' : 'empty'}`}
               onPress={() => setOpen(slot)}
               style={({ pressed }) => ({
                 flexBasis: '48%',
@@ -53,7 +55,7 @@ export function EquipmentCard({ player, onEquip, onUnequip }: Props) {
               })}
             >
               <Text variant="label" color="textMuted">{name}</Text>
-              <Text variant="bodyStrong" numberOfLines={1}>{def ? def.name : 'Empty'}</Text>
+              <Text variant="bodyStrong" numberOfLines={1}>{def ? def.name : unknown ? 'Unknown item' : 'Empty'}</Text>
               {def && <Text variant="caption" color="textMuted">{RARITY_LABEL[def.rarity]}</Text>}
             </Pressable>
           );

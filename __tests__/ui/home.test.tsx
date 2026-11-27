@@ -1,3 +1,4 @@
+jest.mock('expo-router', () => ({ useIsFocused: () => true }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 jest.mock('expo-sqlite/kv-store', () => require('../helpers/memoryKv'));
 jest.mock('expo-haptics', () => ({
@@ -150,4 +151,15 @@ test('a gear drop shows on the return screen and can be equipped right away', as
   const p = useGameStore.getState().save.player;
   const cap = p.inventory.find((i) => i.gearId === 'leather-cap')!;
   expect(p.equipped.head).toBe(cap.uid);
+});
+
+test('the adventure board shows the length after Speed', async () => {
+  const s = newSave();
+  s.habits = [habit('Read')];
+  s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+  s.player = { ...s.player, stats: { power: 0, defense: 0, luck: 0, speed: 10 } }; // ×0.85 → 6h 48m
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+  expect(screen.getAllByText(/6h 48m/).length).toBeGreaterThan(0);
 });

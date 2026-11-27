@@ -7,15 +7,22 @@ import { useReducedMotion } from '@/src/theme/useTheme';
 
 const TICK_FPS = 8;
 
-type Props = { player: Player; anim: Anim; height?: number; accessibilityLabel?: string };
+type Props = {
+  player: Player;
+  anim: Anim;
+  height?: number;
+  accessibilityLabel?: string;
+  /** Stop animating, e.g. while the tab is hidden, to save battery. */
+  paused?: boolean;
+};
 
 /** Stacks the hero's art layers (src/art/layers.ts) and steps through sprite-strip frames. */
-export function HeroSprite({ player, anim, height = 200, accessibilityLabel }: Props) {
+export function HeroSprite({ player, anim, height = 200, accessibilityLabel, paused = false }: Props) {
   const reduced = useReducedMotion();
   const scale = height / FRAME_H;
   const width = FRAME_W * scale;
   const layers = useMemo(() => heroLayers(player, anim), [player, anim]);
-  const animated = !reduced && layers.some((l) => l.asset.frames > 1);
+  const animated = !reduced && !paused && layers.some((l) => l.asset.frames > 1);
 
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -27,7 +34,7 @@ export function HeroSprite({ player, anim, height = 200, accessibilityLabel }: P
   // Gentle breathing bob, for 1-frame idle art. Off with Reduce Motion.
   const [bob] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    if (reduced || anim !== 'idle') {
+    if (reduced || paused || anim !== 'idle') {
       bob.setValue(0);
       return;
     }
@@ -35,7 +42,7 @@ export function HeroSprite({ player, anim, height = 200, accessibilityLabel }: P
     const loop = Animated.loop(Animated.sequence([step(1), step(0)]));
     loop.start();
     return () => loop.stop();
-  }, [anim, bob, reduced]);
+  }, [anim, bob, reduced, paused]);
 
   return (
     <Animated.View
