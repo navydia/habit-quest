@@ -26,6 +26,7 @@ export default function LogScreen() {
   const entries = save.completions.filter((x) => !x.hidden).sort((a, b) => (a.at < b.at ? 1 : -1));
   const byDay = new Map<string, typeof entries>();
   for (const e of entries.slice(0, 200)) byDay.set(e.dayKey, [...(byDay.get(e.dayKey) ?? []), e]);
+  const days = [...byDay.entries()].sort(([a], [b]) => (a < b ? 1 : -1)); // newest day first
 
   const placeholder = (title: string, text: string) => (
     <Card style={{ gap: space.xs }}>
@@ -60,7 +61,7 @@ export default function LogScreen() {
       <View style={{ gap: space.s }}>
         <Text variant="title" accessibilityRole="header">History</Text>
         {entries.length === 0 && <Text color="textMuted">Completed habits show up here.</Text>}
-        {[...byDay.entries()].map(([key, list]) => (
+        {days.map(([key, list]) => (
           <View key={key} style={{ gap: space.xs }}>
             <Text variant="label" color="textMuted">{dayTitle(key)}</Text>
             <Card style={{ paddingVertical: space.xs }}>

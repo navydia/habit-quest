@@ -267,3 +267,16 @@ test('habits can be edited and grouping saved', () => {
   g().setGroupBy('lifeArea');
   expect(g().save.settings.groupBy).toBe('lifeArea');
 });
+
+test('archiving the boss habit clears it, so a fight in progress reports its tokens as not kept', () => {
+  twoHabitsDone();
+  const [a] = g().save.habits;
+  g().setBossHabit(a.id, at('2026-11-20', 7));
+  useGameStore.setState({ save: { ...g().save, boss: { ...g().save.boss, bonusTokens: 6 } } });
+  expect(g().startBossFight('old-bramblehide', 'normal', at(DAY, 9))).toBe(true);
+  g().archiveHabit(a.id, at(DAY, 10));
+  expect(g().save.boss.habitId).toBeNull();
+  useGameStore.setState({ save: { ...g().save, activeRun: { ...g().save.activeRun!, boss: { ...g().save.activeRun!.boss!, successChance: 0 } } } });
+  g().tick(at(DAY, 18));
+  expect(g().save.pendingResult?.boss?.tokensKept).toBe(false);
+});

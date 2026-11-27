@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY } from '@/src/content/habitOptions';
+import { dayKey } from '@/src/game/dates';
 import type { Habit, LifeArea, Schedule, TimeOfDay, Weekday } from '@/src/game/types';
 import type { HabitDetails } from '@/src/store/gameStore';
 import { minTouch, radius, space } from '@/src/theme/tokens';
@@ -27,9 +28,12 @@ type Props = {
   onClose: () => void;
   onSave: (details: HabitDetails) => void;
   onArchive?: (id: string) => void;
+  /** Boss tokens to warn about when archiving the boss habit. */
+  bossTokens?: number;
+  isBossHabit?: boolean;
 };
 
-export function HabitSheet({ visible, habit, onClose, onSave, onArchive }: Props) {
+export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTokens = 0, isBossHabit = false }: Props) {
   const { c, t } = useTheme();
   // Mounted fresh each time it opens (see HomeScreen), so state starts from the habit being edited.
   const start = habit?.schedule ?? { kind: 'daily' as const };
@@ -42,7 +46,10 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive }: Props
   const [every, setEvery] = useState(start.kind === 'interval' ? start.every : 2);
   const [confirmArchive, setConfirmArchive] = useState(false);
 
-  const schedule: Schedule = repeat === 'daily' ? { kind: 'daily' } : repeat === 'weekdays' ? { kind: 'weekdays', days: [...days].sort() } : { kind: 'interval', every };
+  // An every-N-days repeat counts from the day it is set, unless it is unchanged.
+  const from = start.kind === 'interval' && start.every === every && start.from ? start.from : dayKey(new Date());
+  const schedule: Schedule =
+    repeat === 'daily' ? { kind: 'daily' } : repeat === 'weekdays' ? { kind: 'weekdays', days: [...days].sort() } : { kind: 'interval', every, from };
   const valid = name.trim().length > 0 && (repeat !== 'weekdays' || days.length > 0);
   const submit = () => {
     if (!valid) return;
@@ -98,6 +105,8 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive }: Props
             style={[t.body, { flex: 1, color: c.text, backgroundColor: c.surface, borderColor: c.line, borderWidth: 1, borderRadius: radius.button, paddingHorizontal: space.l, minHeight: minTouch + 8 }]}
           />
         </View>
+        {/* Kept right under the name field so it stays visible above the keyboard (style rule 17a). */}
+        <Button title={habit ? 'Save changes' : 'Add habit'} onPress={submit} disabled={!valid} />
         <View style={wrap}>
           {EMOJI_CHOICES.map((e) => chip(e, emoji === e, () => setEmoji(e), `Emoji ${e}`))}
         </View>
@@ -128,7 +137,9 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive }: Props
         )}
 
         <View style={{ marginTop: space.m, gap: space.s }}>
-          <Button title={habit ? 'Save changes' : 'Add habit'} onPress={submit} disabled={!valid} />
+          {habit && onArchive && confirmArchive && isBossHabit && (
+            <Text color="ember">This is your boss habit. Archiving it resets your {bossTokens} boss tokens.</Text>
+          )}
           {habit && onArchive && (
             <Button
               title={confirmArchive ? 'Tap again to archive' : 'Archive habit'}

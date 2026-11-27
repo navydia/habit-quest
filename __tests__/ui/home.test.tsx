@@ -13,7 +13,7 @@ jest.mock('@/src/notify/questNotifications', () => ({
   ensurePermission: jest.fn(async () => true),
 }));
 
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { ensurePermission, scheduleReturn } from '@/src/notify/questNotifications';
 import { addDays } from '@/src/game/dates';
 import HomeScreen from '@/app/(tabs)/index';
@@ -291,4 +291,43 @@ test('the return screen includes the familiar bonus and the level-up it causes',
   expect(screen.getByText('+40')).toBeTruthy();
   expect(screen.getByText(/Bog Toad: \+4% EXP/)).toBeTruthy();
   expect(screen.getByText(/Level up/)).toBeTruthy();
+});
+
+test('the Undo popup does not restart its timer when the screen updates', async () => {
+  jest.useFakeTimers();
+  const s = newSave();
+  s.habits = [habit('Read'), habit('Walk')];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('checkbox', { name: 'Read' }));
+  await act(async () => jest.advanceTimersByTime(4000));
+  await act(async () => useGameStore.getState().setGroupBy('lifeArea')); // any update
+  await act(async () => jest.advanceTimersByTime(2500));
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  jest.useRealTimers();
+});
+
+test('archiving the boss habit warns that tokens will reset', async () => {
+  const s = newSave();
+  s.habits = [habit('Read')];
+  s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 4 };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit Read' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Archive habit' }));
+  expect(screen.getByText(/This is your boss habit\. Archiving it resets your 4 boss tokens\./)).toBeTruthy();
+});
+
+test('a boss fight that cannot start says so', async () => {
+  const s = newSave();
+  s.habits = [habit('Read')];
+  s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+  s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+  useGameStore.setState({ save: { ...useGameStore.getState().save, boss: { habitId: 'Read', tokenEpoch: null, bonusTokens: 0 } } });
+  await fireEvent.press(screen.getByRole('button', { name: /^Fight / }));
+  await new Promise((r) => setTimeout(r, 0));
+  expect(screen.getByText('The boss fight could not start. Check your tokens and try again.')).toBeTruthy();
 });

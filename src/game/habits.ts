@@ -11,7 +11,7 @@ export function isScheduledOn(h: Habit, key: DayKey): boolean {
   if (h.archived) return false;
   if (key < dayKey(new Date(h.createdAt))) return false; // didn't exist yet
   if (h.schedule.kind === 'daily') return true;
-  if (h.schedule.kind === 'interval') return daysBetween(dayKey(new Date(h.createdAt)), key) % Math.max(1, h.schedule.every) === 0;
+  if (h.schedule.kind === 'interval') return daysBetween(h.schedule.from ?? dayKey(new Date(h.createdAt)), key) % Math.max(1, h.schedule.every) === 0;
   return h.schedule.days.includes(weekdayOf(key));
 }
 

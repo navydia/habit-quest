@@ -37,7 +37,7 @@ import { ReturnReveal } from './ReturnReveal';
 export function HomeScreen() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const now = useMinuteClock();
   const reduced = useReducedMotion();
   const focused = useIsFocused();
@@ -48,6 +48,7 @@ export function HomeScreen() {
   const [editing, setEditing] = useState<Habit | 'new' | null>(null);
   const [undo, setUndo] = useState<{ habitId: string; key: string; message: string } | null>(null);
   const [bossOpen, setBossOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
@@ -89,7 +90,7 @@ export function HomeScreen() {
               </Pressable>
             )}
           </View>
-          <View style={[styles.heroWrap, bossFight && styles.heroWrapBoss]}>
+          <View style={[styles.heroWrap, bossFight && [styles.heroWrapBoss, { width: Math.min(350, width - 2 * space.screen) }]]}>
             {mode === 'questing' && !bossFight && <Slime reduced={reduced} />}
             {bossFight && <BossFigure bossId={bossFight.id} name={bossFight.name} reduced={reduced} />}
             {save.familiars.active && <FamiliarBuddy id={save.familiars.active} />}
@@ -98,7 +99,7 @@ export function HomeScreen() {
               anim={mode === 'questing' ? 'fight' : 'idle'}
               height={210}
               paused={!focused}
-              accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : 'Your hero, out on an adventure'}
+              accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : bossFight ? `Your hero, fighting ${bossFight.name}` : 'Your hero, out on an adventure'}
             />
           </View>
         </View>
@@ -134,6 +135,7 @@ export function HomeScreen() {
         </View>
       </ScrollView>
 
+      <UndoToast message={notice} bottom={insets.bottom + 72} onDone={() => setNotice(null)} />
       <UndoToast
         message={undo?.message ?? null}
         bottom={insets.bottom + 72}
@@ -145,6 +147,8 @@ export function HomeScreen() {
       />
       {editing !== null && (
       <HabitSheet
+        bossTokens={bossTokens(save)}
+        isBossHabit={editing !== 'new' && editing?.id === save.boss.habitId}
         visible
         habit={editing === 'new' ? null : editing}
         onClose={() => setEditing(null)}
@@ -165,7 +169,9 @@ export function HomeScreen() {
           setBossOpen(false);
           ensurePermission()
             .catch(() => false)
-            .then(() => startBossFight(bossId, difficulty, new Date()));
+            .then(() => {
+              if (!startBossFight(bossId, difficulty, new Date())) setNotice('The boss fight could not start. Check your tokens and try again.');
+            });
         }}
       />
       <QuestBoardSheet

@@ -33,7 +33,7 @@ interface GameState {
   setGroupBy(groupBy: SaveData['settings']['groupBy']): void;
   /** Starts a boss fight instead of the day's adventure. Returns false if it can't start. */
   startBossFight(bossId: string, difficulty: BossDifficulty, now?: Date): boolean;
-  archiveHabit(id: string): void;
+  archiveHabit(id: string, now?: Date): void;
   toggleHabit(habitId: string, key: DayKey, now?: Date): void;
   ensureBoard(now?: Date): void;
   startQuest(offerId: string, now?: Date): void;
@@ -132,9 +132,12 @@ export const useGameStore = create<GameState>((set, get) => {
       return true;
     },
 
-    archiveHabit(id) {
+    archiveHabit(id, now = new Date()) {
       const s = get().save;
-      commit({ ...s, habits: s.habits.map((h) => (h.id === id ? { ...h, archived: true } : h)) });
+      const habits = s.habits.map((h) => (h.id === id ? { ...h, archived: true } : h));
+      // Archiving the boss habit clears it (tokens reset; the sheet warns first).
+      const boss = s.boss.habitId === id ? { habitId: null, tokenEpoch: now.toISOString(), spentKeys: [], bonusTokens: 0 } : s.boss;
+      commit({ ...s, habits, boss });
     },
 
     toggleHabit(habitId, key, now = new Date()) {

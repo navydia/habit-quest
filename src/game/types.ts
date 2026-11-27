@@ -1,6 +1,6 @@
 export type DayKey = string; // "YYYY-MM-DD", local
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
-export type Schedule = { kind: 'daily' } | { kind: 'weekdays'; days: Weekday[] } | { kind: 'interval'; every: number };
+export type Schedule = { kind: 'daily' } | { kind: 'weekdays'; days: Weekday[] } | { kind: 'interval'; every: number; /** Day the repeat counts from (defaults to the creation day). */ from?: DayKey };
 export type LifeArea = 'health' | 'mind' | 'work' | 'home' | 'social' | 'learning' | 'fun' | 'other';
 export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'anytime';
 

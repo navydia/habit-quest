@@ -48,3 +48,8 @@ test('hiding a completion keeps it done', () => {
   expect(c[0].hidden).toBe(true);
   expect(isCompleted(c, 'a', '2026-11-27')).toBe(true);
 });
+
+test('an every-N-days repeat counts from the day it was set, not the day the habit was made', () => {
+  const h = { ...habit('a', { kind: 'interval', every: 3, from: '2026-11-26' }), createdAt: at('2026-01-01', 9).toISOString() };
+  expect(['2026-11-26', '2026-11-27', '2026-11-29'].map((d) => isScheduledOn(h, d))).toEqual([true, false, true]);
+});

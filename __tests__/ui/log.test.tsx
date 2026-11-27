@@ -28,3 +28,16 @@ test('the Log holds mail, daily quests and scrapbooks', async () => {
   await fireEvent.press(screen.getByRole('button', { name: /Thornwick Meadows scrapbook/ }));
   expect(screen.getByText('Scrapbook: Thornwick Meadows')).toBeTruthy();
 });
+
+test('history days are newest first even when yesterday was logged later', async () => {
+  const s = newSave();
+  s.habits = [habit('Read'), habit('Walk')];
+  s.completions = [
+    { habitId: 'Read', dayKey: '2026-11-27', at: '2026-11-27T09:00:00.000Z' },
+    { habitId: 'Walk', dayKey: '2026-11-26', at: '2026-11-27T10:00:00.000Z' },
+  ];
+  useGameStore.setState({ save: s, loaded: true });
+  await render(<LogScreen />);
+  const names = screen.getAllByText(/^(Read|Walk)$/).map((n) => n.props.children);
+  expect(names).toEqual(['Read', 'Walk']);
+});
