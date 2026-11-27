@@ -52,6 +52,9 @@ export interface QuestRun {
   preStartKeys?: string[];
   /** Speed multiplier fixed at start, so later stat changes don't move the return time. */
   speedFactor?: number;
+  /** Potion drunk before this trip (its effects are baked into the run). */
+  potion?: string;
+  luckBonus?: number;
   /** A boss fight added to this trip (6 tokens spent at start). */
   boss?: {
     bossId: string;
@@ -119,8 +122,19 @@ export interface RegionProgress {
   bossDefeated: boolean;
 }
 
+export interface DailyQuest {
+  id: string;
+  kind: string;
+  event: string;
+  title: string;
+  target: number;
+  progress: number;
+  reward: number;
+  claimed: boolean;
+}
+
 export interface SaveData {
-  version: 4;
+  version: 5;
   player: Player;
   habits: Habit[];
   completions: Completion[];
@@ -140,4 +154,8 @@ export interface SaveData {
   };
   familiars: { owned: string[]; active: string | null };
   settings: { groupBy: 'timeOfDay' | 'lifeArea' | 'custom' };
+  /** Armory slots bought today. */
+  shop: { dayKey: DayKey | null; bought: string[] };
+  potions: { owned: Record<string, number>; active: string | null };
+  daily: { dayKey: DayKey | null; quests: DailyQuest[] };
 }

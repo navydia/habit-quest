@@ -29,13 +29,13 @@ export function bossRequiredPower(boss: BossDef, difficulty: BossDifficulty): nu
 }
 
 /** Normal always wins. Hard and Extreme win if your power (plus Defense) meets their requirement, otherwise 50% / 5%. */
-export function bossChance(p: Player, boss: BossDef, difficulty: BossDifficulty): number {
-  const effective = powerOf(p) + BOSS_DEFENSE_PER_POINT * totalStats(p).defense;
+export function bossChance(p: Player, boss: BossDef, difficulty: BossDifficulty, bonusPower = 0): number {
+  const effective = powerOf(p) + BOSS_DEFENSE_PER_POINT * totalStats(p).defense + bonusPower;
   return effective >= bossRequiredPower(boss, difficulty) ? 1 : BOSS_DIFFICULTY[difficulty].belowChance;
 }
 
 /** Validates and builds the boss part of a run, spending the tokens. */
-export function attachBoss(s: SaveData, boss: { bossId: string; difficulty: BossDifficulty }, now: Date): { save: SaveData; runBoss: NonNullable<QuestRun['boss']> } {
+export function attachBoss(s: SaveData, boss: { bossId: string; difficulty: BossDifficulty }, now: Date, bonusPower = 0): { save: SaveData; runBoss: NonNullable<QuestRun['boss']> } {
   if (bossTokens(s) < BOSS_TOKENS_NEEDED) throw new Error('Not enough boss tokens.');
   const def = availableBosses(s).find((b) => b.id === boss.bossId);
   if (!def) throw new Error(`Boss not available: ${boss.bossId}`);
@@ -53,7 +53,7 @@ export function attachBoss(s: SaveData, boss: { bossId: string; difficulty: Boss
     runBoss: {
       bossId: def.id,
       difficulty: boss.difficulty,
-      successChance: bossChance(s.player, def, boss.difficulty),
+      successChance: bossChance(s.player, def, boss.difficulty, bonusPower),
       prevEpoch: s.boss.tokenEpoch,
       prevSpentKeys: s.boss.spentKeys ?? [],
       prevBonus: s.boss.bonusTokens ?? 0,

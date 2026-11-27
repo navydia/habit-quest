@@ -2,7 +2,13 @@ import { classTitle } from '../game/classTitle';
 import { zeroStats } from '../game/stats';
 import type { Player, SaveData } from '../game/types';
 
-export const CURRENT_VERSION = 4;
+export const CURRENT_VERSION = 5;
+
+const shopDefaults = () => ({
+  shop: { dayKey: null, bought: [] as string[] },
+  potions: { owned: {} as Record<string, number>, active: null },
+  daily: { dayKey: null, quests: [] },
+});
 
 const START_REGION = 'thornwick-meadows';
 const worldDefaults = () => ({
@@ -31,7 +37,8 @@ function withCharacter(p: { level: number; exp: number; gold: number; unspentSp:
 
 export function newSave(): SaveData {
   return {
-    version: 4,
+    version: 5,
+    ...shopDefaults(),
     settings: { groupBy: 'timeOfDay' },
     ...worldDefaults(),
     player: withCharacter({ level: 1, exp: 0, gold: 0, unspentSp: 0 }),
@@ -47,6 +54,7 @@ export function newSave(): SaveData {
 
 /** MIGRATIONS[n] upgrades a version-n save to version n+1. */
 const MIGRATIONS: Record<number, (s: any) => any> = {
+  4: (s) => ({ ...s, ...shopDefaults(), version: 5 }),
   3: (s) => ({
     ...s,
     version: 4,
@@ -68,6 +76,9 @@ function isValidCurrent(s: any): s is SaveData {
     typeof s.world?.regions === 'object' &&
     Array.isArray(s.familiars?.owned) &&
     typeof s.settings?.groupBy === 'string' &&
+    typeof s.potions?.owned === 'object' &&
+    Array.isArray(s.shop?.bought) &&
+    Array.isArray(s.daily?.quests) &&
     typeof s.boss === 'object' &&
     s.boss !== null &&
     s.player?.equipped !== null &&

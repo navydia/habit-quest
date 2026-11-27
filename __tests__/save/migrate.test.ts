@@ -46,7 +46,7 @@ test('a version 1 save mid-quest upgrades all the way to the current version wit
   };
   const { save, recovered } = migrate(v1);
   expect(recovered).toBe(false);
-  expect(save.version).toBe(4);
+  expect(save.version).toBe(5);
   expect(save.activeRun).toEqual(run);
   expect(save.habits).toHaveLength(1);
   expect(save.player).toMatchObject({ level: 3, exp: 50, gold: 120, unspentSp: 6, spentSp: 0, title: 'Vanguard' });
@@ -69,7 +69,7 @@ test('a v2 save mid-adventure upgrades to v3 with a starting world', () => {
   v2.activeRun = { offer: { id: 'o', templateId: 'slime-patrol', name: 'n', flavour: 'f', difficulty: 'easy', requiredPower: 90, rewardExp: 40, rewardGold: 20 }, dayKey: '2026-11-27', startedAt: '2026-11-27T09:00:00.000Z', successChance: 1 };
   const { save, recovered } = migrate(v2);
   expect(recovered).toBe(false);
-  expect(save.version).toBe(4);
+  expect(save.version).toBe(5);
   expect(save.activeRun?.offer.id).toBe('o');
   expect(save.world.currentRegion).toBe('thornwick-meadows');
   expect(save.boss).toEqual({ habitId: null, tokenEpoch: null });
@@ -87,7 +87,20 @@ test('a v3 save gets habit details, history and settings defaults', () => {
   delete v3.settings;
   const { save, recovered } = migrate(v3);
   expect(recovered).toBe(false);
-  expect(save.version).toBe(4);
+  expect(save.version).toBe(5);
   expect(save.habits[0]).toMatchObject({ emoji: '✨', lifeArea: 'other', timeOfDay: 'anytime' });
   expect(save.settings).toEqual({ groupBy: 'timeOfDay' });
+});
+
+test('a v4 save gets shop, potions and daily quest defaults', () => {
+  const v4: any = { ...newSave(), version: 4 };
+  delete v4.shop;
+  delete v4.potions;
+  delete v4.daily;
+  const { save, recovered } = migrate(v4);
+  expect(recovered).toBe(false);
+  expect(save.version).toBe(5);
+  expect(save.potions).toEqual({ owned: {}, active: null });
+  expect(save.shop).toEqual({ dayKey: null, bought: [] });
+  expect(save.daily).toEqual({ dayKey: null, quests: [] });
 });
