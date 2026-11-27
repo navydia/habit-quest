@@ -137,9 +137,7 @@ export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Pr
             <Text variant="caption" color="textMuted">
               {bossResult.success
                 ? `+${bossResult.exp} EXP · +${bossResult.gold} gold${bossDrop ? ` · ${bossDrop.name} (${RARITY_LABEL[bossDrop.rarity]})` : ''}`
-                : bossResult.tokensKept === false
-                  ? 'You switched boss habit during the trip, so these tokens are gone.'
-                  : 'Your 6 tokens are safe. Try again tomorrow.'}
+                : 'Your 6 tokens were spent. Earn six more and try again.'}
             </Text>
           </Card>
         )}

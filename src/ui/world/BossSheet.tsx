@@ -47,7 +47,7 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
   return (
     <Sheet visible={visible} title="Boss fight" onClose={onClose}>
       <View style={{ gap: space.m }}>
-        <Text color="textMuted">Your 6 tokens summon a boss. The fight takes the place of today&rsquo;s adventure. Lose, and you keep your tokens.</Text>
+        <Text color="textMuted">Your 6 tokens summon a boss. The fight takes the place of today&rsquo;s adventure. Losing spends the tokens.</Text>
         <View style={{ gap: space.s }} accessibilityRole="radiogroup" accessibilityLabel="Boss">
           {bosses.map((b) => option(b.id, b.name, b.flavour, b.id === boss?.id, () => setBossId(b.id)))}
         </View>

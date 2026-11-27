@@ -268,15 +268,32 @@ test('habits can be edited and grouping saved', () => {
   expect(g().save.settings.groupBy).toBe('lifeArea');
 });
 
-test('archiving the boss habit clears it, so a fight in progress reports its tokens as not kept', () => {
+test('archiving the boss habit clears it', () => {
   twoHabitsDone();
   const [a] = g().save.habits;
   g().setBossHabit(a.id, at('2026-11-20', 7));
-  useGameStore.setState({ save: { ...g().save, boss: { ...g().save.boss, bonusTokens: 6 } } });
-  expect(g().startBossFight('old-bramblehide', 'normal', at(DAY, 9))).toBe(true);
   g().archiveHabit(a.id, at(DAY, 10));
   expect(g().save.boss.habitId).toBeNull();
-  useGameStore.setState({ save: { ...g().save, activeRun: { ...g().save.activeRun!, boss: { ...g().save.activeRun!.boss!, successChance: 0 } } } });
-  g().tick(at(DAY, 18));
-  expect(g().save.pendingResult?.boss?.tokensKept).toBe(false);
+});
+
+test('Skip (testing) can force a win or a loss', () => {
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-hard`, at(DAY, 9));
+  g().skipAdventure(at(DAY, 9, 5), 'lose');
+  expect(g().save.pendingResult?.success).toBe(false);
+  useGameStore.setState({ save: { ...g().save, pendingResult: null, lastQuestStartedDayKey: null } });
+  g().startQuest(`${DAY}-hard`, at(DAY, 10));
+  g().skipAdventure(at(DAY, 10, 5), 'win');
+  expect(g().save.pendingResult?.success).toBe(true);
+});
+
+test('habits can be moved and custom order chosen', () => {
+  g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+  g().addHabit('B', { kind: 'daily' }, at(DAY, 7));
+  const [a, b] = g().save.habits;
+  g().moveHabit(b.id, { beforeId: a.id, timeOfDay: 'evening' });
+  expect(g().save.habits.find((h) => h.id === b.id)?.timeOfDay).toBe('evening');
+  g().setGroupBy('custom');
+  expect(g().save.settings.groupBy).toBe('custom');
 });

@@ -1,7 +1,6 @@
 import { GEAR, type GearDef } from '../content/gear';
 import { REGIONS, bossById, regionOfBoss, type BossDef } from '../content/regions';
 import { BOSS_BASE, BOSS_DEFENSE_PER_POINT, BOSS_DIFFICULTY, BOSS_RARITY_WEIGHTS, BOSS_TOKENS_NEEDED, FAMILIAR_BASE_CHANCE, FAMILIAR_LUCK_PER_POINT } from './config';
-import { successChance } from './quests';
 import { powerOf, totalStats } from './stats';
 import type { BossDifficulty, Player, QuestResult, QuestRun, Rarity, SaveData } from './types';
 import { isRegionUnlocked } from './world';
@@ -25,9 +24,14 @@ export function availableBosses(s: SaveData): BossDef[] {
   return REGIONS.filter((r) => isRegionUnlocked(s, r.id)).map((r) => r.boss);
 }
 
+export function bossRequiredPower(boss: BossDef, difficulty: BossDifficulty): number {
+  return boss.requiredPower + BOSS_DIFFICULTY[difficulty].extraPower;
+}
+
+/** Normal always wins. Hard and Extreme win if your power (plus Defense) meets their requirement, otherwise 50% / 5%. */
 export function bossChance(p: Player, boss: BossDef, difficulty: BossDifficulty): number {
-  const effective = powerOf(p) + BOSS_DEFENSE_PER_POINT * totalStats(p).defense - BOSS_DIFFICULTY[difficulty].penalty;
-  return successChance(effective, boss.requiredPower);
+  const effective = powerOf(p) + BOSS_DEFENSE_PER_POINT * totalStats(p).defense;
+  return effective >= bossRequiredPower(boss, difficulty) ? 1 : BOSS_DIFFICULTY[difficulty].belowChance;
 }
 
 /** Validates and builds the boss part of a run, spending the tokens. */
@@ -84,14 +88,8 @@ export function resolveBoss(s: SaveData, run: QuestRun, rng: () => number): { sa
   if (!b || !def) return { save: s };
   const success = rng() < b.successChance;
   if (!success) {
-    // Give the tokens back, unless the boss habit was switched since.
-    const restore = s.boss.tokenEpoch === run.startedAt;
-    if (!restore) return { save: s, result: { bossId: def.id, difficulty: b.difficulty, success: false, exp: 0, gold: 0, tokensKept: false } };
-    const back: SaveData = { ...s, boss: { ...s.boss, tokenEpoch: b.prevEpoch, spentKeys: b.prevSpentKeys ?? [], bonusTokens: b.prevBonus ?? 0 } };
-    // Top up anything unchecked during the trip, so all 6 come back.
-    const missing = BOSS_TOKENS_NEEDED - bossTokens(back);
-    const save = missing > 0 ? { ...back, boss: { ...back.boss, bonusTokens: (back.boss.bonusTokens ?? 0) + missing } } : back;
-    return { save, result: { bossId: def.id, difficulty: b.difficulty, success: false, exp: 0, gold: 0, tokensKept: true } };
+    // A lost fight costs the tokens (they were spent when the fight started).
+    return { save: s, result: { bossId: def.id, difficulty: b.difficulty, success: false, exp: 0, gold: 0, tokensKept: false } };
   }
   const region = regionOfBoss(def.id)!;
   const d = BOSS_DIFFICULTY[b.difficulty];

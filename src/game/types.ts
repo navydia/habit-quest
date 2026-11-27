@@ -13,6 +13,8 @@ export interface Habit {
   emoji: string;
   lifeArea: LifeArea;
   timeOfDay: TimeOfDay;
+  /** Position in the creator's custom order (lower first). */
+  order?: number;
 }
 
 export interface Completion {
@@ -137,5 +139,5 @@ export interface SaveData {
     bonusTokens?: number;
   };
   familiars: { owned: string[]; active: string | null };
-  settings: { groupBy: 'timeOfDay' | 'lifeArea' };
+  settings: { groupBy: 'timeOfDay' | 'lifeArea' | 'custom' };
 }

@@ -6,6 +6,7 @@ import { collectResult, questEndTime, resolveQuest, startBossFight as startBoss,
 import { generateBoard } from '../game/quests';
 import { seededRng } from '../game/rng';
 import { classTitle } from '../game/classTitle';
+import { moveHabit as reorder, type MoveTarget } from '../game/ordering';
 import { gearById } from '../content/gear';
 import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
 import type { BossDifficulty, DayKey, Habit, LifeArea, Player, SaveData, Schedule, Slot, StatKey, TimeOfDay } from '../game/types';
@@ -46,7 +47,8 @@ interface GameState {
   /** Collects the result; with `equipDrop`, also equips the dropped item. Returns levels gained. */
   collect(equipDrop?: boolean): number;
   /** Testing only: finish the running adventure now. */
-  skipAdventure(now?: Date): void;
+  skipAdventure(now?: Date, outcome?: 'win' | 'lose'): void;
+  moveHabit(id: string, target: MoveTarget): void;
   allocateSp(stat: StatKey): void;
   respec(): void;
   equip(uid: string): void;
@@ -194,9 +196,16 @@ export const useGameStore = create<GameState>((set, get) => {
       commit(debugAction(get().save, action, now));
     },
 
-    skipAdventure(now = new Date()) {
+    moveHabit(id, target) {
       const s = get().save;
-      const next = resolveQuest(s, now, Math.random, true);
+      commit({ ...s, habits: reorder(s.habits, id, target) });
+    },
+
+    skipAdventure(now = new Date(), outcome) {
+      const s = get().save;
+      // Forced dice: 0 wins every roll, 0.99 loses every roll.
+      const rng = outcome === 'win' ? () => 0 : outcome === 'lose' ? () => 0.99 : Math.random;
+      const next = resolveQuest(s, now, rng, true);
       if (next === s) return;
       commit(next);
       cancelReturn().catch(() => {});
