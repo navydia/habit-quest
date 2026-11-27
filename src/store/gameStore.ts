@@ -93,6 +93,8 @@ export const useGameStore = create<GameState>((set, get) => {
         emoji: details.emoji || '✨',
         lifeArea: details.lifeArea ?? 'other',
         timeOfDay: details.timeOfDay ?? 'anytime',
+        // New habits go to the end of the custom order.
+        order: s.habits.reduce((m, h, i) => Math.max(m, h.order ?? i), -1) + 1,
       };
       commit({ ...s, habits: [...s.habits, habit] });
     },

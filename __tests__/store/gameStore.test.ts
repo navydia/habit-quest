@@ -297,3 +297,13 @@ test('habits can be moved and custom order chosen', () => {
   g().setGroupBy('custom');
   expect(g().save.settings.groupBy).toBe('custom');
 });
+
+test('a new habit goes to the end of the custom order, even after reordering', () => {
+  g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+  g().addHabit('B', { kind: 'daily' }, at(DAY, 7));
+  const [a, b] = g().save.habits;
+  g().moveHabit(b.id, { beforeId: a.id });
+  g().addHabit('C', { kind: 'daily' }, at(DAY, 7));
+  const c = g().save.habits.find((h) => h.name === 'C')!;
+  expect(c.order).toBeGreaterThan(Math.max(...g().save.habits.filter((h) => h !== c).map((h) => h.order ?? 0)));
+});

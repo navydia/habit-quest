@@ -335,14 +335,15 @@ test('a boss fight that cannot start says so', async () => {
   expect(screen.getByText('The boss fight could not start. Check your tokens and try again.')).toBeTruthy();
 });
 
-test('screen readers can move a habit into the next section', async () => {
+test('screen readers can move a habit down past an empty section into the next', async () => {
   const s = newSave();
-  s.habits = [{ ...habit('Run'), timeOfDay: 'morning' }, { ...habit('Read'), timeOfDay: 'evening' }];
+  s.habits = [{ ...habit('Run'), timeOfDay: 'afternoon' }, { ...habit('Read'), timeOfDay: 'evening' }];
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
   await fireEvent(screen.getByRole('button', { name: /^Run, / }), 'accessibilityAction', { nativeEvent: { actionName: 'moveDown' } });
   expect(useGameStore.getState().save.habits.find((h) => h.id === 'Run')?.timeOfDay).toBe('evening');
 });
+
 
 test('a section + button starts a new habit in that section', async () => {
   const s = newSave();
@@ -377,4 +378,13 @@ test('the boss preview shows each difficulty\'s required power and chance', asyn
   await fireEvent.press(screen.getByRole('radio', { name: /^Hard/ }));
   expect(screen.getByText('50%')).toBeTruthy();
   expect(screen.getByText(/Requires 170 power · You have 105/)).toBeTruthy();
+});
+
+test('screen readers can move a habit into an empty section', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Run'), timeOfDay: 'morning' }, { ...habit('Read'), timeOfDay: 'evening' }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent(screen.getByRole('button', { name: /^Run, / }), 'accessibilityAction', { nativeEvent: { actionName: 'moveDown' } });
+  expect(useGameStore.getState().save.habits.find((h) => h.id === 'Run')?.timeOfDay).toBe('afternoon');
 });

@@ -119,15 +119,23 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
   };
 
-  /** Screen-reader alternative to dragging. */
+  /** Screen-reader alternative to dragging. Walks every section, including empty ones. */
   const step = (h: Habit, dir: 'up' | 'down') => {
-    const flat = visible.flatMap((s) => s.items.map((x) => ({ h: x, section: s.key })));
-    const i = flat.findIndex((x) => x.h.id === h.id);
-    const j = dir === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= flat.length) return;
-    const neighbour = flat[j];
-    const beforeId = dir === 'up' ? neighbour.h.id : (flat[j + 1]?.h.id ?? null);
-    onMove(h.id, { beforeId, ...sectionTarget(groupBy, neighbour.section) });
+    const all = sections; // every section, even empty ones
+    const si = all.findIndex((sec) => sec.items.some((x) => x.id === h.id));
+    if (si < 0) return;
+    const items = all[si].items;
+    const pi = items.findIndex((x) => x.id === h.id);
+    const firstAfter = (from: number) => all.slice(from).flatMap((sec) => sec.items).find((x) => x.id !== h.id)?.id ?? null;
+    if (dir === 'down') {
+      if (pi < items.length - 1) return onMove(h.id, { beforeId: items[pi + 2]?.id ?? firstAfter(si + 1), ...sectionTarget(groupBy, all[si].key) });
+      if (si + 1 >= all.length) return;
+      return onMove(h.id, { beforeId: firstAfter(si + 1), ...sectionTarget(groupBy, all[si + 1].key) });
+    }
+    if (pi > 0) return onMove(h.id, { beforeId: items[pi - 1].id, ...sectionTarget(groupBy, all[si].key) });
+    if (si === 0) return;
+    // End of the previous section: just before whatever follows it.
+    return onMove(h.id, { beforeId: items[pi + 1]?.id ?? firstAfter(si + 1), ...sectionTarget(groupBy, all[si - 1].key) });
   };
 
   const subtitle = (h: Habit) =>
@@ -150,44 +158,43 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
       {scheduled.length === 0 && save.habits.length > 0 && <Text style={{ color: home.muted }}>Nothing scheduled today. Enjoy the quiet.</Text>}
       {scheduled.length > 0 && left === 0 && <Text style={{ color: home.muted }}>You can find them in your Log.</Text>}
 
+      {/* Headers, cards and placeholders are direct children, so every onLayout y shares one coordinate space. */}
       <View {...responder.panHandlers} style={{ gap: space.s }}>
-        {visible.map((s) => (
-          <View key={s.key} style={{ gap: space.s }}>
-            {groupBy !== 'custom' && (
-              <View onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.s }}>
-                <Text variant="bodyStrong" style={{ color: home.text }}>{s.title}</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: home.line }} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Add a habit to ${s.title}`}
-                  onPress={() => onAdd(sectionTarget(groupBy, s.key))}
-                  style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, backgroundColor: c.ember, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
-                  hitSlop={6}
-                >
-                  <Text variant="bodyStrong" color="onEmber">+</Text>
-                </Pressable>
-              </View>
-            )}
-            {s.items.map((h) => (
-              <Animated.View
-                key={h.id}
-                onLayout={(e) => layout.set(`row:${h.id}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })}
-                style={dragId === h.id ? { zIndex: 10, transform: [{ translateY: dy }] } : undefined}
+        {visible.flatMap((s) => [
+          groupBy !== 'custom' ? (
+            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.s }}>
+              <Text variant="bodyStrong" style={{ color: home.text }}>{s.title}</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: home.line }} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Add a habit to ${s.title}`}
+                onPress={() => onAdd(sectionTarget(groupBy, s.key))}
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, backgroundColor: c.ember, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+                hitSlop={6}
               >
-                <HabitCard
-                  habit={h}
-                  subtitle={subtitle(h)}
-                  lifted={dragId === h.id}
-                  onComplete={() => onComplete(h, today)}
-                  onOpen={() => onEdit(h)}
-                  onLongPress={() => startDrag(h.id)}
-                  onMove={(dir) => step(h, dir)}
-                />
-              </Animated.View>
-            ))}
-            {s.items.length === 0 && dragId && <View style={{ height: 48, borderRadius: 24, borderWidth: 2, borderStyle: 'dashed', borderColor: home.dash }} />}
-          </View>
-        ))}
+                <Text variant="bodyStrong" color="onEmber">+</Text>
+              </Pressable>
+            </View>
+          ) : null,
+          ...s.items.map((h) => (
+            <Animated.View
+              key={h.id}
+              onLayout={(e) => layout.set(`row:${h.id}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })}
+              style={dragId === h.id ? { zIndex: 10, transform: [{ translateY: dy }] } : undefined}
+            >
+              <HabitCard
+                habit={h}
+                subtitle={subtitle(h)}
+                lifted={dragId === h.id}
+                onComplete={() => onComplete(h, today)}
+                onOpen={() => onEdit(h)}
+                onLongPress={() => startDrag(h.id)}
+                onMove={(dir) => step(h, dir)}
+              />
+            </Animated.View>
+          )),
+          s.items.length === 0 && dragId ? <View key={`gap-${s.key}`} style={{ height: 48, borderRadius: 24, borderWidth: 2, borderStyle: 'dashed', borderColor: home.dash }} /> : null,
+        ])}
       </View>
 
       {missedYesterday.length > 0 && (

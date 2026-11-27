@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { availableBosses, bossChance, bossRequiredPower } from '@/src/game/bosses';
+import { BOSS_DEFENSE_PER_POINT } from '@/src/game/config';
 import { powerOf, totalStats } from '@/src/game/stats';
 import type { BossDifficulty, SaveData } from '@/src/game/types';
 import { minTouch, radius, space } from '@/src/theme/tokens';
@@ -36,7 +37,7 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
   if (!boss) return null;
 
   const chance = bossChance(save.player, boss, difficulty);
-  const yourPower = powerOf(save.player) + 2 * totalStats(save.player).defense;
+  const yourPower = powerOf(save.player) + BOSS_DEFENSE_PER_POINT * totalStats(save.player).defense;
   // Colour shows the risk: moss = safe, gold = a gamble, ember = a long shot.
   const tone = chance >= 1 ? c.primary : chance >= 0.5 ? c.accent : c.ember;
   const toneText = chance >= 1 ? 'onPrimary' : chance >= 0.5 ? 'onAccent' : 'onEmber';
