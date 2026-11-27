@@ -232,3 +232,11 @@ describe('regions and bosses', () => {
     expect(g().save.familiars.active).toBeNull();
   });
 });
+
+test('if the boss can no longer be added, setting out still starts the adventure', () => {
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-easy`, at(DAY, 9), { bossId: 'old-bramblehide', difficulty: 'normal' }); // 0 tokens
+  expect(g().save.activeRun).not.toBeNull();
+  expect(g().save.activeRun?.boss).toBeUndefined();
+});

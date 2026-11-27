@@ -103,3 +103,41 @@ test('Skip resolves the boss as well', () => {
   const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   expect(resolveQuest(s, at(DAY, 9, 1), () => 0, true).pendingResult?.boss).toBeDefined();
 });
+
+describe('review fixes', () => {
+  const start = () => startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+
+  test('unchecking and re-checking a spent boss-habit day does not make a token again', () => {
+    const s = start();
+    const spent = s.completions.find((c) => c.habitId === 'b')!;
+    const rechecked = { ...s, completions: [...s.completions.filter((c) => c !== spent), { ...spent, at: at(DAY, 9, 1).toISOString() }] };
+    expect(bossTokens(rechecked)).toBe(0);
+  });
+
+  test('a loss gives back all 6 tokens even if one was unchecked during the trip', () => {
+    const s = start();
+    const fewer = { ...s, completions: s.completions.filter((c) => c.dayKey !== '2026-11-21') };
+    let n = 0;
+    const r = resolveQuest(fewer, at(DAY, 18), () => (n++ === 0 ? 0 : 0.99));
+    expect(r.pendingResult?.boss?.tokensKept).toBe(true);
+    expect(bossTokens(r)).toBe(6);
+  });
+
+  test('if the boss habit was switched during the trip, a loss says the tokens were not kept', () => {
+    const s = setBossHabit(start(), 'a', at(DAY, 10));
+    let n = 0;
+    const r = resolveQuest(s, at(DAY, 18), () => (n++ === 0 ? 0 : 0.99));
+    expect(r.pendingResult?.boss?.tokensKept).toBe(false);
+  });
+
+  test('Luck raises the familiar chance', () => {
+    const lucky = withTokens(6);
+    lucky.player = { ...lucky.player, stats: { ...lucky.player.stats, luck: 20 } }; // +10 percentage points
+    const s = startQuest(lucky, `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+    let n = 0;
+    // adventure win, adventure drop miss, boss win, rarity, item, familiar roll 0.15 (base 0.1 would miss)
+    const seq = [0, 0.99, 0, 0, 0, 0.15];
+    const r = resolveQuest(s, at(DAY, 18), () => seq[n++] ?? 0.99);
+    expect(r.pendingResult?.boss?.familiarId).toBe('hoglet');
+  });
+});

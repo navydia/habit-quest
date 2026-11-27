@@ -2,7 +2,7 @@ import { GEAR } from '../content/gear';
 import { REGIONS } from '../content/regions';
 import { newSave } from '../save/migrate';
 import { BOSS_TOKENS_NEEDED } from './config';
-import { addDays, dayKey } from './dates';
+import { dayKey } from './dates';
 import { complete, scheduledHabits } from './habits';
 import { addExp, expToNext } from './progression';
 import type { SaveData } from './types';
@@ -22,15 +22,8 @@ export function debugAction(s: SaveData, action: DebugAction, now: Date): SaveDa
     case 'bossTokens': {
       const habitId = s.boss.habitId ?? s.habits.find((h) => !h.archived)?.id;
       if (!habitId) return s;
-      const epoch = new Date(now.getTime() - 60_000);
-      // Synthetic completions on earlier days, timestamped after the epoch so they count as tokens.
-      const fake = Array.from({ length: BOSS_TOKENS_NEEDED }, (_, i) => ({
-        habitId,
-        dayKey: addDays(today, -(i + 2)),
-        at: new Date(epoch.getTime() + 1000 + i).toISOString(),
-      }));
-      const others = s.completions.filter((c) => !fake.some((f) => f.habitId === c.habitId && f.dayKey === c.dayKey));
-      return { ...s, boss: { habitId, tokenEpoch: epoch.toISOString() }, completions: [...others, ...fake] };
+      const boss = s.boss.habitId ? s.boss : { habitId, tokenEpoch: now.toISOString(), spentKeys: [], bonusTokens: 0 };
+      return { ...s, boss: { ...boss, bonusTokens: BOSS_TOKENS_NEEDED } };
     }
     case 'levelUp':
       return { ...s, player: addExp(s.player, expToNext(s.player.level) - s.player.exp).player };

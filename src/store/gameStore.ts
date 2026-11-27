@@ -108,7 +108,9 @@ export const useGameStore = create<GameState>((set, get) => {
       try {
         next = startRun(s, offerId, now, boss);
       } catch {
-        return; // e.g. tokens no longer enough
+        // The boss can't be added any more (e.g. a token was unchecked): set out without it.
+        if (!boss) return;
+        next = startRun(s, offerId, now);
       }
       commit(next);
       rescheduleReturn(next);

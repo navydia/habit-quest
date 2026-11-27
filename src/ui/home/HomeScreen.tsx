@@ -26,6 +26,7 @@ import { ScrapbookSheet } from '../world/ScrapbookSheet';
 import { BossHabitSheet } from '../world/BossHabitSheet';
 import { bossTokens } from '@/src/game/bosses';
 import { currentRegion } from '@/src/game/world';
+import { familiarBonus } from '@/src/game/familiars';
 import { familiarById } from '@/src/content/regions';
 import { ReturnReveal } from './ReturnReveal';
 
@@ -45,6 +46,8 @@ export function HomeScreen() {
   const [bossSheet, setBossSheet] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
   const region = currentRegion(save);
+  const fam = save.familiars.active ? familiarById(save.familiars.active) : undefined;
+  const revealBonus = { ...familiarBonus(save), label: fam ? `${fam.name}: +${fam.bonus.pct}% ${fam.bonus.kind === 'exp' ? 'EXP' : 'gold'}` : null };
 
   const today = dayKey(now);
   const gauge = gaugeProgress(save, today);
@@ -161,6 +164,7 @@ export function HomeScreen() {
       <ReturnReveal
         result={save.pendingResult}
         player={save.player}
+        bonus={revealBonus}
         onCollect={(equipDrop) => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
           collect(equipDrop);

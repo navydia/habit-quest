@@ -75,3 +75,9 @@ test('a v2 save mid-adventure upgrades to v3 with a starting world', () => {
   expect(save.boss).toEqual({ habitId: null, tokenEpoch: null });
   expect(save.familiars).toEqual({ owned: [], active: null });
 });
+
+test('a v3 save with boss set to null is recovered, not crashed on', () => {
+  const s: any = newSave();
+  s.boss = null;
+  expect(migrate(s).recovered).toBe(true);
+});

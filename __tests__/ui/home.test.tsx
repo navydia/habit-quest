@@ -228,3 +228,19 @@ describe('regions, bosses and debug', () => {
     expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
   });
 });
+
+test('the return screen includes the familiar bonus and the level-up it causes', async () => {
+  const s = newSave();
+  s.player = { ...s.player, exp: 61 }; // 61 + 40 × 1.0 = 101 → level 2 only with a bonus... use EXP familiar
+  s.familiars = { owned: ['bog-toad'], active: 'bog-toad' }; // +4% EXP
+  s.pendingResult = {
+    offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 90, rewardExp: 38, rewardGold: 20 },
+    success: true, exp: 38, gold: 20, resolvedAt: '2026-11-27T18:00:00.000Z',
+  };
+  s.player.exp = 61; // 61 + 38 = 99 (no level); 61 + round(38 × 1.04) = 101 (level up)
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  expect(screen.getByText('+40')).toBeTruthy();
+  expect(screen.getByText(/Bog Toad: \+4% EXP/)).toBeTruthy();
+  expect(screen.getByText(/Level up/)).toBeTruthy();
+});

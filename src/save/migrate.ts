@@ -61,6 +61,7 @@ function isValidCurrent(s: any): s is SaveData {
     typeof s.world?.regions === 'object' &&
     Array.isArray(s.familiars?.owned) &&
     typeof s.boss === 'object' &&
+    s.boss !== null &&
     s.player?.equipped !== null &&
     Array.isArray(s.habits) &&
     Array.isArray(s.completions) &&

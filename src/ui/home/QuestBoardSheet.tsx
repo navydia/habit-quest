@@ -114,18 +114,20 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
 
   return (
     <Sheet visible={visible} title={`Adventures in ${region.name}`} onClose={onClose}>
-      <View style={{ gap: space.m }} accessibilityRole="radiogroup">
-        {offers.map(card)}
+      <View style={{ gap: space.m }}>
+        <View style={{ gap: space.m }} accessibilityRole="radiogroup" accessibilityLabel="Adventures">
+          {offers.map(card)}
+        </View>
         {bossReady && (
           <View style={{ gap: space.s, marginTop: space.s }}>
             <Text variant="heading" accessibilityRole="header">A boss awaits</Text>
             <Text variant="caption" color="textMuted">You have 6 boss tokens. Add a boss fight to this trip, or save it for later.</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }} accessibilityRole="radiogroup">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }} accessibilityRole="radiogroup" accessibilityLabel="Boss">
               {bosses.map((b) => choice(b.name, bossId === b.id, () => setBossId(b.id)))}
               {choice('Not today', bossId === null, () => setBossId(null))}
             </View>
             {boss && (
-              <View style={{ flexDirection: 'row', gap: space.s }} accessibilityRole="radiogroup">
+              <View style={{ flexDirection: 'row', gap: space.s }} accessibilityRole="radiogroup" accessibilityLabel="Difficulty">
                 {BOSS_DIFF.map(({ d, label }) =>
                   choice(label, difficulty === d, () => setDifficulty(d), `${Math.round(bossChance(save.player, boss, d) * 100)}%`),
                 )}

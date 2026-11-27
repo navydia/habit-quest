@@ -42,7 +42,14 @@ export interface QuestRun {
   /** Speed multiplier fixed at start, so later stat changes don't move the return time. */
   speedFactor?: number;
   /** A boss fight added to this trip (6 tokens spent at start). */
-  boss?: { bossId: string; difficulty: BossDifficulty; successChance: number; prevEpoch: string | null };
+  boss?: {
+    bossId: string;
+    difficulty: BossDifficulty;
+    successChance: number;
+    prevEpoch: string | null;
+    prevSpentKeys?: string[];
+    prevBonus?: number;
+  };
 }
 
 export interface QuestResult {
@@ -55,7 +62,17 @@ export interface QuestResult {
   story?: string;
   drop?: { gearId: string };
   memento?: { regionId: string; mementoId: string };
-  boss?: { bossId: string; difficulty: BossDifficulty; success: boolean; exp: number; gold: number; drop?: { gearId: string }; familiarId?: string };
+  boss?: {
+    bossId: string;
+    difficulty: BossDifficulty;
+    success: boolean;
+    exp: number;
+    gold: number;
+    drop?: { gearId: string };
+    familiarId?: string;
+    /** On a loss: whether the 6 tokens came back (not if the boss habit was switched mid-trip). */
+    tokensKept?: boolean;
+  };
 }
 
 export type StatKey = 'power' | 'defense' | 'luck' | 'speed';
@@ -101,6 +118,13 @@ export interface SaveData {
   lastQuestStartedDayKey: DayKey | null;
   questLog: QuestResult[];
   world: { currentRegion: string; regions: Record<string, RegionProgress> };
-  boss: { habitId: string | null; tokenEpoch: string | null };
+  boss: {
+    habitId: string | null;
+    tokenEpoch: string | null;
+    /** habitId|dayKey of completions already spent on a fight; re-checking them earns nothing. */
+    spentKeys?: string[];
+    /** Tokens given back (a lost fight) or granted by the debug menu. */
+    bonusTokens?: number;
+  };
   familiars: { owned: string[]; active: string | null };
 }

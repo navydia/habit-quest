@@ -39,3 +39,4 @@ export const BOSS_DIFFICULTY = {
 /** Boss loot never includes commons. rarityShift moves weight from uncommon to epic/legendary (2:1). */
 export const BOSS_RARITY_WEIGHTS = { uncommon: 50, rare: 35, epic: 12, legendary: 3 } as const;
 export const FAMILIAR_BASE_CHANCE = 0.1;
+export const FAMILIAR_LUCK_PER_POINT = 0.005;

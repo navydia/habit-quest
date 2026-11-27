@@ -22,9 +22,12 @@ export function pickLine(resolvedAt: string, lines: string[]): string {
   return lines[h % lines.length];
 }
 
-type Props = { result: QuestResult | null; player: Player; onCollect: (equipDrop: boolean) => void };
+type Bonus = { exp: number; gold: number; label: string | null };
+type Props = { result: QuestResult | null; player: Player; bonus?: Bonus; onCollect: (equipDrop: boolean) => void };
 
-export function ReturnReveal({ result, player, onCollect }: Props) {
+const NO_BONUS: Bonus = { exp: 1, gold: 1, label: null };
+
+export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Props) {
   const { c } = useTheme();
   const reduced = useReducedMotion();
   const scale = useState(() => new Animated.Value(0.6))[0];
@@ -47,7 +50,9 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
   if (!result) return null;
   const lines = result.success ? SUCCESS_LINES : FAIL_LINES;
   const line = pickLine(result.resolvedAt, lines);
-  const levelsGained = addExp(player, result.exp + (result.boss?.exp ?? 0)).levelsGained;
+  // Same maths as collectResult, so the numbers and the level-up banner match what you get.
+  const totalExp = Math.round((result.exp + (result.boss?.exp ?? 0)) * bonus.exp);
+  const levelsGained = addExp(player, totalExp).levelsGained;
   const drop = result.drop ? gearById(result.drop.gearId) : undefined;
   const memento = result.memento ? regionById(result.memento.regionId)?.adventures.find((a) => a.memento.id === result.memento!.mementoId)?.memento : undefined;
   const bossResult = result.boss;
@@ -98,9 +103,10 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
           {!result.success ? ` You still came back with ${result.gold} gold.` : ''}
         </Text>
         <View style={styles.rewards}>
-          <Reward value={`+${result.exp}`} label="EXP" />
-          <Reward value={`+${result.gold}`} label="Gold" />
+          <Reward value={`+${Math.round(result.exp * bonus.exp)}`} label="EXP" />
+          <Reward value={`+${Math.round(result.gold * bonus.gold)}`} label="Gold" />
         </View>
+        {bonus.label && <Text variant="caption" color="textMuted">{bonus.label}</Text>}
         {drop && (
           <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: rarityColors[drop.rarity] }]}>
             <Text variant="label" color="textMuted">Found on the road · {RARITY_LABEL[drop.rarity]}</Text>
@@ -122,7 +128,9 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
             <Text variant="caption" color="textMuted">
               {bossResult.success
                 ? `+${bossResult.exp} EXP · +${bossResult.gold} gold${bossDrop ? ` · ${bossDrop.name} (${RARITY_LABEL[bossDrop.rarity]})` : ''}`
-                : 'Your 6 tokens are safe. Try again tomorrow.'}
+                : bossResult.tokensKept === false
+                  ? 'You switched boss habit during the trip, so these tokens are gone.'
+                  : 'Your 6 tokens are safe. Try again tomorrow.'}
             </Text>
           </Card>
         )}
