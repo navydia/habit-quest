@@ -140,6 +140,7 @@ These are distilled from six UI-guideline sources and chosen for this app: Adham
 15. **Motion is short (200–300 ms for UI) and purposeful.** Loops are reserved for the game world. Respect Reduce Motion.
 16. **Touch targets are at least 44×44 pt**, and every icon-only control has a label for screen readers.
 17. **Text must stay usable at large system font sizes.** Nothing gets clipped or overlaps at 200%.
+17a. **Inputs always stay above the keyboard.** Any screen or sheet with a text field wraps its content in `KeyboardAvoidingView` with `behavior="padding"` on both iOS and Android (Expo apps are edge-to-edge, so Android no longer resizes for the keyboard). The field being typed in and its submit button must stay visible. Check it on a real phone. (The kit `Sheet` already does this.)
 
 **Consistency**
 18. **The design system is the single source of truth.** Screens use only tokens and kit components. The same component looks and behaves the same everywhere. New screen types (shop, scrapbook, region map) get a reusable template before a second one is built.

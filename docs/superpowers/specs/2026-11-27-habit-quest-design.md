@@ -43,6 +43,7 @@ The visual style, tokens and **UI rules for every screen** live in `docs/design/
 - sentence case, generous whitespace, and tokens only
 - every action gives feedback, and every list has an empty state
 - respect Reduce Motion and large text
+- inputs always stay visible above the keyboard
 
 ## 3. Tabs
 
@@ -255,5 +256,5 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 **Still open** (to settle before planning):
 - Whether a region's three quests are the same every day or rotate from a larger pool.
 - Which bosses are available. Every boss in the game, or only those of regions you've reached?
-- What Hard and Extreme change: odds, rewards, tokens needed, familiar drop chance.
+- *(settled)* Hard and Extreme always need **6 boss tokens**, the same as Normal. Proposed effects: your effective power is −30 (Hard) or −60 (Extreme); rewards are ×1.75 or ×3; the familiar drop chance is ×2 or ×4.
 - How many bosses each region has, and whether you can travel back to earlier regions.
