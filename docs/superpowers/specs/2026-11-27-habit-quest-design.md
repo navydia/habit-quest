@@ -42,7 +42,8 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 ## 1b. Testing aids
 
 - **Development builds only** (`__DEV__`, which is true in Expo Go): a **"Skip (testing)"** button finishes a running adventure immediately. **Bosses get the same Skip** when they're built.
-- Release builds never show it.
+- A **Debug menu** ("Debug" chip on the Home screen) offers testing shortcuts: fill the gauge, skip, allow another adventure today, 6 boss tokens, level up, +500 gold, one of every item, every familiar, unlock every region, and reset all progress (needs a second tap).
+- Release builds never show either.
 
 ## 2a. Look and feel
 
@@ -253,7 +254,7 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - An **art spec doc** (canvas sizes, anchors, frame counts, layer order, naming) is written early, so the creator can start drawing in parallel.
 - A hidden **art preview screen** in the app to view any character/gear combination and animation, for checking new art.
 
-## 13. Regions *(agreed direction, still being designed; replaces the random daily board and the F–S boss tiers once built)*
+## 13. Regions *(built in Plan 3; replaces the random daily board (§5.2) and the F–S boss tiers (§6.3))*
 
 **Agreed with the creator:**
 - **The world is made of regions.** Each region needs a minimum **power rating** to enter. **Event regions** can appear alongside event bosses.
@@ -264,7 +265,16 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - **Region complete:** a region is *complete* when all its quests are completed **and its region boss is defeated**.
 - **Bosses belong to regions** instead of F–S tiers. Bosses get a **difficulty picker: Normal, Hard, Extreme**. Any boss can be attempted from any region, wherever your hero currently is.
 
-**Still open** (to settle before planning):
+**Settled in Plan 3:**
+- Three fixed adventures per region.
+- You can fight the boss of any unlocked region.
+- One boss per region.
+- You can travel back any time, except during an adventure.
+- A lost boss fight pays nothing but keeps your 6 tokens.
+- The boss fight is optional on the board ("Not today").
+- Region list, numbers and content: see `docs/superpowers/plans/2026-11-27-plan-3-regions-bosses.md` and `src/content/regions.ts`.
+
+**Previously open (now settled as above):**
 - Whether a region's three quests are the same every day or rotate from a larger pool.
 - Which bosses are available. Every boss in the game, or only those of regions you've reached?
 - *(settled)* Hard and Extreme always need **6 boss tokens**, the same as Normal. Proposed effects: your effective power is −30 (Hard) or −60 (Extreme); rewards are ×1.75 or ×3; the familiar drop chance is ×2 or ×4.
