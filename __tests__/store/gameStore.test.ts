@@ -194,3 +194,41 @@ test('skipping cancels the pending return notification', () => {
   g().skipAdventure(at(DAY, 9, 5));
   expect(cancelReturn).toHaveBeenCalled();
 });
+
+describe('regions and bosses', () => {
+  test('travelling changes the board to the new region', () => {
+    const s = g().save;
+    useGameStore.setState({
+      save: {
+        ...s,
+        player: { ...s.player, level: 4 },
+        world: { currentRegion: 'thornwick-meadows', regions: { 'thornwick-meadows': { cleared: ['slime-patrol', 'herb-gathering', 'missing-goat'], mementos: [], bossDefeated: false } } },
+      },
+    });
+    g().ensureBoard(at(DAY, 9));
+    g().travel('willowmere-marsh', at(DAY, 9));
+    g().ensureBoard(at(DAY, 9));
+    expect(g().save.board?.offers[0].regionId).toBe('willowmere-marsh');
+  });
+
+  test('choosing a boss habit and starting with a boss spends tokens', () => {
+    twoHabitsDone();
+    const [a] = g().save.habits;
+    g().setBossHabit(a.id, at('2026-11-20', 7));
+    const days = ['21', '22', '23', '24', '25', '26'].map((d) => `2026-11-${d}`);
+    useGameStore.setState({ save: { ...g().save, completions: [...g().save.completions, ...days.map((d) => ({ habitId: a.id, dayKey: d, at: at(d, 8).toISOString() }))] } });
+    g().ensureBoard(at(DAY, 9));
+    g().startQuest(`${DAY}-easy`, at(DAY, 9), { bossId: 'old-bramblehide', difficulty: 'hard' });
+    expect(g().save.activeRun?.boss?.difficulty).toBe('hard');
+  });
+
+  test('the active familiar can be set and cleared', () => {
+    useGameStore.setState({ save: { ...g().save, familiars: { owned: ['hoglet'], active: null } } });
+    g().setActiveFamiliar('hoglet');
+    expect(g().save.familiars.active).toBe('hoglet');
+    g().setActiveFamiliar('not-owned');
+    expect(g().save.familiars.active).toBe('hoglet');
+    g().setActiveFamiliar(null);
+    expect(g().save.familiars.active).toBeNull();
+  });
+});

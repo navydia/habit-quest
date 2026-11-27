@@ -8,7 +8,10 @@ import { seededRng } from '../game/rng';
 import { classTitle } from '../game/classTitle';
 import { gearById } from '../content/gear';
 import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
-import type { DayKey, Player, SaveData, Schedule, Slot, StatKey } from '../game/types';
+import type { BossDifficulty, DayKey, Player, SaveData, Schedule, Slot, StatKey } from '../game/types';
+import { setBossHabit as chooseBossHabit } from '../game/bosses';
+import { debugAction, type DebugAction } from '../game/debug';
+import { currentRegion, travel as travelTo } from '../game/world';
 import { cancelReturn, scheduleReturn } from '../notify/questNotifications';
 import { newSave } from '../save/migrate';
 import { loadSave, writeSave } from '../save/storage';
@@ -23,7 +26,12 @@ interface GameState {
   archiveHabit(id: string): void;
   toggleHabit(habitId: string, key: DayKey, now?: Date): void;
   ensureBoard(now?: Date): void;
-  startQuest(offerId: string, now?: Date): void;
+  startQuest(offerId: string, now?: Date, boss?: { bossId: string; difficulty: BossDifficulty }): void;
+  travel(regionId: string, now?: Date): void;
+  setBossHabit(habitId: string, now?: Date): void;
+  setActiveFamiliar(id: string | null): void;
+  /** Development builds only. */
+  debug(action: DebugAction, now?: Date): void;
   tick(now?: Date): void;
   /** Collects the result; with `equipDrop`, also equips the dropped item. Returns levels gained. */
   collect(equipDrop?: boolean): number;
@@ -89,14 +97,19 @@ export const useGameStore = create<GameState>((set, get) => {
       const s = get().save;
       const today = dayKey(now);
       if (s.board?.dayKey === today) return;
-      commit({ ...s, board: { dayKey: today, offers: generateBoard(today, s.player, seededRng(today)) } });
+      commit({ ...s, board: { dayKey: today, offers: generateBoard(today, s.player, seededRng(today), currentRegion(s).id) } });
     },
 
-    startQuest(offerId, now = new Date()) {
+    startQuest(offerId, now = new Date(), boss) {
       get().ensureBoard(now);
       const s = get().save;
       if (!canStartQuest(s, now) || !s.board?.offers.some((o) => o.id === offerId)) return;
-      const next = startRun(s, offerId, now);
+      let next: SaveData;
+      try {
+        next = startRun(s, offerId, now, boss);
+      } catch {
+        return; // e.g. tokens no longer enough
+      }
       commit(next);
       rescheduleReturn(next);
     },
@@ -105,6 +118,26 @@ export const useGameStore = create<GameState>((set, get) => {
       const s = get().save;
       const next = resolveQuest(s, now, Math.random);
       if (next !== s) commit(next);
+    },
+
+    travel(regionId, now = new Date()) {
+      const s = get().save;
+      const next = travelTo(s, regionId, now);
+      if (next !== s) commit(next);
+    },
+
+    setBossHabit(habitId, now = new Date()) {
+      commit(chooseBossHabit(get().save, habitId, now));
+    },
+
+    setActiveFamiliar(id) {
+      const s = get().save;
+      if (id !== null && !s.familiars.owned.includes(id)) return;
+      commit({ ...s, familiars: { ...s.familiars, active: id } });
+    },
+
+    debug(action, now = new Date()) {
+      commit(debugAction(get().save, action, now));
     },
 
     skipAdventure(now = new Date()) {
