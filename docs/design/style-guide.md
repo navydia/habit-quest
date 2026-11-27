@@ -73,10 +73,12 @@ Light / Dark. All text pairings meet 4.5:1.
 | `display` | Fraunces 600 | 32/38 |
 | `title` | Fraunces 600 | 24/30 |
 | `heading` | Fraunces 600 | 19/24 |
-| `body` | Nunito Sans 400 | 16/22 |
-| `bodyStrong` | Nunito Sans 700 | 16/22 |
-| `label` | Nunito Sans 600 | 13/18, +0.3 tracking |
-| `caption` | Nunito Sans 400 | 12/16 |
+| `body` | Nunito Sans 400 | 16/24 (1.5 line height) |
+| `bodyStrong` | Nunito Sans 700 | 16/24 |
+| `label` | Nunito Sans 600 | 13/18, sentence case |
+| `caption` | Nunito Sans 400 | 13/18 |
+
+Labels use sentence case, not all caps (easier to read).
 
 ## 5. Shape, space, depth
 
@@ -96,7 +98,7 @@ Light / Dark. All text pairings meet 4.5:1.
 ## 7. Placeholder art rules
 
 Placeholders are drawn in code (SVG) **in the final style**, so the app already looks like itself.
-- Hero: a rounded bean-shaped body in muted color, two dot eyes with a white highlight, small blush, no outlines (like Finch). It wears a simple **cloak and scarf** to make it read "adventurer" and a little older.
+- Hero: a small **chibi humanoid**: big round head with hair, dot eyes with a white highlight, small blush, tunic with belt, arms, legs and boots, no outlines (like Finch). A **cloak and scarf** make it read "adventurer". Its separate parts (head, hair, torso, arms, legs) preview the layers of the Plan 2 paper doll.
 - The sword is a simple rounded blade with a hilt. The slime is a teal-moss blob with dot eyes.
 - Scenes are flat layered shapes in the scene palette.
 - Every placeholder uses the same canvas sizes and anchor points the real art will use (Plan 2 art spec), so swapping in final art doesn't change any layout.
@@ -107,3 +109,37 @@ Placeholders are drawn in code (SVG) **in the final style**, so the app already 
 - **Failure:** "The slimes had numbers today. You still came back with 16 gold."
 - Never mention missed habits. No exclamation-mark spam (at most one per screen).
 - Buttons are verbs: "Set out", "Collect", "Add habit".
+
+## 9. UI rules for every screen
+
+These are distilled from six UI-guideline sources and chosen for this app: Adham Dannaway's *UI design tips*, Taras Bakusevych's *58 rules for stunning UI* (UX Collective), Emergen's *Modern UI/UX principles*, Webflow's *Modern UI design*, Erik Kennedy's *7 rules for gorgeous UI*, and Figma's *UI design principles*. Every new screen follows them.
+
+**Layout and hierarchy**
+1. **One focal point, one primary action per screen.** On Home that's the hero, then the quest button. Hierarchy comes from size, weight, contrast and space, in that order. Run the "squint test": blurred, the most important thing should still stand out.
+2. **Double the whitespace you think you need.** Group related items by proximity first, and only use cards or containers when proximity isn't enough. Use the spacing scale (4/8/12/16/20/24/32/40) only, never one-off values.
+3. **Keep primary actions in the lower half of the screen**, so they're reachable one-handed. Keep anything destructive (deleting a habit, resetting boss tokens) away from primary buttons, and always confirm it.
+4. **Reveal complexity gradually.** Show what's needed now and put the rest one tap away (sheets, "show more"). Break multi-step tasks into small steps with visible progress.
+5. **Use familiar patterns.** Native tab bar, bottom sheets, standard back gestures. Novelty belongs in the game world (scenes, characters, rewards), not in how navigation works.
+
+**Color and light**
+6. **Light comes from above.** Highlights go on top edges and shadows below: the tactile button lip, one soft drop shadow on floating cards. Never put a shadow above an element.
+7. **Get it working in grays first, then add color with purpose.** Aim for a 60-30-10 balance: about 60% parchment and surface, 30% moss and slate UI, and 10% gold. **Gold means reward or the main call to action, nowhere else.**
+8. **Status colors are fixed:** moss for success and done, slate for in progress and questing, gold for rewards and ready, ember for bosses and caution. Never use red to scold a missed habit.
+9. **Contrast:** at least 4.5:1 for text and 3:1 for icons and large text, checked by the contrast test. **Color is never the only signal.** Pair it with text, an icon or a check mark.
+
+**Type and copy**
+10. **Two families only:** Fraunces for headings, Nunito Sans for everything else. Use regular and bold weights, and sentence case (no all-caps labels). Body text has a line height of about 1.5 and is left-aligned; center only short lines.
+11. **Keep text short and verb-led** ("Set out", "Collect", "Read quest log"). Use the Guild Master voice (§8) for anything narrative.
+
+**Feedback and states**
+12. **Every action gets immediate feedback:** a pressed state, plus haptics where §2 calls for them, a visible result, and a success moment for rewards. If anything takes longer than about 1 second, show a loading state.
+13. **Every list has an empty state** that says what to do next. Every error says what happened and how to fix it, warmly and without blame.
+14. **Make progress visible:** gauges, countdowns, region progress, scrapbook completion. Use variable rewards (drops, rare items) and storytelling (quest log, letters) to give delight. Never use pressure tactics.
+
+**Motion and access**
+15. **Motion is short (200–300 ms for UI) and purposeful.** Loops are reserved for the game world. Respect Reduce Motion.
+16. **Touch targets are at least 44×44 pt**, and every icon-only control has a label for screen readers.
+17. **Text must stay usable at large system font sizes.** Nothing gets clipped or overlaps at 200%.
+
+**Consistency**
+18. **The design system is the single source of truth.** Screens use only tokens and kit components. The same component looks and behaves the same everywhere. New screen types (shop, scrapbook, region map) get a reusable template before a second one is built.

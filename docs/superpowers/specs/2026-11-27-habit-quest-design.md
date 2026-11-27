@@ -33,6 +33,17 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 - Stats becoming a min-maxing puzzle. Stats are light flavor; random SP allocation must still be fine.
 - The app feeling like a spreadsheet with a sprite glued on. The character is front and center.
 
+## 2a. Look and feel
+
+The visual style, tokens and **UI rules for every screen** live in `docs/design/style-guide.md` (§9 lists the 18 rules). Every new screen and feature follows it, so the app stays consistent as it grows. The most important rules:
+
+- one focal point and one primary action per screen
+- gold only for rewards and the main call to action
+- never scold missed habits
+- sentence case, generous whitespace, and tokens only
+- every action gives feedback, and every list has an empty state
+- respect Reduce Motion and large text
+
 ## 3. Tabs
 
 1. **Home / Journey**: character, quest gauge, boss tokens, today's habits.
@@ -57,7 +68,7 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 ### 5.2 Choosing a quest
 - A board of several quests (builder's call: ~3) is generated daily.
 - Each quest card shows: name/flavour, **required power rating**, **% chance of success**, duration, rewards (EXP, gold, possible drops).
-- Harder quests → lower success chance, bigger rewards. Success chance (set by the creator): power ≥ required → **100%**; up to 50 points short → **60%**; more than 50 short → **5%**. The board always shows all three quests; you pick one each time.
+- Harder quests → lower success chance, bigger rewards. Success chance (set by the creator): power ≥ required → **100%**; up to 50 points short → **60%**; more than 50 short → **20%**. The board always shows all three quests; you pick one each time.
 - **Luck** increases the chance that a rare quest appears on the board.
 - Potions (§9.3) may be applied before starting.
 
@@ -73,6 +84,7 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 - **Success:** full EXP + gold + chance of gear drop.
 - **Failure:** a much smaller reward (builder's call: ~20–25%). Never zero.
 - The Guild Master sends a letter about the outcome (§10).
+- The return screen has a **Read quest log** button showing a short anecdote about how the quest went (a success or failure story per quest).
 
 ### 5.5 Day boundary & overlapping quests *(designer's call)*
 - Habit completions always count toward **today's gauge** and, if a quest is running, **also shorten it**, even if that quest started yesterday.
@@ -228,3 +240,20 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - **Placeholders follow the exact same format**: generated simple shapes/colors at the real canvas sizes, with the real frame counts. Replacing one means overwriting a file.
 - An **art spec doc** (canvas sizes, anchors, frame counts, layer order, naming) is written early, so the creator can start drawing in parallel.
 - A hidden **art preview screen** in the app to view any character/gear combination and animation, for checking new art.
+
+## 13. Regions *(agreed direction, still being designed; replaces the random daily board and the F–S boss tiers once built)*
+
+**Agreed with the creator:**
+- **The world is made of regions.** Each region needs a minimum **power rating** to enter. **Event regions** can appear alongside event bosses.
+- **A region has its own quests.** While your hero is in a region, the quest board offers that region's **three quests** and you pick one per day (the daily loop in §5 is unchanged).
+- **Required power is fixed per quest.** So as your power grows, your odds on each quest rise through the 20% → 60% → 100% steps. Growing stronger is visible progress.
+- **First completion gives a memento.** The first time you complete each quest, you get a special item that goes into that region's **scrapbook** as a keepsake.
+- **Moving on:** you can travel to the next region once your power meets its requirement **and** you've completed each of the current region's quests at least once.
+- **Region complete:** a region is *complete* when all its quests are completed **and its region boss is defeated**.
+- **Bosses belong to regions** instead of F–S tiers. Bosses get a **difficulty picker: Normal, Hard, Extreme**. Any boss can be attempted from any region, wherever your hero currently is.
+
+**Still open** (to settle before planning):
+- Whether a region's three quests are the same every day or rotate from a larger pool.
+- Which bosses are available. Every boss in the game, or only those of regions you've reached?
+- What Hard and Extreme change: odds, rewards, tokens needed, familiar drop chance.
+- How many bosses each region has, and whether you can travel back to earlier regions.
