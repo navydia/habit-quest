@@ -17,10 +17,26 @@ beforeEach(() => {
   useGameStore.setState({ save: s, loaded: true });
 });
 
-test('shows the class title and level', async () => {
+test('the character box shows power, name, title, then class and level', async () => {
   await render(<CharacterScreen />);
-  expect(screen.getByText('Vanguard')).toBeTruthy();
-  expect(screen.getByText(/Level 1/)).toBeTruthy();
+  expect(screen.getByLabelText(/^[0-9]+ power$/)).toBeTruthy();
+  expect(screen.getByText('Adventurer')).toBeTruthy();
+  expect(screen.getByText('the Wanderer')).toBeTruthy();
+  expect(screen.getByText('Vanguard · Level 1')).toBeTruthy();
+});
+
+test('the cog opens Customize, where name, look and title can change', async () => {
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Customize your character' }));
+  await fireEvent.changeText(screen.getByLabelText('Name'), 'Leo');
+  await fireEvent.press(screen.getByRole('button', { name: 'Skin deep' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Pointed' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'She / her' }));
+  const prof = g().save.profile;
+  expect(prof.name).toBe('Leo');
+  expect(prof.look).toMatchObject({ skin: 'deep', ears: 'pointed' });
+  expect(prof.pronouns).toBe('she');
+  expect(screen.getByRole('button', { name: /Boss Breaker, locked/ }).props.accessibilityState.disabled).toBe(true);
 });
 
 test('the + button spends a skill point', async () => {

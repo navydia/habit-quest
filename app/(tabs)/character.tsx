@@ -11,7 +11,11 @@ import { expToNext } from '@/src/game/progression';
 import { STAT_KEYS, gearStats, powerOf } from '@/src/game/stats';
 import type { Slot, StatKey } from '@/src/game/types';
 import { useGameStore } from '@/src/store/gameStore';
-import { board, home, minTouch, radius, rarity as rarityColors, scene, space } from '@/src/theme/tokens';
+import { board, fonts, home, hud, minTouch, radius, rarity as rarityColors, space } from '@/src/theme/tokens';
+import { titleById } from '@/src/content/titles';
+import { HomeScene } from '@/src/ui/home/HomeScene';
+import { CustomizeScreen } from '@/src/ui/character/CustomizeScreen';
+import { CogIcon } from '@/src/ui/icons/Icons';
 import { useTheme } from '@/src/theme/useTheme';
 import { FamiliarSheet, familiarBonusText } from '@/src/ui/character/FamiliarSheet';
 import { SlotSheet } from '@/src/ui/character/SlotSheet';
@@ -49,6 +53,8 @@ export default function CharacterScreen() {
   const [slot, setSlot] = useState<Slot | null>(null);
   const [familiarOpen, setFamiliarOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
+  const { setProfile } = useGameStore.getState();
   const need = expToNext(p.level);
   const gear = gearStats(p);
   const life = lifetimeStats(save);
@@ -86,16 +92,31 @@ export default function CharacterScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: space.screen, paddingTop: insets.top + space.l, paddingBottom: insets.bottom + 96, gap: space.l }}>
-      {/* Portrait with six equipment boxes around it */}
-      <View style={{ backgroundColor: scene.skyBottom, borderRadius: 28, padding: space.l, gap: space.m }}>
+      {/* Full-bleed character box: place background, power on top, then name, title, class · level. */}
+      <View style={{ marginHorizontal: -space.screen, marginTop: -(insets.top + space.l), paddingTop: insets.top + space.m, paddingHorizontal: space.screen, paddingBottom: space.l, gap: space.s, overflow: 'hidden' }}>
+        <HomeScene place={save.profile.background} />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: 'rgba(28,24,22,0.35)' }} />
+        <View style={{ alignItems: 'center' }} accessible accessibilityLabel={`${powerOf(p)} power`}>
+          <Text variant="label" style={{ color: home.muted }}>POWER</Text>
+          <Text style={{ fontFamily: fonts.heading, fontSize: 44, lineHeight: 50, color: home.text }}>{powerOf(p)}</Text>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ gap: space.m }}>{LEFT.map(box)}</View>
-          <HeroSprite player={p} anim="idle" height={200} />
+          <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
           <View style={{ gap: space.m }}>{RIGHT.map(box)}</View>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Customize your character"
+          onPress={() => setCustomizing(true)}
+          style={({ pressed }) => ({ position: 'absolute', right: space.screen + 84, bottom: 168, width: minTouch, height: minTouch, borderRadius: minTouch / 2, backgroundColor: hud.bg, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+        >
+          <CogIcon color={home.text} />
+        </Pressable>
         <View style={{ alignItems: 'center', gap: 2 }}>
-          <Text variant="display" accessibilityRole="header" style={{ color: home.text }}>{p.title}</Text>
-          <Text style={{ color: home.muted }}>Level {p.level} · {powerOf(p)} power</Text>
+          <Text variant="display" accessibilityRole="header" style={{ color: home.text }}>{save.profile.name}</Text>
+          <Text variant="bodyStrong" style={{ color: home.muted }}>{titleById(save.profile.titleId)?.name ?? 'the Wanderer'}</Text>
+          <Text variant="caption" style={{ color: home.muted }}>{p.title} · Level {p.level}</Text>
         </View>
         <View style={{ gap: space.xs }}>
           <ProgressBar value={p.exp / need} label="Experience" tone="accent" />
@@ -135,19 +156,6 @@ export default function CharacterScreen() {
         {p.spentSp > 0 && <Button title="Reset points" variant="secondary" onPress={() => setConfirmReset(true)} />}
       </TactileCard>
 
-      {/* Familiar */}
-      <TactileCard accent={fam ? c.primary : undefined}>
-        <Text variant="heading" accessibilityRole="header">Familiar</Text>
-        {fam ? (
-          <>
-            <Text variant="bodyStrong">🐾 {fam.name} · {familiarBonusText(fam.id)}</Text>
-            <Text variant="caption" color="textMuted">{fam.description}</Text>
-          </>
-        ) : (
-          <Text color="textMuted">No familiar with you. Beat bosses for a chance at one.</Text>
-        )}
-      </TactileCard>
-
       {/* Lifetime stats */}
       <TactileCard>
         <Text variant="heading" accessibilityRole="header">Your journey</Text>
@@ -163,6 +171,7 @@ export default function CharacterScreen() {
 
       {__DEV__ && <Button title="Art preview (testing)" variant="secondary" onPress={() => router.push('/art-preview')} />}
 
+      <CustomizeScreen visible={customizing} save={save} onClose={() => setCustomizing(false)} onChange={setProfile} />
       <SlotSheet slot={slot} player={p} onClose={() => setSlot(null)} onEquip={(uid) => equip(uid)} onUnequip={unequip} />
       <FamiliarSheet visible={familiarOpen} owned={save.familiars.owned} active={save.familiars.active} onClose={() => setFamiliarOpen(false)} onSetActive={setActiveFamiliar} />
       <Sheet visible={confirmReset} title="Reset your points?" onClose={() => setConfirmReset(false)}>

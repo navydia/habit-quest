@@ -34,3 +34,19 @@ export function SlidersIcon({ size = 22, color }: { size?: number; color: string
     </Svg>
   );
 }
+
+/** Cog for "Customize". */
+export function CogIcon({ size = 22, color }: { size?: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth={2} fill="none" />
+      <Path
+        d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+      <Circle cx="12" cy="12" r="6.6" stroke={color} strokeWidth={2} fill="none" />
+    </Svg>
+  );
+}
