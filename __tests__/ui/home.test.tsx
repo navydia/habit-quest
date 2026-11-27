@@ -228,7 +228,7 @@ describe('regions, bosses and debug', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Read' }));
     expect(useGameStore.getState().save.boss.habitId).toBe('Read');
-    expect(screen.getByText('Boss tokens 0 / 6')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Boss habit Read, 0 of 6 tokens. Change' })).toBeTruthy();
   });
 
   test('with a full gauge and 6 tokens the button becomes Boss fight, which replaces the adventure', async () => {
@@ -380,11 +380,3 @@ test('the boss preview shows each difficulty\'s required power and chance', asyn
   expect(screen.getByText(/Requires 170 power · You have 105/)).toBeTruthy();
 });
 
-test('screen readers can move a habit into an empty section', async () => {
-  const s = newSave();
-  s.habits = [{ ...habit('Run'), timeOfDay: 'morning' }, { ...habit('Read'), timeOfDay: 'evening' }];
-  useGameStore.setState({ save: s });
-  await render(<HomeScreen />);
-  await fireEvent(screen.getByRole('button', { name: /^Run, / }), 'accessibilityAction', { nativeEvent: { actionName: 'moveDown' } });
-  expect(useGameStore.getState().save.habits.find((h) => h.id === 'Run')?.timeOfDay).toBe('afternoon');
-});

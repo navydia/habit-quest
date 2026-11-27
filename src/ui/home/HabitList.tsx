@@ -55,9 +55,9 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
           : [{ key: 'custom', title: 'Your order', items: todo }],
     [groupBy, todo],
   );
-  // While dragging, every section is shown so a card can be dropped into an empty one.
   const [dragId, setDragId] = useState<string | null>(null);
-  const visible = sections.filter((s) => s.items.length > 0 || (dragId && groupBy !== 'custom'));
+  // Only groups with habits are shown; a card can be dragged between the visible ones.
+  const visible = sections.filter((s) => s.items.length > 0);
 
   // ---- drag state (positions are relative to the list container) ----
   const layout = useRef(new Map<string, { y: number; h: number }>()).current;
@@ -119,9 +119,9 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
   };
 
-  /** Screen-reader alternative to dragging. Walks every section, including empty ones. */
+  /** Screen-reader alternative to dragging, across the visible groups. */
   const step = (h: Habit, dir: 'up' | 'down') => {
-    const all = sections; // every section, even empty ones
+    const all = visible; // same groups as dragging: the visible ones
     const si = all.findIndex((sec) => sec.items.some((x) => x.id === h.id));
     if (si < 0) return;
     const items = all[si].items;
@@ -145,7 +145,7 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
 
   const left = todo.length;
   return (
-    <View style={{ gap: space.m }}>
+    <View style={{ gap: space.l }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text variant="title" accessibilityRole="header" style={{ color: home.text, flex: 1 }}>
           {scheduled.length === 0 ? 'Today' : left === 0 ? 'All done for today' : `${left} ${left === 1 ? 'habit' : 'habits'} left for today`}
@@ -159,10 +159,10 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
       {scheduled.length > 0 && left === 0 && <Text style={{ color: home.muted }}>You can find them in your Log.</Text>}
 
       {/* Headers, cards and placeholders are direct children, so every onLayout y shares one coordinate space. */}
-      <View {...responder.panHandlers} style={{ gap: space.s }}>
+      <View {...responder.panHandlers} style={{ gap: space.m }}>
         {visible.flatMap((s) => [
           groupBy !== 'custom' ? (
-            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.s }}>
+            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.xl, marginBottom: space.xs }}>
               <Text variant="bodyStrong" style={{ color: home.text }}>{s.title}</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: home.line }} />
               <Pressable
@@ -193,7 +193,6 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
               />
             </Animated.View>
           )),
-          s.items.length === 0 && dragId ? <View key={`gap-${s.key}`} style={{ height: 48, borderRadius: 24, borderWidth: 2, borderStyle: 'dashed', borderColor: home.dash }} /> : null,
         ])}
       </View>
 

@@ -64,7 +64,7 @@ Light / Dark. All text pairings meet 4.5:1.
 
 ## 4. Type
 
-- **Headings:** **Fraunces** (variable soft serif, SemiBold 600, "SOFT" axis 100). It gives the storybook gravitas.
+- **Headings:** **Nunito Sans ExtraBold (800)**. The creator swapped the storybook serif for a friendly sans-serif (Plan 6).
 - **Body/UI:** **Nunito Sans** (Regular 400 / SemiBold 600 / Bold 700). It's rounded and friendly without looking childish.
 - Numbers in HUD (gold, timers): Nunito Sans Bold with tabular figures.
 
@@ -144,3 +144,11 @@ These are distilled from six UI-guideline sources and chosen for this app: Adham
 
 **Consistency**
 18. **The design system is the single source of truth.** Screens use only tokens and kit components. The same component looks and behaves the same everywhere. New screen types (shop, scrapbook, region map) get a reusable template before a second one is built.
+
+## 10. Home look (Plans 5–6, creator decisions)
+- **Home page:** sits on `home.bg` (deep warm dusk). Text there uses `home.text` / `home.muted`.
+- **Habit cards:** tactile, like buttons: a darker lip below, a light top highlight, and a soft shadow.
+- **Secondary actions on dark pages** use the **outline** button.
+- **Adventure gauge:** a translucent panel. The count sits inside a tall bar, with boss tokens as 😈 icons below it (faded when not yet earned) and no token text.
+- **Spacing:** generous gaps between habit cards and before group headers.
+- **New screens** (Character, Shop, Log) reuse these pieces: tactile cards, the coloured blobs, the outline buttons and the sans-serif headings.

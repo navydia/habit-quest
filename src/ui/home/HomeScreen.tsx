@@ -108,7 +108,7 @@ export function HomeScreen() {
         </View>
 
         <View style={styles.body}>
-          <View style={{ marginTop: -36 }}>
+          <View style={{ marginTop: space.l }}>
             <QuestStatus
               save={save}
               gauge={gauge}
@@ -140,7 +140,7 @@ export function HomeScreen() {
             onMove={moveHabit}
             onDragging={setDragging}
           />
-          <Button title="+ New habit" variant="secondary" onPress={() => { setPreset({}); setEditing('new'); }} />
+          <Button title="+ New habit" variant="outline" outlineColor={home.text} onPress={() => { setPreset({}); setEditing('new'); }} />
         </View>
       </ScrollView>
 

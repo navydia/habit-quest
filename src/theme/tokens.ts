@@ -75,16 +75,16 @@ export const minTouch = 44;
 export const lipHeight = 4;
 
 export const fonts = {
-  heading: 'Fraunces_600SemiBold',
+  heading: 'NunitoSans_800ExtraBold',
   body: 'NunitoSans_400Regular',
   bodySemi: 'NunitoSans_600SemiBold',
   bodyBold: 'NunitoSans_700Bold',
 };
 
 export const type = {
-  display: { fontFamily: fonts.heading, fontSize: 32, lineHeight: 38 },
-  title: { fontFamily: fonts.heading, fontSize: 24, lineHeight: 30 },
-  heading: { fontFamily: fonts.heading, fontSize: 19, lineHeight: 24 },
+  display: { fontFamily: fonts.heading, fontSize: 30, lineHeight: 36 },
+  title: { fontFamily: fonts.heading, fontSize: 22, lineHeight: 28 },
+  heading: { fontFamily: fonts.heading, fontSize: 18, lineHeight: 24 },
   body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24 },
   bodyStrong: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 24 },
   label: { fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 18, letterSpacing: 0.2 },

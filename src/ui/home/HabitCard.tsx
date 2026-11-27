@@ -20,22 +20,31 @@ type Props = {
 export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongPress, onMove }: Props) {
   const { c } = useTheme();
   return (
+    // Tactile like the buttons: a darker lip below, a light top highlight, and a soft shadow (light from above).
+    <View
+      style={{
+        borderRadius: 24,
+        backgroundColor: c.line,
+        paddingBottom: lipHeight,
+        shadowColor: '#000',
+        shadowOpacity: lifted ? 0.3 : 0.18,
+        shadowRadius: lifted ? 16 : 8,
+        shadowOffset: { width: 0, height: lifted ? 10 : 4 },
+        elevation: lifted ? 10 : 4,
+        transform: [{ scale: lifted ? 1.03 : 1 }],
+      }}
+    >
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: c.surface,
         borderRadius: 24,
-        paddingLeft: space.m,
-        paddingRight: space.m,
-        paddingVertical: space.m,
+        borderTopWidth: 1.5,
+        borderTopColor: 'rgba(255,255,255,0.9)',
+        paddingHorizontal: space.l,
+        paddingVertical: space.l,
         gap: space.m,
-        shadowColor: '#000',
-        shadowOpacity: lifted ? 0.25 : 0.08,
-        shadowRadius: lifted ? 16 : 6,
-        shadowOffset: { width: 0, height: lifted ? 8 : 3 },
-        elevation: lifted ? 8 : 2,
-        transform: [{ scale: lifted ? 1.03 : 1 }],
       }}
     >
       <Pressable
@@ -76,6 +85,7 @@ export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongP
           </View>
         )}
       </Pressable>
+    </View>
     </View>
   );
 }
