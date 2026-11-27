@@ -5,7 +5,6 @@ export const QUEST_BASE_MS = 8 * 3600_000;
 export const QUEST_CUT_MS = 20 * 60_000;
 export const QUEST_FLOOR_MS = 5 * 3600_000;
 export const FAIL_REWARD_FRACTION = 0.25;
-export const BOARD_SIZE = 3;
 export const SP_PER_LEVEL = 3;
 
 /** Success chance by how far power falls short of the required power. */

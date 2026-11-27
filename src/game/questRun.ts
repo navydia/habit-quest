@@ -4,6 +4,7 @@ import { canStartQuest } from './gauge';
 import { addExp } from './progression';
 import { powerOf, speedFactor } from './stats';
 import { rollDrop } from './drops';
+import { recordClear } from './world';
 import { successChance } from './quests';
 import { QUEST_TEMPLATES } from '../content/quests';
 import type { Completion, QuestRun, SaveData } from './types';
@@ -58,7 +59,9 @@ export function resolveQuest(s: SaveData, now: Date, rng: () => number, force = 
     story: storyFor(run.offer.templateId, success),
     ...(drop ? { drop: { gearId: drop.id } } : {}),
   };
-  return { ...s, activeRun: null, pendingResult: result, questLog: [...s.questLog, result] };
+  const cleared = success ? recordClear(s, run.offer) : { save: s };
+  const final = { ...result, ...(cleared.memento ? { memento: cleared.memento } : {}) };
+  return { ...cleared.save, activeRun: null, pendingResult: final, questLog: [...s.questLog, final] };
 }
 
 function storyFor(templateId: string, success: boolean): string | undefined {
