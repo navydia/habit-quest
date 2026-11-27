@@ -371,3 +371,19 @@ test('the boss preview shows each difficulty\'s required power and chance', asyn
   expect(screen.getByText(/Requires 170 power · You have 105/)).toBeTruthy();
 });
 
+
+test('wins and losses look different for adventures and bosses', async () => {
+  const offer = { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy' as const, requiredPower: 90, rewardExp: 40, rewardGold: 20 };
+  const show = async (pendingResult: any) => {
+    const s = newSave();
+    s.pendingResult = pendingResult;
+    useGameStore.setState({ save: s });
+    return render(<HomeScreen />);
+  };
+  await show({ offer, success: false, exp: 10, gold: 5, resolvedAt: 'a' });
+  expect(screen.getByText('The adventure went sideways')).toBeTruthy();
+  await show({ kind: 'boss', offer, success: true, exp: 0, gold: 0, resolvedAt: 'b', boss: { bossId: 'old-bramblehide', difficulty: 'normal', success: true, exp: 150, gold: 80 } });
+  expect(screen.getByText('Victory!')).toBeTruthy();
+  await show({ kind: 'boss', offer, success: false, exp: 0, gold: 0, resolvedAt: 'c', boss: { bossId: 'old-bramblehide', difficulty: 'hard', success: false, exp: 0, gold: 0 } });
+  expect(screen.getByText('Not this time')).toBeTruthy();
+});
