@@ -6,6 +6,7 @@ import { powerOf, speedFactor } from './stats';
 import { rollDrop } from './drops';
 import { recordClear } from './world';
 import { attachBoss, resolveBoss } from './bosses';
+import { bossById, regionOfBoss } from '../content/regions';
 import { familiarBonus } from './familiars';
 import type { BossDifficulty , Completion, QuestRun, SaveData } from './types';
 import { successChance } from './quests';
@@ -13,15 +14,13 @@ import { QUEST_TEMPLATES } from '../content/quests';
 
 const completionKey = (c: Completion) => `${c.habitId}|${c.dayKey}`;
 
-export function startQuest(s: SaveData, offerId: string, now: Date, boss?: { bossId: string; difficulty: BossDifficulty }): SaveData {
+export function startQuest(s: SaveData, offerId: string, now: Date): SaveData {
   if (!canStartQuest(s, now)) throw new Error('A quest cannot be started right now.');
   const offer = s.board?.offers.find((o) => o.id === offerId);
   if (!offer) throw new Error(`Unknown quest offer: ${offerId}`);
   const today = dayKey(now);
-  const withBoss = boss ? attachBoss(s, boss, now) : undefined;
-  const base = withBoss?.save ?? s;
   return {
-    ...base,
+    ...s,
     activeRun: {
       offer,
       dayKey: today,
@@ -29,7 +28,40 @@ export function startQuest(s: SaveData, offerId: string, now: Date, boss?: { bos
       successChance: successChance(powerOf(s.player), offer.requiredPower),
       preStartKeys: s.completions.map(completionKey),
       speedFactor: speedFactor(s.player),
-      ...(withBoss ? { boss: withBoss.runBoss } : {}),
+    },
+    lastQuestStartedDayKey: today,
+  };
+}
+
+/** A boss fight takes the place of the day's adventure: same gauge, timer and once-a-day rule. */
+export function startBossFight(s: SaveData, now: Date, boss: { bossId: string; difficulty: BossDifficulty }): SaveData {
+  if (!canStartQuest(s, now)) throw new Error('A boss fight cannot be started right now.');
+  const def = bossById(boss.bossId);
+  if (!def) throw new Error(`Unknown boss: ${boss.bossId}`);
+  const { save, runBoss } = attachBoss(s, boss, now);
+  const today = dayKey(now);
+  const offer = {
+    id: `${today}-boss`,
+    templateId: def.id,
+    name: def.name,
+    flavour: def.flavour,
+    difficulty: 'hard' as const,
+    requiredPower: def.requiredPower,
+    rewardExp: 0,
+    rewardGold: 0,
+    regionId: regionOfBoss(def.id)?.id,
+  };
+  return {
+    ...save,
+    activeRun: {
+      kind: 'boss',
+      offer,
+      dayKey: today,
+      startedAt: now.toISOString(),
+      successChance: runBoss.successChance,
+      preStartKeys: s.completions.map(completionKey),
+      speedFactor: speedFactor(s.player),
+      boss: runBoss,
     },
     lastQuestStartedDayKey: today,
   };
@@ -52,6 +84,19 @@ export function isReturned(run: QuestRun, completions: Completion[], now: Date):
 export function resolveQuest(s: SaveData, now: Date, rng: () => number, force = false): SaveData {
   const run = s.activeRun;
   if (!run || (!force && !isReturned(run, s.completions, now))) return s;
+  if (run.kind === 'boss') {
+    const bossed = resolveBoss(s, run, rng);
+    const result = {
+      kind: 'boss' as const,
+      offer: run.offer,
+      success: !!bossed.result?.success,
+      exp: 0,
+      gold: 0,
+      resolvedAt: now.toISOString(),
+      ...(bossed.result ? { boss: bossed.result } : {}),
+    };
+    return { ...bossed.save, activeRun: null, pendingResult: result, questLog: [...s.questLog, result] };
+  }
   const success = rng() < run.successChance;
   const drop = success ? rollDrop(run.offer.difficulty, s.player, rng) : null;
   const share = success ? 1 : FAIL_REWARD_FRACTION;

@@ -218,8 +218,9 @@ describe('regions and bosses', () => {
     const days = ['21', '22', '23', '24', '25', '26'].map((d) => `2026-11-${d}`);
     useGameStore.setState({ save: { ...g().save, completions: [...g().save.completions, ...days.map((d) => ({ habitId: a.id, dayKey: d, at: at(d, 8).toISOString() }))] } });
     g().ensureBoard(at(DAY, 9));
-    g().startQuest(`${DAY}-easy`, at(DAY, 9), { bossId: 'old-bramblehide', difficulty: 'hard' });
+    expect(g().startBossFight('old-bramblehide', 'hard', at(DAY, 9))).toBe(true);
     expect(g().save.activeRun?.boss?.difficulty).toBe('hard');
+    expect(g().save.activeRun?.kind).toBe('boss');
   });
 
   test('the active familiar can be set and cleared', () => {
@@ -233,10 +234,36 @@ describe('regions and bosses', () => {
   });
 });
 
-test('if the boss can no longer be added, setting out still starts the adventure', () => {
+test('a boss fight without 6 tokens does not start and says so', () => {
   twoHabitsDone();
-  g().ensureBoard(at(DAY, 9));
-  g().startQuest(`${DAY}-easy`, at(DAY, 9), { bossId: 'old-bramblehide', difficulty: 'normal' }); // 0 tokens
-  expect(g().save.activeRun).not.toBeNull();
-  expect(g().save.activeRun?.boss).toBeUndefined();
+  expect(g().startBossFight('old-bramblehide', 'normal', at(DAY, 9))).toBe(false);
+  expect(g().save.activeRun).toBeNull();
+});
+
+test('completing never unticks; undo does', () => {
+  g().addHabit('Read', { kind: 'daily' }, at(DAY, 7), { emoji: '📚', lifeArea: 'learning', timeOfDay: 'evening' });
+  const h = g().save.habits[0];
+  expect(h).toMatchObject({ emoji: '📚', lifeArea: 'learning', timeOfDay: 'evening' });
+  g().completeHabit(h.id, DAY, at(DAY, 8));
+  g().completeHabit(h.id, DAY, at(DAY, 8, 1));
+  expect(g().save.completions).toHaveLength(1);
+  g().undoCompletion(h.id, DAY, at(DAY, 8, 2));
+  expect(g().save.completions).toHaveLength(0);
+});
+
+test('removing from history keeps the habit done', () => {
+  g().addHabit('Read', { kind: 'daily' }, at(DAY, 7));
+  const h = g().save.habits[0];
+  g().completeHabit(h.id, DAY, at(DAY, 8));
+  g().hideFromHistory(h.id, DAY);
+  expect(g().save.completions[0]).toMatchObject({ hidden: true, habitId: h.id });
+});
+
+test('habits can be edited and grouping saved', () => {
+  g().addHabit('Read', { kind: 'daily' }, at(DAY, 7));
+  const h = g().save.habits[0];
+  g().updateHabit(h.id, { name: ' Read more ', schedule: { kind: 'interval', every: 2 }, lifeArea: 'mind' });
+  expect(g().save.habits[0]).toMatchObject({ name: 'Read more', schedule: { kind: 'interval', every: 2 }, lifeArea: 'mind' });
+  g().setGroupBy('lifeArea');
+  expect(g().save.settings.groupBy).toBe('lifeArea');
 });

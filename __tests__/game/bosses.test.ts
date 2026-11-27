@@ -1,6 +1,6 @@
 import { gearById } from '@/src/content/gear';
 import { availableBosses, bossChance, bossTokens, setBossHabit } from '@/src/game/bosses';
-import { collectResult, resolveQuest, startQuest } from '@/src/game/questRun';
+import { collectResult, resolveQuest, startBossFight } from '@/src/game/questRun';
 import { generateBoard } from '@/src/game/quests';
 import { seededRng } from '@/src/game/rng';
 import type { SaveData } from '@/src/game/types';
@@ -47,22 +47,24 @@ test('harder difficulty means lower odds; Defense helps', () => {
   expect(bossChance(tanky, boss, 'normal')).toBe(1);
 });
 
-test('starting with a boss needs 6 tokens and spends them', () => {
-  expect(() => startQuest(withTokens(5), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' })).toThrow();
-  const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+test('a boss fight needs 6 tokens, spends them, and is the day\'s only trip', () => {
+  expect(() => startBossFight(withTokens(5), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' })).toThrow();
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   expect(s.activeRun?.boss?.bossId).toBe(BOSS);
+  expect(s.activeRun?.kind).toBe('boss');
+  expect(s.lastQuestStartedDayKey).toBe(DAY);
   expect(bossTokens(s)).toBe(0);
 });
 
 test('unchecking an old boss-habit completion after the fight started keeps tokens spent', () => {
-  const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   const fewer = { ...s, completions: s.completions.slice(1) };
   expect(bossTokens(fewer)).toBe(0);
   expect(fewer.activeRun?.boss).toEqual(s.activeRun?.boss);
 });
 
 test('winning beats the boss, pays out and drops non-common gear', () => {
-  const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   const r = resolveQuest(s, at(DAY, 18), () => 0).pendingResult!;
   expect(r.boss).toMatchObject({ bossId: BOSS, success: true, exp: 150, gold: 80 });
   expect(gearById(r.boss!.drop!.gearId)!.rarity).not.toBe('common');
@@ -70,27 +72,26 @@ test('winning beats the boss, pays out and drops non-common gear', () => {
 });
 
 test('losing keeps the 6 tokens for another try', () => {
-  const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   let n = 0;
-  const rng = () => (n++ === 0 ? 0 : 0.99); // adventure succeeds, everything else fails
-  const r = resolveQuest(s, at(DAY, 18), rng);
+  const r = resolveQuest(s, at(DAY, 18), () => 0.99); // boss loses
   expect(r.pendingResult?.boss?.success).toBe(false);
   expect(bossTokens(r)).toBe(6);
 });
 
 test('Hard pays 1.75× and Extreme 3×', () => {
-  const run = (d: 'hard' | 'extreme') => resolveQuest(startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: d }), at(DAY, 18), () => 0).pendingResult!.boss!;
+  const run = (d: 'hard' | 'extreme') => resolveQuest(startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: d }), at(DAY, 18), () => 0).pendingResult!.boss!;
   expect(run('hard').exp).toBe(Math.round(150 * 1.75));
   expect(run('extreme').gold).toBe(240);
 });
 
 test('a familiar can drop, is never given twice, and its bonus applies when collecting', () => {
-  const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   const won = resolveQuest(s, at(DAY, 18), () => 0);
   expect(won.pendingResult?.boss?.familiarId).toBe('hoglet');
   const { save } = collectResult(won);
   expect(save.familiars.owned).toEqual(['hoglet']);
-  const owned = startQuest({ ...withTokens(6), familiars: { owned: ['hoglet'], active: 'hoglet' } }, `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const owned = startBossFight({ ...withTokens(6), familiars: { owned: ['hoglet'], active: 'hoglet' } }, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   const again = resolveQuest(owned, at(DAY, 18), () => 0);
   expect(again.pendingResult?.boss?.familiarId).toBeUndefined();
   const before = again.player.gold;
@@ -100,12 +101,12 @@ test('a familiar can drop, is never given twice, and its bonus applies when coll
 });
 
 test('Skip resolves the boss as well', () => {
-  const s = startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
   expect(resolveQuest(s, at(DAY, 9, 1), () => 0, true).pendingResult?.boss).toBeDefined();
 });
 
 describe('review fixes', () => {
-  const start = () => startQuest(withTokens(6), `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const start = () => startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
 
   test('unchecking and re-checking a spent boss-habit day does not make a token again', () => {
     const s = start();
@@ -117,27 +118,39 @@ describe('review fixes', () => {
   test('a loss gives back all 6 tokens even if one was unchecked during the trip', () => {
     const s = start();
     const fewer = { ...s, completions: s.completions.filter((c) => c.dayKey !== '2026-11-21') };
-    let n = 0;
-    const r = resolveQuest(fewer, at(DAY, 18), () => (n++ === 0 ? 0 : 0.99));
+    const r = resolveQuest(fewer, at(DAY, 18), () => 0.99);
     expect(r.pendingResult?.boss?.tokensKept).toBe(true);
     expect(bossTokens(r)).toBe(6);
   });
 
   test('if the boss habit was switched during the trip, a loss says the tokens were not kept', () => {
     const s = setBossHabit(start(), 'a', at(DAY, 10));
-    let n = 0;
-    const r = resolveQuest(s, at(DAY, 18), () => (n++ === 0 ? 0 : 0.99));
+    const r = resolveQuest(s, at(DAY, 18), () => 0.99);
     expect(r.pendingResult?.boss?.tokensKept).toBe(false);
   });
 
   test('Luck raises the familiar chance', () => {
     const lucky = withTokens(6);
     lucky.player = { ...lucky.player, stats: { ...lucky.player.stats, luck: 20 } }; // +10 percentage points
-    const s = startQuest(lucky, `${DAY}-easy`, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+    const s = startBossFight(lucky, at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
     let n = 0;
-    // adventure win, adventure drop miss, boss win, rarity, item, familiar roll 0.15 (base 0.1 would miss)
-    const seq = [0, 0.99, 0, 0, 0, 0.15];
+    // boss win, rarity, item, familiar roll 0.15 (base 0.1 would miss)
+    const seq = [0, 0, 0, 0.15];
     const r = resolveQuest(s, at(DAY, 18), () => seq[n++] ?? 0.99);
     expect(r.pendingResult?.boss?.familiarId).toBe('hoglet');
   });
+});
+
+test('a boss trip gives no adventure clear or memento, and its result is marked as a boss fight', () => {
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
+  const r = resolveQuest(s, at(DAY, 18), () => 0);
+  expect(r.pendingResult?.kind).toBe('boss');
+  expect(r.pendingResult?.memento).toBeUndefined();
+  expect(r.world.regions['thornwick-meadows'].cleared).toEqual([]);
+  expect(r.pendingResult?.exp).toBe(0);
+});
+
+test('an archived boss habit earns no tokens', () => {
+  const s = withTokens(6);
+  expect(bossTokens({ ...s, habits: s.habits.map((h) => (h.id === 'b' ? { ...h, archived: true } : h)) })).toBe(0);
 });

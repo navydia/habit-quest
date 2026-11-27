@@ -1,6 +1,8 @@
 export type DayKey = string; // "YYYY-MM-DD", local
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
-export type Schedule = { kind: 'daily' } | { kind: 'weekdays'; days: Weekday[] };
+export type Schedule = { kind: 'daily' } | { kind: 'weekdays'; days: Weekday[] } | { kind: 'interval'; every: number };
+export type LifeArea = 'health' | 'mind' | 'work' | 'home' | 'social' | 'learning' | 'fun' | 'other';
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'anytime';
 
 export interface Habit {
   id: string;
@@ -8,12 +10,17 @@ export interface Habit {
   schedule: Schedule;
   createdAt: string;
   archived: boolean;
+  emoji: string;
+  lifeArea: LifeArea;
+  timeOfDay: TimeOfDay;
 }
 
 export interface Completion {
   habitId: string;
   dayKey: DayKey;
   at: string; // ISO timestamp
+  /** Removed from the History menu. Still counts as done. */
+  hidden?: boolean;
 }
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
@@ -33,6 +40,8 @@ export interface QuestOffer {
 export type BossDifficulty = 'normal' | 'hard' | 'extreme';
 
 export interface QuestRun {
+  /** 'boss' = a boss fight that takes the place of the day's adventure. Missing = adventure. */
+  kind?: 'adventure' | 'boss';
   offer: QuestOffer;
   dayKey: DayKey;
   startedAt: string;
@@ -53,6 +62,7 @@ export interface QuestRun {
 }
 
 export interface QuestResult {
+  kind?: 'adventure' | 'boss';
   offer: QuestOffer;
   success: boolean;
   exp: number;
@@ -108,7 +118,7 @@ export interface RegionProgress {
 }
 
 export interface SaveData {
-  version: 3;
+  version: 4;
   player: Player;
   habits: Habit[];
   completions: Completion[];
@@ -127,4 +137,5 @@ export interface SaveData {
     bonusTokens?: number;
   };
   familiars: { owned: string[]; active: string | null };
+  settings: { groupBy: 'timeOfDay' | 'lifeArea' };
 }

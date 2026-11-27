@@ -13,7 +13,12 @@ import { hud, radius, space } from '@/src/theme/tokens';
 import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
-import { AddHabitSheet } from './AddHabitSheet';
+import { HabitSheet } from '../habits/HabitSheet';
+import { UndoToast } from './UndoToast';
+import { BossSheet } from '../world/BossSheet';
+import { BossFigure } from './BossFigure';
+import { bossById , familiarById } from '@/src/content/regions';
+import type { Habit } from '@/src/game/types';
 import { HabitList } from './HabitList';
 import { HeroSprite } from '../hero/HeroSprite';
 import { Slime } from './Slime';
@@ -27,7 +32,6 @@ import { BossHabitSheet } from '../world/BossHabitSheet';
 import { bossTokens } from '@/src/game/bosses';
 import { currentRegion } from '@/src/game/world';
 import { familiarBonus } from '@/src/game/familiars';
-import { familiarById } from '@/src/content/regions';
 import { ReturnReveal } from './ReturnReveal';
 
 export function HomeScreen() {
@@ -38,8 +42,12 @@ export function HomeScreen() {
   const reduced = useReducedMotion();
   const focused = useIsFocused();
   const save = useGameStore((s) => s.save);
-  const { toggleHabit, addHabit, ensureBoard, startQuest, collect, skipAdventure, travel, setBossHabit, debug } = useGameStore.getState();
-  const [adding, setAdding] = useState(false);
+  const { addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit, debug } =
+    useGameStore.getState();
+  // Habit sheet: null = closed, 'new' = add, otherwise the habit being edited.
+  const [editing, setEditing] = useState<Habit | 'new' | null>(null);
+  const [undo, setUndo] = useState<{ habitId: string; key: string; message: string } | null>(null);
+  const [bossOpen, setBossOpen] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
@@ -53,6 +61,7 @@ export function HomeScreen() {
   const gauge = gaugeProgress(save, today);
   const canStart = canStartQuest(save, now);
   const mode = save.activeRun ? 'questing' : 'idle';
+  const bossFight = save.activeRun?.kind === 'boss' && save.activeRun.boss ? bossById(save.activeRun.boss.bossId) : undefined;
 
   const wasFull = useRef(gauge.full);
   useEffect(() => {
@@ -80,8 +89,9 @@ export function HomeScreen() {
               </Pressable>
             )}
           </View>
-          <View style={styles.heroWrap}>
-            {mode === 'questing' && <Slime reduced={reduced} />}
+          <View style={[styles.heroWrap, bossFight && styles.heroWrapBoss]}>
+            {mode === 'questing' && !bossFight && <Slime reduced={reduced} />}
+            {bossFight && <BossFigure bossId={bossFight.id} name={bossFight.name} reduced={reduced} />}
             {save.familiars.active && <FamiliarBuddy id={save.familiars.active} />}
             <HeroSprite
               player={save.player}
@@ -103,28 +113,71 @@ export function HomeScreen() {
               now={now}
               onSkip={__DEV__ ? () => skipAdventure(new Date()) : undefined}
               onBossHabit={() => setBossSheet(true)}
+              onBoss={() => setBossOpen(true)}
               onChoose={() => {
                 ensureBoard(new Date());
                 setChoosing(true);
               }}
             />
           </View>
-          <HabitList save={save} today={today} onToggle={(id, key) => toggleHabit(id, key, new Date())} />
-          <Button title="+ Add habit" variant="secondary" onPress={() => setAdding(true)} />
+          <HabitList
+            save={save}
+            today={today}
+            onComplete={(h, key) => {
+              completeHabit(h.id, key, new Date());
+              setUndo({ habitId: h.id, key, message: `${h.emoji} ${h.name} · done` });
+            }}
+            onEdit={(h) => setEditing(h)}
+            onGroupBy={setGroupBy}
+          />
+          <Button title="+ Add habit" variant="secondary" onPress={() => setEditing('new')} />
         </View>
       </ScrollView>
 
-      <AddHabitSheet visible={adding} onClose={() => setAdding(false)} onAdd={(name, schedule) => addHabit(name, schedule)} />
+      <UndoToast
+        message={undo?.message ?? null}
+        bottom={insets.bottom + 72}
+        onDone={() => setUndo(null)}
+        onUndo={() => {
+          if (undo) undoCompletion(undo.habitId, undo.key, new Date());
+          setUndo(null);
+        }}
+      />
+      {editing !== null && (
+      <HabitSheet
+        visible
+        habit={editing === 'new' ? null : editing}
+        onClose={() => setEditing(null)}
+        onSave={(d) => (editing && editing !== 'new' ? updateHabit(editing.id, d) : addHabit(d.name, d.schedule, new Date(), d))}
+        onArchive={archiveHabit}
+      />
+      )}
+      <BossSheet
+        visible={bossOpen}
+        save={save}
+        onClose={() => setBossOpen(false)}
+        onAdventureInstead={() => {
+          setBossOpen(false);
+          ensureBoard(new Date());
+          setChoosing(true);
+        }}
+        onFight={(bossId, difficulty) => {
+          setBossOpen(false);
+          ensurePermission()
+            .catch(() => false)
+            .then(() => startBossFight(bossId, difficulty, new Date()));
+        }}
+      />
       <QuestBoardSheet
         visible={choosing}
         save={save}
         onClose={() => setChoosing(false)}
-        onStart={(id, boss) => {
+        onStart={(id) => {
           setChoosing(false);
           // Ask first, so the return notification is allowed when it gets scheduled.
           ensurePermission()
             .catch(() => false)
-            .then(() => startQuest(id, new Date(), boss));
+            .then(() => startQuest(id, new Date()));
         }}
       />
       <MapSheet
@@ -199,6 +252,8 @@ function Chip({ text }: { text: string }) {
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
   heroWrap: { width: 250, alignItems: 'center', justifyContent: 'flex-end' },
+  // Boss fight: hero on the left, the boss looming on the right.
+  heroWrapBoss: { width: 350, alignItems: 'flex-start', paddingLeft: 10 },
   hud: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
   buddy: { position: 'absolute', left: 10, bottom: 14, width: 42, height: 36, borderTopLeftRadius: 21, borderTopRightRadius: 21, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#C79A5B', alignItems: 'center', justifyContent: 'center' },
   buddyEyes: { flexDirection: 'row', gap: 8, marginTop: -2 },

@@ -21,11 +21,12 @@ type Props = {
   /** Only passed in development builds. */
   onSkip?: () => void;
   onBossHabit: () => void;
+  onBoss: () => void;
 };
 
 
 /** The card under the scene: quest gauge, or the running quest's countdown. */
-export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose, onSkip, onBossHabit }: Props) {
+export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose, onSkip, onBossHabit, onBoss }: Props) {
   const { c } = useTheme();
   const tokens = bossTokens(save);
   const bossHabit = save.habits.find((h) => h.id === save.boss.habitId && !h.archived);
@@ -56,13 +57,12 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
     const total = Math.max(1, end - start);
     return (
       <Card floating style={{ gap: space.s }}>
-        <Text variant="label" color="info">On an adventure</Text>
+        <Text variant="label" color={run.kind === 'boss' ? 'ember' : 'info'}>{run.kind === 'boss' ? 'Boss fight' : 'On an adventure'}</Text>
         <Text variant="heading">{run.offer.name}</Text>
         <ProgressBar value={(now.getTime() - start) / total} tone="info" label="Adventure progress" />
         <Text variant="body" color="textMuted">
           Returns in {formatRemaining(end - now.getTime())}. Each habit you finish brings them home sooner.
         </Text>
-        {run.boss && <Text variant="label" color="ember">Boss fight on this trip</Text>}
         {onSkip && <Button title="Skip (testing)" variant="secondary" onPress={onSkip} />}
       </Card>
     );
@@ -85,7 +85,11 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
       </View>
       <ProgressBar value={gauge.done / gauge.target} tone={gauge.full ? 'accent' : 'primary'} label="Adventure gauge" />
       <Text variant="body" color="textMuted">{hint}</Text>
-      {canStart && <Button title="Choose an adventure" variant="reward" onPress={onChoose} />}
+      {canStart && (tokens >= 6 && bossHabit ? (
+        <Button title="Boss fight" variant="reward" onPress={onBoss} accessibilityHint="Your 6 boss tokens are ready" />
+      ) : (
+        <Button title="Choose an adventure" variant="reward" onPress={onChoose} />
+      ))}
       {bossRow}
     </Card>
   );

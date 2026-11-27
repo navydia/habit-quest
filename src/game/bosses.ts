@@ -11,7 +11,7 @@ const keyOf = (c: { habitId: string; dayKey: string }) => `${c.habitId}|${c.dayK
 /** Boss-habit completions after the epoch that haven't been spent, plus any given-back tokens. Max 6. */
 export function bossTokens(s: SaveData): number {
   const { habitId, tokenEpoch, spentKeys = [], bonusTokens = 0 } = s.boss;
-  if (!habitId) return 0;
+  if (!habitId || s.habits.find((h) => h.id === habitId)?.archived) return 0;
   const spent = new Set(spentKeys);
   const n = s.completions.filter((c) => c.habitId === habitId && (!tokenEpoch || c.at > tokenEpoch) && !spent.has(keyOf(c))).length;
   return Math.min(BOSS_TOKENS_NEEDED, n + bonusTokens);

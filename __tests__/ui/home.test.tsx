@@ -70,7 +70,7 @@ test('notification permission is asked before the return is scheduled', async ()
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
   await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
-  await fireEvent.press(screen.getAllByRole('radio')[0]);
+  await fireEvent.press(screen.getByRole('radio', { name: /^Slime Patrol/ }));
   await fireEvent.press(screen.getByRole('button', { name: /Set out/ }));
   await new Promise((r) => setTimeout(r, 0));
   const perm = (ensurePermission as jest.Mock).mock.invocationCallOrder[0];
@@ -78,18 +78,51 @@ test('notification permission is asked before the return is scheduled', async ()
   expect(perm).toBeLessThan(sched);
 });
 
-test('a habit backfilled for yesterday can still be unchecked', async () => {
+test('completing a habit removes it from today; Undo brings it back', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Read'), emoji: '📚' }, habit('Walk')];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('checkbox', { name: 'Read' }));
+  expect(screen.queryByRole('checkbox', { name: 'Read' })).toBeNull();
+  expect(screen.getByText('📚 Read · done')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Undo' }));
+  expect(screen.getByRole('checkbox', { name: 'Read' })).toBeTruthy();
+});
+
+test('logging a forgotten habit from yesterday removes it from that list too', async () => {
   const s = newSave();
   s.habits = [{ ...habit('Walk'), createdAt: new Date(2020, 0, 1).toISOString() }];
+  s.completions = [{ habitId: 'Walk', dayKey: today, at: new Date().toISOString() }];
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
   await fireEvent.press(screen.getByRole('button', { name: /yesterday/i }));
-  const boxes = () => screen.getAllByRole('checkbox', { name: 'Walk' });
-  await fireEvent.press(boxes()[1]); // log yesterday
-  expect(boxes()).toHaveLength(2);
-  expect(boxes()[1].props.accessibilityState.checked).toBe(true);
-  await fireEvent.press(boxes()[1]); // undo the accidental tick
-  expect(boxes()[1].props.accessibilityState.checked).toBe(false);
+  await fireEvent.press(screen.getByRole('checkbox', { name: 'Walk' }));
+  expect(screen.queryByRole('checkbox', { name: 'Walk' })).toBeNull();
+  expect(screen.getByText('All done for today. You can find them in your Log.')).toBeTruthy();
+});
+
+test('habits can be grouped by life area', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Read'), lifeArea: 'learning' }, { ...habit('Walk'), lifeArea: 'health' }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('radio', { name: 'Life area' }));
+  expect(useGameStore.getState().save.settings.groupBy).toBe('lifeArea');
+  expect(screen.getByText('📚 Learning')).toBeTruthy();
+  expect(screen.getByText('💪 Health')).toBeTruthy();
+});
+
+test('a habit can be edited from its ⋯ button', async () => {
+  const s = newSave();
+  s.habits = [habit('Read')];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit Read' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Evening' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Emoji 📚' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
+  expect(useGameStore.getState().save.habits[0]).toMatchObject({ timeOfDay: 'evening', emoji: '📚' });
 });
 
 test('the return screen lets you read the adventure log story', async () => {
@@ -195,15 +228,30 @@ describe('regions, bosses and debug', () => {
     expect(screen.getByText('Boss tokens 0 / 6')).toBeTruthy();
   });
 
-  test('with 6 tokens the board offers a boss fight with a difficulty choice', async () => {
-    useGameStore.setState({ save: withHabit() });
-    useGameStore.getState().debug('bossTokens');
+  test('with a full gauge and 6 tokens the button becomes Boss fight, which replaces the adventure', async () => {
+    const s = withHabit();
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+    useGameStore.setState({ save: s });
     await render(<HomeScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
-    expect(screen.getByText('A boss awaits')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('radio', { name: /Extreme/ }));
-    await fireEvent.press(screen.getAllByRole('radio')[0]);
-    expect(screen.getByRole('button', { name: /Set out: .* \+ Old Bramblehide \(Extreme\)/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Choose an adventure' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+    await fireEvent.press(screen.getByRole('radio', { name: /^Extreme/ }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Fight Old Bramblehide (Extreme)' }));
+    await new Promise((r) => setTimeout(r, 0));
+    const run = useGameStore.getState().save.activeRun;
+    expect(run?.kind).toBe('boss');
+    expect(run?.boss?.difficulty).toBe('extreme');
+    expect(screen.getByLabelText('Old Bramblehide, the boss')).toBeTruthy();
+  });
+
+  test('the boss menu can send you adventuring instead, keeping your tokens', async () => {
+    const s = withHabit();
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+    await fireEvent.press(screen.getByRole('button', { name: /Go adventuring instead/ }));
+    expect(screen.getByText('Adventures in Thornwick Meadows')).toBeTruthy();
   });
 
   test('a first clear shows its memento on the return screen', async () => {

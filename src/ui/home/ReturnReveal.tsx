@@ -48,7 +48,14 @@ export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Pr
   }, [result, reduced, scale, spin]);
 
   if (!result) return null;
-  const lines = result.success ? SUCCESS_LINES : FAIL_LINES;
+  const lines =
+    result.kind === 'boss'
+      ? result.success
+        ? ['A fight for the ages. The road is quieter for it.']
+        : ['The boss held its ground. Rest up, then try again.']
+      : result.success
+        ? SUCCESS_LINES
+        : FAIL_LINES;
   const line = pickLine(result.resolvedAt, lines);
   // Same maths as collectResult, so the numbers and the level-up banner match what you get.
   const totalExp = Math.round((result.exp + (result.boss?.exp ?? 0)) * bonus.exp);
@@ -64,7 +71,7 @@ export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Pr
     <Modal visible animationType="fade" onRequestClose={() => onCollect(false)}>
       <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={styles.root}>
         <Text variant="label" color={result.success ? 'primary' : 'textMuted'}>
-          {result.success ? 'Adventure complete' : 'Adventure not completed'}
+          {result.kind === 'boss' ? 'Boss fight' : result.success ? 'Adventure complete' : 'Adventure not completed'}
         </Text>
         <Text variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>Your hero has returned!</Text>
         <Text variant="heading" color="textMuted">{result.offer.name}</Text>
@@ -100,12 +107,14 @@ export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Pr
         )}
         <Text style={{ textAlign: 'center' }}>
           {line}
-          {!result.success ? ` You still came back with ${result.gold} gold.` : ''}
+          {!result.success && result.kind !== 'boss' ? ` You still came back with ${result.gold} gold.` : ''}
         </Text>
+        {result.kind !== 'boss' && (
         <View style={styles.rewards}>
           <Reward value={`+${Math.round(result.exp * bonus.exp)}`} label="EXP" />
           <Reward value={`+${Math.round(result.gold * bonus.gold)}`} label="Gold" />
         </View>
+        )}
         {bonus.label && <Text variant="caption" color="textMuted">{bonus.label}</Text>}
         {drop && (
           <Card style={[styles.log, { borderLeftWidth: 4, borderLeftColor: rarityColors[drop.rarity] }]}>

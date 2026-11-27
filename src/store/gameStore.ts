@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { dayKey } from '../game/dates';
 import { canStartQuest } from '../game/gauge';
-import { canLogDay, complete, isCompleted, uncomplete } from '../game/habits';
-import { collectResult, questEndTime, resolveQuest, startQuest as startRun } from '../game/questRun';
+import { canLogDay, complete, hideCompletion, isCompleted, uncomplete } from '../game/habits';
+import { collectResult, questEndTime, resolveQuest, startBossFight as startBoss, startQuest as startRun } from '../game/questRun';
 import { generateBoard } from '../game/quests';
 import { seededRng } from '../game/rng';
 import { classTitle } from '../game/classTitle';
 import { gearById } from '../content/gear';
 import { allocateSp as spendPoint, respec as resetPoints } from '../game/stats';
-import type { BossDifficulty, DayKey, Player, SaveData, Schedule, Slot, StatKey } from '../game/types';
+import type { BossDifficulty, DayKey, Habit, LifeArea, Player, SaveData, Schedule, Slot, StatKey, TimeOfDay } from '../game/types';
 import { setBossHabit as chooseBossHabit } from '../game/bosses';
 import { debugAction, type DebugAction } from '../game/debug';
 import { currentRegion, travel as travelTo } from '../game/world';
@@ -16,17 +16,27 @@ import { cancelReturn, scheduleReturn } from '../notify/questNotifications';
 import { newSave } from '../save/migrate';
 import { loadSave, writeSave } from '../save/storage';
 
+export type HabitDetails = { name: string; schedule: Schedule; emoji: string; lifeArea: LifeArea; timeOfDay: TimeOfDay };
+
 interface GameState {
   save: SaveData;
   loaded: boolean;
   /** True when the stored save could not be read; we then never write, so it is not overwritten. */
   persistBlocked: boolean;
   load(): Promise<void>;
-  addHabit(name: string, schedule: Schedule, now?: Date): void;
+  addHabit(name: string, schedule: Schedule, now?: Date, details?: Partial<HabitDetails>): void;
+  updateHabit(id: string, details: Partial<HabitDetails>): void;
+  /** Marks a habit done. Home never unticks; mistakes use undoCompletion (the Undo popup). */
+  completeHabit(habitId: string, key: DayKey, now?: Date): void;
+  undoCompletion(habitId: string, key: DayKey, now?: Date): void;
+  hideFromHistory(habitId: string, key: DayKey): void;
+  setGroupBy(groupBy: SaveData['settings']['groupBy']): void;
+  /** Starts a boss fight instead of the day's adventure. Returns false if it can't start. */
+  startBossFight(bossId: string, difficulty: BossDifficulty, now?: Date): boolean;
   archiveHabit(id: string): void;
   toggleHabit(habitId: string, key: DayKey, now?: Date): void;
   ensureBoard(now?: Date): void;
-  startQuest(offerId: string, now?: Date, boss?: { bossId: string; difficulty: BossDifficulty }): void;
+  startQuest(offerId: string, now?: Date): void;
   travel(regionId: string, now?: Date): void;
   setBossHabit(habitId: string, now?: Date): void;
   setActiveFamiliar(id: string | null): void;
@@ -70,10 +80,56 @@ export const useGameStore = create<GameState>((set, get) => {
       }
     },
 
-    addHabit(name, schedule, now = new Date()) {
+    addHabit(name, schedule, now = new Date(), details = {}) {
       const s = get().save;
-      const habit = { id: newId(), name: name.trim(), schedule, createdAt: now.toISOString(), archived: false };
+      const habit: Habit = {
+        id: newId(),
+        name: name.trim(),
+        schedule,
+        createdAt: now.toISOString(),
+        archived: false,
+        emoji: details.emoji || '✨',
+        lifeArea: details.lifeArea ?? 'other',
+        timeOfDay: details.timeOfDay ?? 'anytime',
+      };
       commit({ ...s, habits: [...s.habits, habit] });
+    },
+
+    updateHabit(id, details) {
+      const s = get().save;
+      commit({ ...s, habits: s.habits.map((h) => (h.id === id ? { ...h, ...details, name: (details.name ?? h.name).trim() } : h)) });
+    },
+
+    completeHabit(habitId, key, now = new Date()) {
+      if (!canLogDay(key, now) || isCompleted(get().save.completions, habitId, key)) return;
+      get().toggleHabit(habitId, key, now);
+    },
+
+    undoCompletion(habitId, key, now = new Date()) {
+      if (!isCompleted(get().save.completions, habitId, key)) return;
+      get().toggleHabit(habitId, key, now);
+    },
+
+    hideFromHistory(habitId, key) {
+      const s = get().save;
+      commit({ ...s, completions: hideCompletion(s.completions, habitId, key) });
+    },
+
+    setGroupBy(groupBy) {
+      commit({ ...get().save, settings: { ...get().save.settings, groupBy } });
+    },
+
+    startBossFight(bossId, difficulty, now = new Date()) {
+      const s = get().save;
+      let next: SaveData;
+      try {
+        next = startBoss(s, now, { bossId, difficulty });
+      } catch {
+        return false;
+      }
+      commit(next);
+      rescheduleReturn(next);
+      return true;
     },
 
     archiveHabit(id) {
@@ -100,18 +156,11 @@ export const useGameStore = create<GameState>((set, get) => {
       commit({ ...s, board: { dayKey: today, offers: generateBoard(today, s.player, seededRng(today), currentRegion(s).id) } });
     },
 
-    startQuest(offerId, now = new Date(), boss) {
+    startQuest(offerId, now = new Date()) {
       get().ensureBoard(now);
       const s = get().save;
       if (!canStartQuest(s, now) || !s.board?.offers.some((o) => o.id === offerId)) return;
-      let next: SaveData;
-      try {
-        next = startRun(s, offerId, now, boss);
-      } catch {
-        // The boss can't be added any more (e.g. a token was unchecked): set out without it.
-        if (!boss) return;
-        next = startRun(s, offerId, now);
-      }
+      const next = startRun(s, offerId, now);
       commit(next);
       rescheduleReturn(next);
     },

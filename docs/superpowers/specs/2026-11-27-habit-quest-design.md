@@ -279,3 +279,15 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
 - Which bosses are available. Every boss in the game, or only those of regions you've reached?
 - *(settled)* Hard and Extreme always need **6 boss tokens**, the same as Normal. Proposed effects: your effective power is −30 (Hard) or −60 (Extreme); rewards are ×1.75 or ×3; the familiar drop chance is ×2 or ×4.
 - How many bosses each region has, and whether you can travel back to earlier regions.
+
+## 14. Habits, history and boss fights *(creator decisions, built in Plan 4; amends §4, §5.6, §6.2)*
+
+- **Completing a habit removes it from today's list.** There is no untick on Home. An **Undo** popup (~6 s) catches accidents; it reverses the completion under the §5.6 rule (rewards already used stay used).
+- **History** lives in the **Log** tab and lists every completed habit by day. **Removing** an entry only tidies the history: the habit still counts as done that day and never returns to Home.
+- **Habit properties:** emoji, life area (Health, Mind, Work, Home, Social, Learning, Fun, Other), time of day (Morning, Afternoon, Evening, Anytime) and repeat (every day, chosen weekdays, every N days). Today's list can be **grouped by time of day or life area**. Each habit has a ⋯ button to edit or archive it.
+- **Boss fights are their own trip and replace the day's adventure.**
+  - When the gauge is full and you have 6 tokens, "Choose an adventure" becomes **"Boss fight"**.
+  - The boss menu picks the boss and difficulty, and has a "Go adventuring instead" link that keeps your tokens.
+  - Home shows the hero fighting a big boss.
+  - Only one trip (adventure or boss) per day.
+- **The Board tab is now the Log.** It holds mail (Guild Master letters, later), daily quests (City, later), the scrapbooks, and History.

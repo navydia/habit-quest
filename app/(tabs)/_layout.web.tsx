@@ -3,8 +3,8 @@ import { SymbolView } from 'expo-symbols';
 import { useTheme } from '@/src/theme/useTheme';
 
 // Web preview only: native tabs render at the top on web, so use a bottom JS tab bar here.
-const ICONS = { index: 'home', character: 'person', city: 'location_city', board: 'mail' } as const;
-const TITLES = { index: 'Home', character: 'Character', city: 'City', board: 'Board' } as const;
+const ICONS = { index: 'home', character: 'person', city: 'location_city', log: 'menu_book' } as const;
+const TITLES = { index: 'Home', character: 'Character', city: 'City', log: 'Log' } as const;
 
 export default function WebTabLayout() {
   const { c } = useTheme();
@@ -24,7 +24,7 @@ export default function WebTabLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="character" />
       <Tabs.Screen name="city" />
-      <Tabs.Screen name="board" />
+      <Tabs.Screen name="log" />
     </Tabs>
   );
 }
