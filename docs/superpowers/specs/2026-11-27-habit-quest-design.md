@@ -57,7 +57,7 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 ### 5.2 Choosing a quest
 - A board of several quests (builder's call: ~3) is generated daily.
 - Each quest card shows: name/flavour, **required power rating**, **% chance of success**, duration, rewards (EXP, gold, possible drops).
-- Harder quests → lower success chance, bigger rewards. Below the required power rating the chance drops steeply but is not zero (builder's call on the curve).
+- Harder quests → lower success chance, bigger rewards. Success chance (set by the creator): power ≥ required → **100%**; up to 50 points short → **60%**; more than 50 short → **5%**. The board always shows all three quests; you pick one each time.
 - **Luck** increases the chance that a rare quest appears on the board.
 - Potions (§9.3) may be applied before starting.
 

@@ -6,7 +6,9 @@
 
 **Architecture:** All game rules live in `src/game/` as **pure TypeScript functions**. They take `now: Date` and an `rng: () => number` as parameters, so they're fully unit-testable with no React or device involved. A single **Zustand store** holds one versioned `SaveData` JSON object and calls the pure functions. The store persists to on-device storage through a migration layer. Screens use **Expo Router** tabs. Quest timing is always **derived from timestamps** (start time + completion records), never from a running timer.
 
-**Tech Stack:** Expo (latest stable SDK, via `create-expo-app`), TypeScript (strict), Expo Router, Zustand, `expo-sqlite/kv-store` for persistence, `expo-notifications`, Jest with `jest-expo`, `@testing-library/react-native`.
+**Tech Stack:** Expo SDK (latest stable, 57+), TypeScript (strict), Expo Router with native tabs, Zustand, `expo-sqlite/kv-store`, `expo-notifications`, `expo-haptics`, `react-native-svg`, `@expo-google-fonts/fraunces` + `nunito-sans`, Jest with `jest-expo`, `@testing-library/react-native`.
+
+**Style:** `docs/design/style-guide.md` governs every screen and placeholder.
 
 **Spec:** `docs/superpowers/specs/2026-11-27-habit-quest-design.md`
 
@@ -159,21 +161,22 @@ export function canStartQuest(s: SaveData, now: Date): boolean;
 ```ts
 // progression.ts
 export function expToNext(level: number): number;          // 100 * level
-export function powerRating(level: number): number;        // 10 + 5*(level-1); stat/gear terms added in Plan 2
+export function powerRating(level: number): number;        // 100 + 15*(level-1); stat/gear terms added in Plan 2
 export function addExp(p: Player, exp: number): { player: Player; levelsGained: number };  // grants SP_PER_LEVEL per level, carries overflow
 // content/quests.ts
 export interface QuestTemplate { id: string; name: string; flavour: string }
 export const QUEST_TEMPLATES: QuestTemplate[];             // at least 12 entries, cozy-serious tone
 // quests.ts
-export const DIFFICULTY: Record<Difficulty, { powerMult: number; rewardMult: number }>;
-//   easy {0.7, 1}, normal {1.0, 1.6}, hard {1.3, 2.5}
+export const DIFFICULTY: Record<Difficulty, { offsetMin: number; offsetMax: number; rewardMult: number }>;
+//   easy {-60, 0, 1}, normal {10, 50, 1.6}, hard {35, 90, 3}
 export function successChance(power: number, required: number): number;
 export function generateBoard(key: DayKey, player: Player, rng: () => number): QuestOffer[];  // one of each difficulty, distinct templates
 ```
-Success chance, as a curve the tests pin down. With `r = power / required`: if `r >= 1`, the chance is `0.75 + 0.5*(r-1)`; otherwise it's `0.75 * r^3`. Clamp the result to `[0.05, 0.95]`.
-Base rewards: `exp = round(40 * rewardMult * (1 + 0.1*(level-1)))`, `gold = round(20 * rewardMult * (1 + 0.1*(level-1)))`. `requiredPower = round(powerRating(level) * powerMult)`.
+Success chance is a step function, set by the creator. `power >= required` → **1.0**. `required - power <= 50` → **0.6**. Otherwise → **0.05**. Put the thresholds in config as `SUCCESS_BANDS`.
+`requiredPower = powerRating(level) + offset`, where `offset` is an integer in `[offsetMin, offsetMax]` drawn from the rng. So easy is always 100%, normal is always 60%, and hard is sometimes a 60% gamble and sometimes a 5% long shot. Crossing that 50-point line is what stats and potions will matter for later.
+Base rewards: `exp = round(40 * rewardMult * (1 + 0.1*(level-1)))`, `gold = round(20 * rewardMult * (1 + 0.1*(level-1)))`.
 
-- [ ] **Step 1: Failing tests:** `expToNext(1)`→100. `addExp({level:1,exp:90,...},30)` → level 2, exp 20, unspentSp +3, levelsGained 1. `addExp` across two levels grants 6 SP. `successChance(10,10)`→0.75. `(14,10)`→0.95. `(100,10)`→0.95. `(5,10)`→0.09375 (rounding allowed to 4 dp). `(1,100)`→0.05. `generateBoard` with `seededRng("2026-11-27")` at level 1 returns 3 offers with difficulties `easy, normal, hard`, distinct `templateId`s, `requiredPower` `[7,10,13]`, `rewardExp` `[40,64,100]`, and is identical on a second call with the same seed.
+- [ ] **Step 1: Failing tests:** `expToNext(1)`→100. `addExp({level:1,exp:90,...},30)` → level 2, exp 20, unspentSp +3, levelsGained 1. `addExp` across two levels grants 6 SP. `successChance(100,100)`→1. `(150,100)`→1. `(100,101)`→0.6. `(100,150)`→0.6. `(100,151)`→0.05. `generateBoard` with `seededRng("2026-11-27")` at level 1 returns 3 offers with difficulties `easy, normal, hard`, distinct `templateId`s, `requiredPower` in `[40..100]`, `[110..150]` and `[135..190]` respectively, and `rewardExp` `[40,64,120]`. It is identical on a second call with the same seed. Over 200 seeds, the hard offer lands in both the 0.6 and 0.05 bands at least once.
 - [ ] **Step 2:** Run → FAIL.
 - [ ] **Step 3:** Implement, and write the 12+ quest templates (e.g. "Slime Patrol — The meadow slimes are bouncing into the farm fields again.").
 - [ ] **Step 4:** Run → PASS.
@@ -193,7 +196,7 @@ export function collectResult(s: SaveData): { save: SaveData; levelsGained: numb
 ```
 `questEndTime`: let `n` be the number of completions with `at >= run.startedAt`, regardless of `dayKey`, so backfilled yesterday-habits count too (spec §5.6). Duration is `max(QUEST_FLOOR_MS, QUEST_BASE_MS - n*QUEST_CUT_MS)`. Because the end time is derived, unchecking a habit lengthens the run again automatically. `startQuest` stores `successChance` at start time. The board for the day is regenerated in the store (Task 8), not here. `resolveQuest` rolls `rng() < successChance`; on failure, rewards are `round(reward * FAIL_REWARD_FRACTION)`.
 
-- [ ] **Step 1: Failing tests:** a run started at 09:00 with 0 later completions ends at 17:00. With 3 completions after the start, it ends at 16:00. With 20, it ends at 14:00 (the floor). A completion timestamped before the start doesn't count. **Review Focus 3:** after removing a post-start completion, the end time moves 20 min later and `activeRun` is still set. **Review Focus 1:** a save with a run started at 09:00, resolved at 19:00 the same day, gives `pendingResult` and `activeRun: null`. `resolveQuest` before the end time returns the save unchanged. With an rng that returns 0.99 and a chance of 0.75, the result is a failure with exp `round(40*0.25)=10`. `startQuest` throws when a quest was already started today. `collectResult` adds gold and levels up.
+- [ ] **Step 1: Failing tests:** a run started at 09:00 with 0 later completions ends at 17:00. With 3 completions after the start, it ends at 16:00. With 20, it ends at 14:00 (the floor). A completion timestamped before the start doesn't count. **Review Focus 3:** after removing a post-start completion, the end time moves 20 min later and `activeRun` is still set. **Review Focus 1:** a save with a run started at 09:00, resolved at 19:00 the same day, gives `pendingResult` and `activeRun: null`. `resolveQuest` before the end time returns the save unchanged. With an rng that returns 0.99 and a chance of 0.6, the result is a failure with exp `round(40*0.25)=10`. `startQuest` throws when a quest was already started today. `collectResult` adds gold and levels up.
 - [ ] **Step 2:** Run → FAIL.
 - [ ] **Step 3:** Implement.
 - [ ] **Step 4:** Run → PASS.
@@ -261,18 +264,33 @@ export const useGameStore: UseBoundStore<StoreApi<GameState>>;
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS.
 - [ ] **Step 5:** Commit `feat: game store wiring rules, storage and notifications`.
 
-### Task 9: Home screen
+### Task 9: Design system
+
+**Files:** Create `src/theme/tokens.ts`, `src/theme/useTheme.ts`, `src/theme/fonts.ts`, `src/ui/kit/{Text,Button,Card,ProgressBar,Sheet,Checkbox}.tsx`; Modify `app/_layout.tsx` (font loading), `app/(tabs)/_layout.tsx` (switch to Expo Router **native tabs** with SF Symbols / Material icons: house, figure, building, envelope); Test `__tests__/theme/contrast.test.ts`
+
+**Interfaces — Produces:** `useTheme(): { c: ColorTokens; t: TypeStyles; space; radius }` following the system color scheme. Kit components consume only tokens. `Button({ title, onPress, variant: 'primary'|'secondary', disabled })` is tactile, with a lip and a spring press, plus a haptic. `ProgressBar({ value: 0..1, tone })` animates its fill.
+
+All values come from `docs/design/style-guide.md` §3–§6: tokens, Fraunces + Nunito Sans via `@expo-google-fonts`, radii, lip, motion, haptics (`expo-haptics`), Reduce Motion (`AccessibilityInfo`), and 44-pt minimum targets.
+
+- [ ] **Step 1: Failing test:** a `contrastRatio(a,b)` helper (in `src/theme/contrast.ts`) shows every text/background pair in both modes ≥ 4.5: `text/bg`, `text/surface`, `textMuted/surface`, `onPrimary/primary`.
+- [ ] **Step 2:** Run → FAIL. **Step 3:** Implement tokens, fonts, kit, and native tabs. **Step 4:** Run → PASS; `tsc` clean.
+- [ ] **Step 5:** Commit `feat: design system tokens, type and UI kit`.
+
+### Task 10: Home screen
+
+All UI uses the Task 9 kit and tokens and follows the style guide. No raw colors or font sizes in screens.
 
 **Files:** Modify `app/_layout.tsx`, `app/(tabs)/index.tsx`, `app/(tabs)/character.tsx`; Create the `src/ui/*` files listed in File Structure; Test `__tests__/ui/home.test.tsx`
 
 **Interfaces — Consumes:** `useGameStore`.
 
 Layout, top to bottom: the hero area (about 45% of the height), the gauge row, then the habit list with an "+ Add habit" button.
-- `HeroPlaceholder({ mode: 'idle' | 'questing' })` draws a rounded colored body with eyes. In idle mode it bobs gently and glances left and right every few seconds; in questing mode it swings a rectangle "sword" while a green circle "slime" pops in and out. Use RN `Animated`. This component is **replaced by the real art system in Plan 2**, so keep it self-contained.
+- `HomeScene` draws a full-bleed dusk scene (style guide §3 scene palette) in `react-native-svg`. Idle shows an indoor corner of a cottage with a lamp; questing shows outdoors with hills.
+- `HeroPlaceholder({ mode: 'idle' | 'questing' })` is drawn in SVG per style guide §7: a bean body, dot eyes with highlights, a cloak and scarf, a sword while questing, and a slime that hops in, squashes and poofs. Motion follows §6 and respects Reduce Motion. This component is **replaced by the real art system in Plan 2**, so keep it self-contained.
 - While questing, show the time remaining ("Returns in 5h 40m"), updated every 60 s.
 - `QuestGauge` shows a bar with `done/target`. When full and `canStartQuest`, it shows a "Choose a quest" button that opens `QuestBoardSheet`. With no habits, it shows "Add a habit to start your journey."
-- `QuestBoardSheet` shows 3 cards with name, flavour, difficulty, required power, success % (rounded), duration "8h", and EXP/gold. Tapping a card asks for confirmation, then starts the quest. On first start, call `ensurePermission()`.
-- `ReturnReveal` appears when `pendingResult` is set: "Your hero has returned!", success or failure line, +EXP, +gold, a level-up banner if `levelsGained > 0`, and a Collect button. Failure copy stays warm ("The slimes won this time, but you still found 10 gold.").
+- `QuestBoardSheet` shows 3 cards with name, flavour, difficulty, required power vs your power, success % (100% / 60% / 5%), duration "8h", and EXP/gold. Tapping a card asks for confirmation, then starts the quest. On first start, call `ensurePermission()`.
+- `ReturnReveal` appears when `pendingResult` is set: "Your hero has returned!", success or failure line, +EXP, +gold, a level-up banner if `levelsGained > 0`, and a Collect button. Copy follows style guide §8.
 - `HabitList` shows today's scheduled habits with checkboxes, plus a collapsible "Yesterday" section listing uncompleted habits from yesterday.
 - `AddHabitSheet` has a name field and a schedule choice of Daily or specific weekdays (seven toggles).
 - Root `_layout.tsx` calls `load()`, and calls `tick()` on `AppState` "active" and on a 60 s interval.
