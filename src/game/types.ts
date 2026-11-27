@@ -44,6 +44,8 @@ export interface QuestResult {
   exp: number;
   gold: number;
   resolvedAt: string;
+  /** Quest-log anecdote. Optional so older saves still load. */
+  story?: string;
 }
 
 export interface Player {

@@ -40,7 +40,8 @@ export function AddHabitSheet({ visible, onClose, onAdd }: Props) {
       accessibilityLabel={a11y}
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={{
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.8 : 1,
         minHeight: minTouch,
         minWidth: minTouch,
         paddingHorizontal: space.m,
@@ -50,7 +51,7 @@ export function AddHabitSheet({ visible, onClose, onAdd }: Props) {
         backgroundColor: selected ? c.primary : c.surface,
         borderWidth: 1,
         borderColor: selected ? c.primary : c.line,
-      }}
+      })}
     >
       <Text variant="bodyStrong" color={selected ? 'onPrimary' : 'text'}>{label}</Text>
     </Pressable>

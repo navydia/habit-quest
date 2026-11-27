@@ -3,6 +3,7 @@ import { dayKey } from './dates';
 import { canStartQuest } from './gauge';
 import { addExp, powerRating } from './progression';
 import { successChance } from './quests';
+import { QUEST_TEMPLATES } from '../content/quests';
 import type { Completion, QuestRun, SaveData } from './types';
 
 const completionKey = (c: Completion) => `${c.habitId}|${c.dayKey}`;
@@ -48,8 +49,14 @@ export function resolveQuest(s: SaveData, now: Date, rng: () => number): SaveDat
     exp: Math.round(run.offer.rewardExp * share),
     gold: Math.round(run.offer.rewardGold * share),
     resolvedAt: now.toISOString(),
+    story: storyFor(run.offer.templateId, success),
   };
   return { ...s, activeRun: null, pendingResult: result, questLog: [...s.questLog, result] };
+}
+
+function storyFor(templateId: string, success: boolean): string | undefined {
+  const t = QUEST_TEMPLATES.find((q) => q.id === templateId);
+  return t ? (success ? t.success : t.failure) : undefined;
 }
 
 export function collectResult(s: SaveData): { save: SaveData; levelsGained: number } {

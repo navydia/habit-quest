@@ -13,8 +13,8 @@ describe('successChance (creator rules)', () => {
     expect(successChance(100, 101)).toBe(0.6);
     expect(successChance(100, 150)).toBe(0.6);
   });
-  test('more than 50 points short → 5%', () => {
-    expect(successChance(100, 151)).toBe(0.05);
+  test('more than 50 points short → 20%', () => {
+    expect(successChance(100, 151)).toBe(0.2);
   });
 });
 
@@ -45,12 +45,19 @@ describe('generateBoard', () => {
   test('same seed gives the same board', () => {
     expect(generateBoard('2026-11-27', lvl1, seededRng('2026-11-27'))).toEqual(board);
   });
-  test('hard quests are sometimes a 60% gamble and sometimes a 5% long shot', () => {
+  test('hard quests are sometimes a 60% gamble and sometimes a 20% long shot', () => {
     const chances = new Set<number>();
     for (let i = 0; i < 200; i++) {
       const hard = generateBoard('d', lvl1, seededRng(`s${i}`))[2];
       chances.add(successChance(100, hard.requiredPower));
     }
-    expect(chances).toEqual(new Set([0.6, 0.05]));
+    expect(chances).toEqual(new Set([0.6, 0.2]));
   });
+});
+
+test('every quest template has a success and a failure story', () => {
+  for (const t of QUEST_TEMPLATES) {
+    expect(t.success.length).toBeGreaterThan(40);
+    expect(t.failure.length).toBeGreaterThan(40);
+  }
 });

@@ -73,10 +73,12 @@ Light / Dark. All text pairings meet 4.5:1.
 | `display` | Fraunces 600 | 32/38 |
 | `title` | Fraunces 600 | 24/30 |
 | `heading` | Fraunces 600 | 19/24 |
-| `body` | Nunito Sans 400 | 16/22 |
-| `bodyStrong` | Nunito Sans 700 | 16/22 |
-| `label` | Nunito Sans 600 | 13/18, +0.3 tracking |
-| `caption` | Nunito Sans 400 | 12/16 |
+| `body` | Nunito Sans 400 | 16/24 (1.5 line height) |
+| `bodyStrong` | Nunito Sans 700 | 16/24 |
+| `label` | Nunito Sans 600 | 13/18, sentence case |
+| `caption` | Nunito Sans 400 | 13/18 |
+
+Labels use sentence case, not all caps (easier to read).
 
 ## 5. Shape, space, depth
 
@@ -96,7 +98,7 @@ Light / Dark. All text pairings meet 4.5:1.
 ## 7. Placeholder art rules
 
 Placeholders are drawn in code (SVG) **in the final style**, so the app already looks like itself.
-- Hero: a rounded bean-shaped body in muted color, two dot eyes with a white highlight, small blush, no outlines (like Finch). It wears a simple **cloak and scarf** to make it read "adventurer" and a little older.
+- Hero: a small **chibi humanoid**: big round head with hair, dot eyes with a white highlight, small blush, tunic with belt, arms, legs and boots, no outlines (like Finch). A **cloak and scarf** make it read "adventurer". Its separate parts (head, hair, torso, arms, legs) preview the layers of the Plan 2 paper doll.
 - The sword is a simple rounded blade with a hilt. The slime is a teal-moss blob with dot eyes.
 - Scenes are flat layered shapes in the scene palette.
 - Every placeholder uses the same canvas sizes and anchor points the real art will use (Plan 2 art spec), so swapping in final art doesn't change any layout.

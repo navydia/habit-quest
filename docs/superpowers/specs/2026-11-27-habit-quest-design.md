@@ -57,7 +57,7 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 ### 5.2 Choosing a quest
 - A board of several quests (builder's call: ~3) is generated daily.
 - Each quest card shows: name/flavour, **required power rating**, **% chance of success**, duration, rewards (EXP, gold, possible drops).
-- Harder quests → lower success chance, bigger rewards. Success chance (set by the creator): power ≥ required → **100%**; up to 50 points short → **60%**; more than 50 short → **5%**. The board always shows all three quests; you pick one each time.
+- Harder quests → lower success chance, bigger rewards. Success chance (set by the creator): power ≥ required → **100%**; up to 50 points short → **60%**; more than 50 short → **20%**. The board always shows all three quests; you pick one each time.
 - **Luck** increases the chance that a rare quest appears on the board.
 - Potions (§9.3) may be applied before starting.
 
@@ -73,6 +73,7 @@ The creator is building it themselves with Claude Code, and drawing the final ar
 - **Success:** full EXP + gold + chance of gear drop.
 - **Failure:** a much smaller reward (builder's call: ~20–25%). Never zero.
 - The Guild Master sends a letter about the outcome (§10).
+- The return screen has a **Read quest log** button showing a short anecdote about how the quest went (a success or failure story per quest).
 
 ### 5.5 Day boundary & overlapping quests *(designer's call)*
 - Habit completions always count toward **today's gauge** and, if a quest is running, **also shorten it**, even if that quest started yesterday.

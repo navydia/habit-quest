@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ScrollView } from 'react-native';
 import { Animated, Easing, Modal, StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { addExp } from '@/src/game/progression';
@@ -6,6 +7,7 @@ import type { Player, QuestResult } from '@/src/game/types';
 import { space } from '@/src/theme/tokens';
 import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
+import { Card } from '../kit/Card';
 import { Text } from '../kit/Text';
 
 const SUCCESS_LINES = ['Back before supper. Not bad, adventurer.', 'The job is done, and done properly.', 'The town owes you one. They will pay in gold.'];
@@ -25,9 +27,11 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
   const reduced = useReducedMotion();
   const scale = useRef(new Animated.Value(0.6)).current;
   const spin = useRef(new Animated.Value(0)).current;
+  const [showLog, setShowLog] = useState(false);
 
   useEffect(() => {
     if (!result) return;
+    setShowLog(false);
     scale.setValue(reduced ? 1 : 0.6);
     if (!reduced) {
       Animated.spring(scale, { toValue: 1, damping: 9, stiffness: 160, useNativeDriver: true }).start();
@@ -46,12 +50,20 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
     <Modal visible animationType="fade" onRequestClose={onCollect}>
       <View style={[styles.root, { backgroundColor: c.bg }]}>
         <Text variant="label" color={result.success ? 'primary' : 'textMuted'}>
-          {result.success ? 'QUEST COMPLETE' : 'QUEST FAILED'}
+          {result.success ? 'Quest complete' : 'Quest not completed'}
         </Text>
         <Text variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>Your hero has returned!</Text>
         <Text variant="heading" color="textMuted">{result.offer.name}</Text>
 
-        <View style={styles.art}>
+        {showLog && result.story ? (
+          <Card style={styles.log}>
+            <Text variant="label" color="textMuted">From the quest log</Text>
+            <ScrollView style={{ maxHeight: 220 }}>
+              <Text>{result.story}</Text>
+            </ScrollView>
+          </Card>
+        ) : (
+          <View style={styles.art}>
           <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]}>
             <Svg width="100%" height="100%" viewBox="-100 -100 200 200">
               <G opacity={0.25}>
@@ -71,20 +83,30 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
           </Animated.View>
         </View>
 
+        )}
         <Text style={{ textAlign: 'center' }}>
           {line}
           {!result.success ? ` You still came back with ${result.gold} gold.` : ''}
         </Text>
         <View style={styles.rewards}>
           <Reward value={`+${result.exp}`} label="EXP" />
-          <Reward value={`+${result.gold}`} label="GOLD" />
+          <Reward value={`+${result.gold}`} label="Gold" />
         </View>
         {levelsGained > 0 && (
           <View style={[styles.banner, { backgroundColor: c.primary }]}>
             <Text variant="bodyStrong" color="onPrimary">Level up · you are now level {player.level + levelsGained}</Text>
           </View>
         )}
-        <Button title="Collect" variant="reward" onPress={onCollect} style={{ alignSelf: 'stretch' }} />
+        <View style={styles.actions}>
+          <Button title="Collect" variant="reward" onPress={onCollect} />
+          {result.story ? (
+            <Button
+              title={showLog ? 'Hide quest log' : 'Read quest log'}
+              variant="secondary"
+              onPress={() => setShowLog((v) => !v)}
+            />
+          ) : null}
+        </View>
       </View>
     </Modal>
   );
@@ -103,5 +125,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xxxl, gap: space.l },
   art: { width: 240, height: 200, alignItems: 'center', justifyContent: 'center' },
   rewards: { flexDirection: 'row', gap: space.huge },
+  log: { alignSelf: 'stretch', gap: space.s },
+  actions: { alignSelf: 'stretch', gap: space.m },
   banner: { paddingHorizontal: space.l, paddingVertical: space.s, borderRadius: 999 },
 });

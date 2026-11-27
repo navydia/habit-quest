@@ -13,5 +13,5 @@ export const SUCCESS_BANDS = {
   meets: 1, // power >= required
   closeShortfall: 50, // short by up to this many points...
   close: 0.6, // ...gives this chance
-  far: 0.05, // anything further short
+  far: 0.2, // anything further short
 };

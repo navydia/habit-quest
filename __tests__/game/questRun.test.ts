@@ -3,6 +3,7 @@ import { generateBoard } from '@/src/game/quests';
 import { seededRng } from '@/src/game/rng';
 import type { Completion, SaveData } from '@/src/game/types';
 import { at, emptySave, habit } from '../helpers/save';
+import { QUEST_TEMPLATES } from '@/src/content/quests';
 
 const DAY = '2026-11-27';
 const HOUR = 3600_000;
@@ -112,4 +113,14 @@ test('runs saved before preStartKeys existed still compute an end time', () => {
   const run = { ...started().activeRun! } as any;
   delete run.preStartKeys;
   expect(questEndTime(run, after(3)).getTime()).toBe(at(DAY, 16).getTime());
+});
+
+test('the result carries a quest-log story matching the outcome', () => {
+  const win = resolveQuest(started(), at(DAY, 18), () => 0).pendingResult!;
+  const t = QUEST_TEMPLATES.find((q) => q.id === win.offer.templateId)!;
+  expect(win.story).toBe(t.success);
+  const s = started();
+  s.activeRun = { ...s.activeRun!, successChance: 0.6 };
+  const loss = resolveQuest(s, at(DAY, 18), () => 0.99).pendingResult!;
+  expect(loss.story).toBe(t.failure);
 });

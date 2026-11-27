@@ -90,3 +90,30 @@ test('a habit backfilled for yesterday can still be unchecked', async () => {
   await fireEvent.press(boxes()[1]); // undo the accidental tick
   expect(boxes()[1].props.accessibilityState.checked).toBe(false);
 });
+
+test('the return screen lets you read the quest log story', async () => {
+  const s = newSave();
+  s.pendingResult = {
+    offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 80, rewardExp: 40, rewardGold: 20 },
+    success: true,
+    exp: 40,
+    gold: 20,
+    resolvedAt: new Date().toISOString(),
+    story: 'Our hero herded eleven slimes back over the stone wall.',
+  };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  expect(screen.queryByText('Our hero herded eleven slimes back over the stone wall.')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Read quest log' }));
+  expect(screen.getByText('Our hero herded eleven slimes back over the stone wall.')).toBeTruthy();
+});
+
+test('with habits but none scheduled today, the gauge says so instead of asking for a habit', async () => {
+  const s = newSave();
+  const notToday = ([0, 1, 2, 3, 4, 5, 6] as const).filter((d) => d !== new Date().getDay());
+  s.habits = [{ ...habit('Gym'), schedule: { kind: 'weekdays', days: [notToday[0]] } }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  expect(screen.queryByText('Add a habit to start your journey.')).toBeNull();
+  expect(screen.getByText('No habits are scheduled today. Your hero is resting.')).toBeTruthy();
+});

@@ -8,7 +8,7 @@ import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
 import { powerRating } from '@/src/game/progression';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
-import { radius, space } from '@/src/theme/tokens';
+import { hud, radius, space } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
@@ -101,7 +101,7 @@ export function HomeScreen() {
 function Chip({ text }: { text: string }) {
   return (
     <View style={styles.chip}>
-      <Text variant="label" style={{ color: '#FFF8EC' }}>{text}</Text>
+      <Text variant="label" style={{ color: hud.text }}>{text}</Text>
     </View>
   );
 }
@@ -109,6 +109,6 @@ function Chip({ text }: { text: string }) {
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
   hud: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
-  chip: { backgroundColor: 'rgba(28,24,22,0.55)', borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
+  chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },
 });

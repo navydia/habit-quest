@@ -50,7 +50,7 @@ export function HabitList({ save, today, onToggle }: Props) {
             style={{ minHeight: minTouch, justifyContent: 'center' }}
           >
             <Text variant="label" color="textMuted">
-              {showYesterday ? '▾' : '▸'} FORGOT TO LOG YESTERDAY?
+              {showYesterday ? '▾' : '▸'} Forgot to log yesterday?
             </Text>
           </Pressable>
           {showYesterday && <Card style={{ paddingVertical: space.s }}>{yesterdays.map((h) => row(h, yesterday))}</Card>}

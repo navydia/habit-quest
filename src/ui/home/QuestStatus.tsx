@@ -11,6 +11,7 @@ import { formatRemaining } from '../format';
 type Gauge = { done: number; target: number; full: boolean; hasHabits: boolean };
 type Props = { save: SaveData; gauge: Gauge; canStart: boolean; startedToday: boolean; now: Date; onChoose: () => void };
 
+
 /** The card under the scene: quest gauge, or the running quest's countdown. */
 export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose }: Props) {
   const run = save.activeRun;
@@ -20,7 +21,7 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
     const total = Math.max(1, end - start);
     return (
       <Card floating style={{ gap: space.s }}>
-        <Text variant="label" color="info">ON A QUEST</Text>
+        <Text variant="label" color="info">On a quest</Text>
         <Text variant="heading">{run.offer.name}</Text>
         <ProgressBar value={(now.getTime() - start) / total} tone="info" label="Quest progress" />
         <Text variant="body" color="textMuted">
@@ -31,7 +32,8 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
   }
 
   let hint: string;
-  if (!gauge.hasHabits) hint = 'Add a habit to start your journey.';
+  if (save.habits.every((h) => h.archived)) hint = 'Add a habit to start your journey.';
+  else if (!gauge.hasHabits) hint = 'No habits are scheduled today. Your hero is resting.';
   else if (startedToday) hint = 'Today\'s quest is done. Rest up for tomorrow.';
   else if (gauge.full) hint = 'Your hero is ready to set out.';
   else hint = `${gauge.target - gauge.done} more ${gauge.target - gauge.done === 1 ? 'habit' : 'habits'} until a quest is ready.`;
@@ -39,7 +41,7 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
   return (
     <Card floating style={{ gap: space.s }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Text variant="label" color="textMuted">QUEST GAUGE</Text>
+        <Text variant="label" color="textMuted">Quest gauge</Text>
         <Text variant="label" color="textMuted">
           {Math.min(gauge.done, gauge.target)} / {gauge.target}
         </Text>

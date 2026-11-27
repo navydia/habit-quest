@@ -3,7 +3,22 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useReducedMotion } from '@/src/theme/useTheme';
 
-const HERO = { body: '#D8B48E', bodyShade: '#C29C77', cloak: '#3E5F66', cloakShade: '#33505A', scarf: '#B5543A', eye: '#2A2623', blush: '#E0937A' };
+const HERO = {
+  skin: '#E8C4A0',
+  skinShade: '#D6AD86',
+  hair: '#5A3E32',
+  tunic: '#6E8B74',
+  tunicShade: '#5C7862',
+  trousers: '#4A4A58',
+  boots: '#5B4A43',
+  belt: '#5B4A43',
+  buckle: '#C9892B',
+  cloak: '#3E5F66',
+  cloakShade: '#33505A',
+  scarf: '#B5543A',
+  eye: '#2A2623',
+  blush: '#E0937A',
+};
 
 /**
  * Placeholder hero drawn in code, in the final style (style guide §7).
@@ -19,29 +34,44 @@ export function HeroPlaceholder({ mode }: { mode: 'idle' | 'questing' }) {
     <View style={styles.wrap} accessible accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : 'Your hero, out on a quest'}>
       {mode === 'questing' && <Slime reduced={reduced} />}
       <Animated.View style={{ transform: [{ translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }}>
-        <Svg width={150} height={170} viewBox="0 0 120 136">
-          <Ellipse cx="60" cy="130" rx="34" ry="5" fill="#000" opacity="0.18" />
-          {/* cloak behind body */}
-          <Path d="M24 70 Q60 52 96 70 L102 124 Q60 132 18 124 Z" fill={HERO.cloakShade} />
-          {/* bean body */}
-          <Ellipse cx="60" cy="78" rx="34" ry="44" fill={HERO.body} />
-          <Ellipse cx="60" cy="104" rx="26" ry="16" fill={HERO.bodyShade} opacity="0.5" />
-          {/* cloak front panels */}
-          <Path d="M28 76 Q34 108 30 124 L46 126 Q40 100 44 78 Z" fill={HERO.cloak} />
-          <Path d="M92 76 Q86 108 90 124 L74 126 Q80 100 76 78 Z" fill={HERO.cloak} />
+        <Svg width={150} height={200} viewBox="0 0 120 160">
+          <Ellipse cx="60" cy="154" rx="30" ry="5" fill="#000" opacity="0.18" />
+          {/* cloak, behind everything */}
+          <Path d="M36 80 Q60 72 84 80 L94 146 Q60 152 26 146 Z" fill={HERO.cloakShade} />
+          {/* legs and boots */}
+          <Rect x="47" y="120" width="11" height="24" rx="5" fill={HERO.trousers} />
+          <Rect x="62" y="120" width="11" height="24" rx="5" fill={HERO.trousers} />
+          <Rect x="44" y="138" width="16" height="10" rx="5" fill={HERO.boots} />
+          <Rect x="60" y="138" width="16" height="10" rx="5" fill={HERO.boots} />
+          {/* arms */}
+          <Rect x="29" y="84" width="12" height="34" rx="6" fill={HERO.tunicShade} />
+          <Circle cx="35" cy="120" r="6" fill={HERO.skin} />
+          <Rect x="79" y="84" width="12" height="34" rx="6" fill={HERO.tunicShade} />
+          <Circle cx="85" cy="120" r="6" fill={HERO.skin} />
+          {/* torso */}
+          <Rect x="39" y="78" width="42" height="50" rx="16" fill={HERO.tunic} />
+          <Rect x="39" y="110" width="42" height="6" fill={HERO.belt} />
+          <Rect x="56" y="109" width="8" height="8" rx="2" fill={HERO.buckle} />
+          {/* cloak edges framing the torso */}
+          <Path d="M38 80 Q34 110 30 140 L38 141 Q40 112 44 82 Z" fill={HERO.cloak} />
+          <Path d="M82 80 Q86 110 90 140 L82 141 Q80 112 76 82 Z" fill={HERO.cloak} />
           {/* scarf */}
-          <Path d="M32 66 Q60 80 88 66 L88 74 Q60 88 32 74 Z" fill={HERO.scarf} />
-          <Path d="M74 74 L80 96 L70 94 Z" fill={HERO.scarf} />
-          {/* face */}
+          <Path d="M40 76 Q60 88 80 76 L80 84 Q60 96 40 84 Z" fill={HERO.scarf} />
+          <Path d="M68 86 L74 104 L64 102 Z" fill={HERO.scarf} />
+          {/* head */}
+          <Circle cx="33" cy="54" r="5" fill={HERO.skinShade} />
+          <Circle cx="87" cy="54" r="5" fill={HERO.skinShade} />
+          <Circle cx="60" cy="50" r="28" fill={HERO.skin} />
+          <Path d="M31 50 Q30 20 60 20 Q90 20 89 50 Q84 36 70 34 Q64 42 50 38 Q40 42 31 50 Z" fill={HERO.hair} />
           <G transform={`translate(${look}, 0)`}>
-            <Circle cx="48" cy="52" r="4.2" fill={HERO.eye} />
-            <Circle cx="72" cy="52" r="4.2" fill={HERO.eye} />
-            <Circle cx="49.4" cy="50.6" r="1.4" fill="#fff" />
-            <Circle cx="73.4" cy="50.6" r="1.4" fill="#fff" />
+            <Circle cx="50" cy="55" r="3.8" fill={HERO.eye} />
+            <Circle cx="70" cy="55" r="3.8" fill={HERO.eye} />
+            <Circle cx="51.3" cy="53.7" r="1.3" fill="#fff" />
+            <Circle cx="71.3" cy="53.7" r="1.3" fill="#fff" />
           </G>
-          <Ellipse cx="41" cy="60" rx="5" ry="2.6" fill={HERO.blush} opacity="0.6" />
-          <Ellipse cx="79" cy="60" rx="5" ry="2.6" fill={HERO.blush} opacity="0.6" />
-          <Path d="M56 60 Q60 63 64 60" stroke={HERO.eye} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <Ellipse cx="43" cy="63" rx="4.5" ry="2.4" fill={HERO.blush} opacity="0.55" />
+          <Ellipse cx="77" cy="63" rx="4.5" ry="2.4" fill={HERO.blush} opacity="0.55" />
+          <Path d="M56 65 Q60 68 64 65" stroke={HERO.eye} strokeWidth="1.6" fill="none" strokeLinecap="round" />
         </Svg>
       </Animated.View>
       {mode === 'questing' && (
@@ -115,7 +145,7 @@ function useGlance(active: boolean) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: 230, height: 180, alignItems: 'center', justifyContent: 'flex-end' },
-  sword: { position: 'absolute', right: 32, bottom: 50, transformOrigin: 'bottom' },
+  wrap: { width: 230, height: 210, alignItems: 'center', justifyContent: 'flex-end' },
+  sword: { position: 'absolute', right: 64, bottom: 42, transformOrigin: 'bottom' },
   slime: { position: 'absolute', right: -10, bottom: 6 },
 });

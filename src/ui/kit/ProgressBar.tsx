@@ -10,7 +10,7 @@ export function ProgressBar({ value, label, tone = 'primary', height = 14 }: Pro
   const clamped = Math.max(0, Math.min(1, value));
   const width = useRef(new Animated.Value(clamped)).current;
   useEffect(() => {
-    Animated.timing(width, { toValue: clamped, duration: 400, useNativeDriver: false }).start();
+    Animated.timing(width, { toValue: clamped, duration: 250, useNativeDriver: false }).start();
   }, [clamped, width]);
   return (
     <View

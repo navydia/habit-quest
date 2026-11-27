@@ -13,6 +13,7 @@ const light = {
   onAccent: '#2A2623',
   accentLip: '#9A6820',
   ember: '#B5543A',
+  onEmber: '#FFFFFF',
   info: '#4D6A8A',
 };
 
@@ -32,6 +33,7 @@ const dark: ColorTokens = {
   onAccent: '#1B1F24',
   accentLip: '#B88A3A',
   ember: '#E08467',
+  onEmber: '#1B1F24',
   info: '#8FAACB',
 };
 
@@ -49,6 +51,9 @@ export const scene = {
   floor: '#7A5E4C',
   window: '#8E7A9E',
 };
+
+/** Chips drawn over the scene; same in both modes because the scene is. */
+export const hud = { bg: 'rgba(28,24,22,0.6)', text: '#FFF8EC' };
 
 export const rarity = {
   common: '#8C877F',
@@ -74,10 +79,10 @@ export const type = {
   display: { fontFamily: fonts.heading, fontSize: 32, lineHeight: 38 },
   title: { fontFamily: fonts.heading, fontSize: 24, lineHeight: 30 },
   heading: { fontFamily: fonts.heading, fontSize: 19, lineHeight: 24 },
-  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
-  bodyStrong: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 22 },
-  label: { fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 18, letterSpacing: 0.3 },
-  caption: { fontFamily: fonts.body, fontSize: 12, lineHeight: 16 },
+  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24 },
+  bodyStrong: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 24 },
+  label: { fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 18, letterSpacing: 0.2 },
+  caption: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
 } as const;
 
 export type TypeStyle = keyof typeof type;
