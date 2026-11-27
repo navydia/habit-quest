@@ -36,10 +36,6 @@ const FIGHT_ANGLES = [-40, -10, 25, 55];
 const ITEMS = {
   // base
   'base.legs': () => `<rect x="47" y="120" width="11" height="24" rx="5" fill="${C.trousers}"/><rect x="62" y="120" width="11" height="24" rx="5" fill="${C.trousers}"/>${boots(C.shoe)}`,
-  'base.body': () => torso(C.shirt, C.shirtShade),
-  'base.head': () => `<circle cx="33" cy="54" r="5" fill="${C.skinShade}"/><circle cx="87" cy="54" r="5" fill="${C.skinShade}"/><circle cx="60" cy="50" r="28" fill="${C.skin}"/>`,
-  'base.face': () => `<circle cx="50" cy="55" r="3.8" fill="${C.eye}"/><circle cx="70" cy="55" r="3.8" fill="${C.eye}"/><circle cx="51.3" cy="53.7" r="1.3" fill="#fff"/><circle cx="71.3" cy="53.7" r="1.3" fill="#fff"/><ellipse cx="43" cy="63" rx="4.5" ry="2.4" fill="${C.blush}" opacity="0.55"/><ellipse cx="77" cy="63" rx="4.5" ry="2.4" fill="${C.blush}" opacity="0.55"/><path d="M56 65 Q60 68 64 65" stroke="${C.eye}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-  'base.hair': () => `<path d="M31 50 Q30 20 60 20 Q90 20 89 50 Q84 36 70 34 Q64 42 50 38 Q40 42 31 50 Z" fill="${C.hair}"/>`,
   // body
   'gear.travellers-tunic': () => torso('#6E8B74', '#5C7862', belt()),
   'gear.padded-jerkin': () => torso('#8C6A4F', '#7A5C44', `<path d="M48 82 L48 108 M60 80 L60 108 M72 82 L72 108" stroke="#6F543E" stroke-width="2"/>${belt()}`),
@@ -72,6 +68,28 @@ const WEAPONS = {
   'gear.moonlit-staff': staff('#4A4A58', '#B9A8E0'),
 };
 const AURAS = { rare: '#4F7FB5', epic: '#8A5FB0', legendary: '#D49A2A' };
+
+// ---- Customizable base layers (Plan 7): skin × ears, hair style × colour, eyes × lashes ----
+const SKINS = { fair: ['#F4D7C2', '#E3BFA6'], light: ['#EDC9A6', '#D9B08A'], tan: ['#E8C4A0', '#D6AD86'], brown: ['#B97F55', '#A06C46'], deep: ['#7A4E33', '#663F28'] };
+const HAIR_COLORS = { black: '#2B2523', brown: '#5A3E32', auburn: '#8A3B24', blonde: '#D9B45A', silver: '#C9CDD2', teal: '#3E8A87' };
+const EYES = { dark: '#2A2623', brown: '#5B3A24', green: '#3E6B3A', blue: '#3A5E8C', violet: '#6A4A8C' };
+const HAIR_STYLES = {
+  short: (c) => `<path d="M31 50 Q30 20 60 20 Q90 20 89 50 Q84 36 70 34 Q64 42 50 38 Q40 42 31 50 Z" fill="${c}"/>`,
+  long: (c) => `<path d="M29 52 Q28 18 60 18 Q92 18 91 52 L94 88 Q86 92 82 86 L84 52 Q80 36 66 34 Q60 42 46 38 Q38 44 36 52 L38 86 Q34 92 26 88 Z" fill="${c}"/>`,
+  curly: (c) => [[36, 40, 9], [44, 28, 10], [58, 22, 11], [72, 26, 10], [84, 36, 9], [88, 48, 7], [32, 50, 7]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join(''),
+  bun: (c) => `<circle cx="60" cy="14" r="10" fill="${c}"/><path d="M31 50 Q30 20 60 20 Q90 20 89 50 Q84 38 60 34 Q36 38 31 50 Z" fill="${c}"/>`,
+};
+for (const [skin, [base, shade]] of Object.entries(SKINS)) {
+  ITEMS[`base.body.${skin}`] = () => torso(C.shirt, C.shirtShade).replaceAll(C.skin, base);
+  ITEMS[`base.head.${skin}.round`] = () => `<circle cx="33" cy="54" r="5" fill="${shade}"/><circle cx="87" cy="54" r="5" fill="${shade}"/><circle cx="60" cy="50" r="28" fill="${base}"/>`;
+  ITEMS[`base.head.${skin}.pointed`] = () => `<path d="M36 50 L18 38 L33 62 Z" fill="${shade}"/><path d="M84 50 L102 38 L87 62 Z" fill="${shade}"/><circle cx="60" cy="50" r="28" fill="${base}"/>`;
+}
+for (const [style, draw] of Object.entries(HAIR_STYLES)) for (const [color, c] of Object.entries(HAIR_COLORS)) ITEMS[`base.hair.${style}.${color}`] = () => draw(c);
+for (const [eye, c] of Object.entries(EYES)) {
+  const face = (lashes) => `<circle cx="50" cy="55" r="3.8" fill="${c}"/><circle cx="70" cy="55" r="3.8" fill="${c}"/><circle cx="51.3" cy="53.7" r="1.3" fill="#fff"/><circle cx="71.3" cy="53.7" r="1.3" fill="#fff"/>${lashes ? `<path d="M46.5 52 l-3 -2.5 M73.5 52 l3 -2.5" stroke="${C.eye}" stroke-width="1.4" stroke-linecap="round"/>` : ''}<ellipse cx="43" cy="63" rx="4.5" ry="2.4" fill="${C.blush}" opacity="0.55"/><ellipse cx="77" cy="63" rx="4.5" ry="2.4" fill="${C.blush}" opacity="0.55"/><path d="M56 65 Q60 68 64 65" stroke="${C.eye}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  ITEMS[`base.face.${eye}.plain`] = () => face(false);
+  ITEMS[`base.face.${eye}.lashes`] = () => face(true);
+}
 
 const assets = []; // { id, anim, frames, fps, draw(frameIndex) }
 for (const [id, draw] of Object.entries(ITEMS)) assets.push({ id, anim: 'idle', frames: 1, fps: 1, draw: () => draw() });

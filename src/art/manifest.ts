@@ -6,18 +6,6 @@ export const ART: Record<string, Partial<Record<Anim, ArtAsset>>> = {
   'base.legs': {
     idle: { src: require('../../assets/art/base.legs/idle.png'), frames: 1, fps: 1 },
   },
-  'base.body': {
-    idle: { src: require('../../assets/art/base.body/idle.png'), frames: 1, fps: 1 },
-  },
-  'base.head': {
-    idle: { src: require('../../assets/art/base.head/idle.png'), frames: 1, fps: 1 },
-  },
-  'base.face': {
-    idle: { src: require('../../assets/art/base.face/idle.png'), frames: 1, fps: 1 },
-  },
-  'base.hair': {
-    idle: { src: require('../../assets/art/base.hair/idle.png'), frames: 1, fps: 1 },
-  },
   'gear.travellers-tunic': {
     idle: { src: require('../../assets/art/gear.travellers-tunic/idle.png'), frames: 1, fps: 1 },
   },
@@ -62,6 +50,153 @@ export const ART: Record<string, Partial<Record<Anim, ArtAsset>>> = {
   },
   'gear.dragonscale-cloak': {
     idle: { src: require('../../assets/art/gear.dragonscale-cloak/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.body.fair': {
+    idle: { src: require('../../assets/art/base.body.fair/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.fair.round': {
+    idle: { src: require('../../assets/art/base.head.fair.round/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.fair.pointed': {
+    idle: { src: require('../../assets/art/base.head.fair.pointed/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.body.light': {
+    idle: { src: require('../../assets/art/base.body.light/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.light.round': {
+    idle: { src: require('../../assets/art/base.head.light.round/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.light.pointed': {
+    idle: { src: require('../../assets/art/base.head.light.pointed/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.body.tan': {
+    idle: { src: require('../../assets/art/base.body.tan/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.tan.round': {
+    idle: { src: require('../../assets/art/base.head.tan.round/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.tan.pointed': {
+    idle: { src: require('../../assets/art/base.head.tan.pointed/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.body.brown': {
+    idle: { src: require('../../assets/art/base.body.brown/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.brown.round': {
+    idle: { src: require('../../assets/art/base.head.brown.round/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.brown.pointed': {
+    idle: { src: require('../../assets/art/base.head.brown.pointed/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.body.deep': {
+    idle: { src: require('../../assets/art/base.body.deep/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.deep.round': {
+    idle: { src: require('../../assets/art/base.head.deep.round/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.head.deep.pointed': {
+    idle: { src: require('../../assets/art/base.head.deep.pointed/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.short.black': {
+    idle: { src: require('../../assets/art/base.hair.short.black/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.short.brown': {
+    idle: { src: require('../../assets/art/base.hair.short.brown/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.short.auburn': {
+    idle: { src: require('../../assets/art/base.hair.short.auburn/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.short.blonde': {
+    idle: { src: require('../../assets/art/base.hair.short.blonde/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.short.silver': {
+    idle: { src: require('../../assets/art/base.hair.short.silver/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.short.teal': {
+    idle: { src: require('../../assets/art/base.hair.short.teal/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.long.black': {
+    idle: { src: require('../../assets/art/base.hair.long.black/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.long.brown': {
+    idle: { src: require('../../assets/art/base.hair.long.brown/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.long.auburn': {
+    idle: { src: require('../../assets/art/base.hair.long.auburn/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.long.blonde': {
+    idle: { src: require('../../assets/art/base.hair.long.blonde/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.long.silver': {
+    idle: { src: require('../../assets/art/base.hair.long.silver/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.long.teal': {
+    idle: { src: require('../../assets/art/base.hair.long.teal/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.curly.black': {
+    idle: { src: require('../../assets/art/base.hair.curly.black/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.curly.brown': {
+    idle: { src: require('../../assets/art/base.hair.curly.brown/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.curly.auburn': {
+    idle: { src: require('../../assets/art/base.hair.curly.auburn/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.curly.blonde': {
+    idle: { src: require('../../assets/art/base.hair.curly.blonde/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.curly.silver': {
+    idle: { src: require('../../assets/art/base.hair.curly.silver/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.curly.teal': {
+    idle: { src: require('../../assets/art/base.hair.curly.teal/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.bun.black': {
+    idle: { src: require('../../assets/art/base.hair.bun.black/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.bun.brown': {
+    idle: { src: require('../../assets/art/base.hair.bun.brown/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.bun.auburn': {
+    idle: { src: require('../../assets/art/base.hair.bun.auburn/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.bun.blonde': {
+    idle: { src: require('../../assets/art/base.hair.bun.blonde/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.bun.silver': {
+    idle: { src: require('../../assets/art/base.hair.bun.silver/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.hair.bun.teal': {
+    idle: { src: require('../../assets/art/base.hair.bun.teal/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.dark.plain': {
+    idle: { src: require('../../assets/art/base.face.dark.plain/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.dark.lashes': {
+    idle: { src: require('../../assets/art/base.face.dark.lashes/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.brown.plain': {
+    idle: { src: require('../../assets/art/base.face.brown.plain/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.brown.lashes': {
+    idle: { src: require('../../assets/art/base.face.brown.lashes/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.green.plain': {
+    idle: { src: require('../../assets/art/base.face.green.plain/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.green.lashes': {
+    idle: { src: require('../../assets/art/base.face.green.lashes/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.blue.plain': {
+    idle: { src: require('../../assets/art/base.face.blue.plain/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.blue.lashes': {
+    idle: { src: require('../../assets/art/base.face.blue.lashes/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.violet.plain': {
+    idle: { src: require('../../assets/art/base.face.violet.plain/idle.png'), frames: 1, fps: 1 },
+  },
+  'base.face.violet.lashes': {
+    idle: { src: require('../../assets/art/base.face.violet.lashes/idle.png'), frames: 1, fps: 1 },
   },
   'gear.wooden-sword': {
     idle: { src: require('../../assets/art/gear.wooden-sword/idle.png'), frames: 1, fps: 1 },

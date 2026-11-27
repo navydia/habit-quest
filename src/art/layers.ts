@@ -1,5 +1,5 @@
 import { gearById, RARITY_ORDER } from '../content/gear';
-import type { Player, Rarity, Slot } from '../game/types';
+import type { Look, Player, Pronouns, Rarity, Slot } from '../game/types';
 import { ART } from './manifest';
 import type { Anim, ArtAsset } from './types';
 
@@ -7,13 +7,22 @@ import type { Anim, ArtAsset } from './types';
 export const LAYER_ORDER = ['aura', 'accessoryBack', 'legs', 'feet', 'bodyBase', 'body', 'head', 'face', 'hair', 'headGear', 'weapon'] as const;
 export type LayerName = (typeof LAYER_ORDER)[number];
 
-const BASE: [LayerName, string][] = [
-  ['legs', 'base.legs'],
-  ['bodyBase', 'base.body'],
-  ['head', 'base.head'],
-  ['face', 'base.face'],
-  ['hair', 'base.hair'],
-];
+/** The base body, built from the character's look (Customize screen). */
+export type Appearance = { look: Look; pronouns: Pronouns };
+export const DEFAULT_APPEARANCE: Appearance = {
+  look: { skin: 'tan', hairStyle: 'short', hairColor: 'brown', eyes: 'dark', ears: 'round' },
+  pronouns: 'they',
+};
+
+function baseLayers({ look, pronouns }: Appearance): [LayerName, string][] {
+  return [
+    ['legs', 'base.legs'],
+    ['bodyBase', `base.body.${look.skin}`],
+    ['head', `base.head.${look.skin}.${look.ears}`],
+    ['face', `base.face.${look.eyes}.${pronouns === 'she' ? 'lashes' : 'plain'}`],
+    ['hair', `base.hair.${look.hairStyle}.${look.hairColor}`],
+  ];
+}
 
 const SLOT_LAYER: Record<Slot, LayerName> = {
   weapon: 'weapon',
@@ -36,13 +45,13 @@ function pick(artId: string, anim: Anim): ArtAsset | undefined {
   return entry?.[anim] ?? entry?.idle;
 }
 
-export function heroLayers(p: Player, anim: Anim): HeroLayer[] {
+export function heroLayers(p: Player, anim: Anim, appearance: Appearance = DEFAULT_APPEARANCE): HeroLayer[] {
   const out: HeroLayer[] = [];
   const add = (layer: LayerName, artId: string) => {
     const asset = pick(artId, anim);
     if (asset) out.push({ layer, artId, asset });
   };
-  for (const [layer, artId] of BASE) add(layer, artId);
+  for (const [layer, artId] of baseLayers(appearance)) add(layer, artId);
 
   let best = -1;
   for (const [slot, uid] of Object.entries(p.equipped) as [Slot, string][]) {

@@ -36,7 +36,7 @@ test('rare or better gear adds an aura in the colour of the best rarity', () => 
 test('layers without a fight animation fall back to idle', () => {
   const fight = heroLayers(withGear('wooden-sword'), 'fight');
   expect(fight.find((l) => l.layer === 'weapon')?.asset.frames).toBeGreaterThan(1);
-  expect(fight.find((l) => l.layer === 'head')?.asset).toBe(ART['base.head'].idle);
+  expect(fight.find((l) => l.layer === 'head')?.asset).toBe(ART['base.head.tan.round'].idle);
 });
 
 test('items with no art are skipped instead of crashing', () => {
@@ -50,4 +50,16 @@ test('every catalog item has idle art; weapons also have a fight animation', () 
     expect([g.id, !!ART[g.art]?.idle]).toEqual([g.id, true]);
     if (g.slot === 'weapon') expect([g.id, (ART[g.art]?.fight?.frames ?? 0) > 1]).toEqual([g.id, true]);
   }
+});
+
+test('the look picks the base layer variants', () => {
+  const layers = heroLayers(withGear(), 'idle', { look: { skin: 'deep', hairStyle: 'bun', hairColor: 'teal', eyes: 'green', ears: 'pointed' }, pronouns: 'she' });
+  expect(layers.map((l) => l.artId)).toEqual(['base.legs', 'base.body.deep', 'base.head.deep.pointed', 'base.face.green.lashes', 'base.hair.bun.teal']);
+});
+
+test('every look combination has art', () => {
+  for (const skin of ['fair', 'light', 'tan', 'brown', 'deep'])
+    for (const ears of ['round', 'pointed']) expect(ART[`base.head.${skin}.${ears}`]?.idle).toBeTruthy();
+  for (const style of ['short', 'long', 'curly', 'bun'])
+    for (const color of ['black', 'brown', 'auburn', 'blonde', 'silver', 'teal']) expect(ART[`base.hair.${style}.${color}`]?.idle).toBeTruthy();
 });

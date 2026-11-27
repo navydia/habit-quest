@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Animated, Easing, Image, View } from 'react-native';
-import { heroLayers } from '@/src/art/layers';
+import { heroLayers, type Appearance } from '@/src/art/layers';
 import { FRAME_H, FRAME_W, type Anim } from '@/src/art/types';
 import type { Player } from '@/src/game/types';
 import { useReducedMotion } from '@/src/theme/useTheme';
@@ -14,14 +14,16 @@ type Props = {
   accessibilityLabel?: string;
   /** Stop animating, e.g. while the tab is hidden, to save battery. */
   paused?: boolean;
+  /** Skin, hair, eyes, ears and pronouns from the Customize screen. */
+  appearance?: Appearance;
 };
 
 /** Stacks the hero's art layers (src/art/layers.ts) and steps through sprite-strip frames. */
-export function HeroSprite({ player, anim, height = 200, accessibilityLabel, paused = false }: Props) {
+export function HeroSprite({ player, anim, height = 200, accessibilityLabel, paused = false, appearance }: Props) {
   const reduced = useReducedMotion();
   const scale = height / FRAME_H;
   const width = FRAME_W * scale;
-  const layers = useMemo(() => heroLayers(player, anim), [player, anim]);
+  const layers = useMemo(() => heroLayers(player, anim, appearance), [player, anim, appearance]);
   const animated = !reduced && !paused && layers.some((l) => l.asset.frames > 1);
 
   const [tick, setTick] = useState(0);
