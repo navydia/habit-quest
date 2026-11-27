@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, View } from 'react-native';
 import type { ColorTokens } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
@@ -8,7 +8,7 @@ type Props = { value: number; label: string; tone?: keyof ColorTokens; height?: 
 export function ProgressBar({ value, label, tone = 'primary', height = 14 }: Props) {
   const { c } = useTheme();
   const clamped = Math.max(0, Math.min(1, value));
-  const width = useRef(new Animated.Value(clamped)).current;
+  const width = useState(() => new Animated.Value(clamped))[0];
   useEffect(() => {
     Animated.timing(width, { toValue: clamped, duration: 250, useNativeDriver: false }).start();
   }, [clamped, width]);

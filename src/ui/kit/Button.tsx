@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRef } from 'react';
+import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { lipHeight, minTouch, radius } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
@@ -17,7 +17,7 @@ type Props = {
 /** Tactile button: a darker "lip" below; the face sinks on press. */
 export function Button({ title, onPress, variant = 'primary', disabled, style, accessibilityHint }: Props) {
   const { c } = useTheme();
-  const sink = useRef(new Animated.Value(0)).current;
+  const sink = useState(() => new Animated.Value(0))[0];
   const spring = (to: number) =>
     Animated.spring(sink, { toValue: to, damping: 15, stiffness: 180, useNativeDriver: true }).start();
 

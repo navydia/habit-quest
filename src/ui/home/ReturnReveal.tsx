@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { ScrollView } from 'react-native';
-import { Animated, Easing, Modal, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView , Animated, Easing, Modal, StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { addExp } from '@/src/game/progression';
 import type { Player, QuestResult } from '@/src/game/types';
@@ -25,13 +24,14 @@ type Props = { result: QuestResult | null; player: Player; onCollect: () => void
 export function ReturnReveal({ result, player, onCollect }: Props) {
   const { c } = useTheme();
   const reduced = useReducedMotion();
-  const scale = useRef(new Animated.Value(0.6)).current;
-  const spin = useRef(new Animated.Value(0)).current;
-  const [showLog, setShowLog] = useState(false);
+  const scale = useState(() => new Animated.Value(0.6))[0];
+  const spin = useState(() => new Animated.Value(0))[0];
+  // Remember which result's log is open, so a new result starts with it closed.
+  const [logFor, setLogFor] = useState<string | null>(null);
+  const showLog = !!result && logFor === result.resolvedAt;
 
   useEffect(() => {
     if (!result) return;
-    setShowLog(false);
     scale.setValue(reduced ? 1 : 0.6);
     if (!reduced) {
       Animated.spring(scale, { toValue: 1, damping: 9, stiffness: 160, useNativeDriver: true }).start();
@@ -103,7 +103,7 @@ export function ReturnReveal({ result, player, onCollect }: Props) {
             <Button
               title={showLog ? 'Hide quest log' : 'Read quest log'}
               variant="secondary"
-              onPress={() => setShowLog((v) => !v)}
+              onPress={() => setLogFor(showLog ? null : result.resolvedAt)}
             />
           ) : null}
         </View>

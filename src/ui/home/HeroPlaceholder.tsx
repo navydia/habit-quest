@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useReducedMotion } from '@/src/theme/useTheme';
@@ -110,7 +110,7 @@ function Slime({ reduced }: { reduced: boolean }) {
 }
 
 function useLoop(duration: number, easing: (v: number) => number, yoyo = true) {
-  const v = useRef(new Animated.Value(0)).current;
+  const v = useState(() => new Animated.Value(0))[0];
   useEffect(() => {
     if (!duration) {
       v.setValue(0);
@@ -127,10 +127,7 @@ function useLoop(duration: number, easing: (v: number) => number, yoyo = true) {
 function useGlance(active: boolean) {
   const [look, setLook] = useState(0);
   useEffect(() => {
-    if (!active) {
-      setLook(0);
-      return;
-    }
+    if (!active) return;
     let timer: ReturnType<typeof setTimeout>;
     const next = () => {
       timer = setTimeout(() => {
@@ -141,7 +138,7 @@ function useGlance(active: boolean) {
     next();
     return () => clearTimeout(timer);
   }, [active]);
-  return look;
+  return active ? look : 0;
 }
 
 const styles = StyleSheet.create({
