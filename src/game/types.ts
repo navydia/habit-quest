@@ -36,6 +36,8 @@ export interface QuestRun {
   successChance: number;
   /** habitId|dayKey of completions that existed at start; re-checking them gives no time cut. */
   preStartKeys?: string[];
+  /** Speed multiplier fixed at start, so later stat changes don't move the return time. */
+  speedFactor?: number;
 }
 
 export interface QuestResult {
@@ -46,6 +48,7 @@ export interface QuestResult {
   resolvedAt: string;
   /** Quest-log anecdote. Optional so older saves still load. */
   story?: string;
+  drop?: { gearId: string };
 }
 
 export type StatKey = 'power' | 'defense' | 'luck' | 'speed';
