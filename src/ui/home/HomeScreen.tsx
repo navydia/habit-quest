@@ -7,7 +7,6 @@ import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
-import { powerOf } from '@/src/game/stats';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
 import { home, hud, radius, space } from '@/src/theme/tokens';
@@ -27,12 +26,14 @@ import { Slime } from './Slime';
 import { HomeScene } from './HomeScene';
 import { QuestBoardSheet } from './QuestBoardSheet';
 import { QuestStatus } from './QuestStatus';
-import { DebugSheet } from './DebugSheet';
 import { MapSheet } from '../world/MapSheet';
 import { ScrapbookSheet } from '../world/ScrapbookSheet';
 import { BossHabitSheet } from '../world/BossHabitSheet';
 import { bossTokens } from '@/src/game/bosses';
-import { currentRegion } from '@/src/game/world';
+import { currentRegion, placeId } from '@/src/game/world';
+import { placeOf } from '@/src/content/places';
+import { expToNext } from '@/src/game/progression';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { familiarBonus } from '@/src/game/familiars';
 import { ReturnReveal } from './ReturnReveal';
 
@@ -43,7 +44,7 @@ export function HomeScreen() {
   const reduced = useReducedMotion();
   const focused = useIsFocused();
   const save = useGameStore((s) => s.save);
-  const { moveHabit, addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit, debug } =
+  const { goHome, moveHabit, addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit } =
     useGameStore.getState();
   // Habit sheet: null = closed, 'new' = add, otherwise the habit being edited.
   const [editing, setEditing] = useState<Habit | 'new' | null>(null);
@@ -57,8 +58,11 @@ export function HomeScreen() {
   const [mapOpen, setMapOpen] = useState(false);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
   const [bossSheet, setBossSheet] = useState(false);
-  const [debugOpen, setDebugOpen] = useState(false);
   const region = currentRegion(save);
+  const runRegion = save.activeRun?.offer.regionId;
+  // Out on a trip: the region it happens in. Otherwise: home, or the region you travelled to.
+  const scenePlace = save.activeRun ? (runRegion ?? region.id) : placeId(save);
+  const pal = placeOf(scenePlace);
   const fam = save.familiars.active ? familiarById(save.familiars.active) : undefined;
   const revealBonus = { ...familiarBonus(save), label: fam ? `${fam.name}: +${fam.bonus.pct}% ${fam.bonus.kind === 'exp' ? 'EXP' : 'gold'}` : null };
 
@@ -75,24 +79,34 @@ export function HomeScreen() {
   }, [gauge.full]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: home.bg }}>
+    <View style={{ flex: 1, backgroundColor: pal.bottom }}>
+      {/* Pull-down area: the place's wall/sky colour, feathered into the floor colour. */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: height * 0.6 }}>
+        <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id="pull" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={pal.top} />
+              <Stop offset="0.7" stopColor={pal.top} />
+              <Stop offset="1" stopColor={pal.bottom} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#pull)" />
+        </Svg>
+      </View>
       <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
         <View style={[styles.stage, { height: Math.max(300, height * 0.45) }]}>
-          <HomeScene mode={mode} />
-          <View style={[styles.hud, { top: insets.top + space.s }]}>
-            <Chip text={`Lv ${save.player.level}`} />
-            <Chip text={`${save.player.gold} gold`} />
-            <Chip text={`${powerOf(save.player)} power`} />
-          </View>
-          <View style={[styles.hudRow2, { top: insets.top + space.s + 36 }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Map: ${region.name}`} hitSlop={6} onPress={() => setMapOpen(true)} style={({ pressed }) => [styles.chip, styles.tapChip, { opacity: pressed ? 0.75 : 1 }]}>
-              <Text variant="label" style={{ color: hud.text }}>⌖ {region.name}</Text>
+          <HomeScene place={scenePlace} />
+          <View style={[styles.mapRow, { top: insets.top + space.s }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Map. You are at ${scenePlace === 'home' ? 'home' : region.name}`}
+              hitSlop={6}
+              onPress={() => setMapOpen(true)}
+              style={({ pressed }) => [styles.chip, styles.tapChip, { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.75 : 1 }]}
+            >
+              <MapIcon color={hud.text} />
+              <Text variant="label" style={{ color: hud.text }}>{scenePlace === 'home' ? 'Home' : region.name}</Text>
             </Pressable>
-            {__DEV__ && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Debug menu" hitSlop={6} onPress={() => setDebugOpen(true)} style={({ pressed }) => [styles.chip, styles.tapChip, { opacity: pressed ? 0.75 : 1 }]}>
-                <Text variant="label" style={{ color: hud.text }}>Debug</Text>
-              </Pressable>
-            )}
           </View>
           <View style={[styles.heroWrap, bossFight && [styles.heroWrapBoss, { width: Math.min(350, width - 2 * space.screen) }]]}>
             {mode === 'questing' && !bossFight && <Slime reduced={reduced} />}
@@ -109,7 +123,13 @@ export function HomeScreen() {
         </View>
 
         <View style={styles.body}>
-          <View style={{ marginTop: space.l }}>
+          <View style={{ marginTop: space.m, flexDirection: 'row', alignItems: 'center', gap: space.m }} accessible accessibilityLabel={`Level ${save.player.level}, ${save.player.exp} of ${expToNext(save.player.level)} EXP`}>
+            <Text variant="bodyStrong" style={{ color: home.text }}>Lv {save.player.level}</Text>
+            <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.18)', overflow: 'hidden' }}>
+              <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
+            </View>
+          </View>
+          <View>
             <QuestStatus
               save={save}
               gauge={gauge}
@@ -207,6 +227,10 @@ export function HomeScreen() {
           travel(id, clockNow());
           setMapOpen(false);
         }}
+        onGoHome={() => {
+          goHome();
+          setMapOpen(false);
+        }}
         onScrapbook={(id) => {
           setMapOpen(false);
           setScrapbook(id);
@@ -221,17 +245,6 @@ export function HomeScreen() {
         onClose={() => setBossSheet(false)}
         onChoose={(id) => setBossHabit(id, clockNow())}
       />
-      {__DEV__ && (
-        <DebugSheet
-          visible={debugOpen}
-          onClose={() => setDebugOpen(false)}
-          onAction={(a) => {
-            if (a === 'skip') skipAdventure(clockNow());
-            else debug(a, clockNow());
-            setDebugOpen(false);
-          }}
-        />
-      )}
       <ReturnReveal
         result={save.pendingResult}
         player={save.player}
@@ -259,13 +272,6 @@ function FamiliarBuddy({ id }: { id: string }) {
   );
 }
 
-function Chip({ text }: { text: string }) {
-  return (
-    <View style={styles.chip}>
-      <Text variant="label" style={{ color: hud.text }}>{text}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
@@ -276,8 +282,18 @@ const styles = StyleSheet.create({
   buddy: { position: 'absolute', left: 10, bottom: 14, width: 42, height: 36, borderTopLeftRadius: 21, borderTopRightRadius: 21, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#C79A5B', alignItems: 'center', justifyContent: 'center' },
   buddyEyes: { flexDirection: 'row', gap: 8, marginTop: -2 },
   eye: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#2A2623' },
+  mapRow: { position: 'absolute', right: space.screen, flexDirection: 'row' },
   hudRow2: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
   tapChip: { minHeight: 32, justifyContent: 'center' },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },
 });
+
+/** Folded-map icon (line style, matches the type). */
+function MapIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24">
+      <Path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14" stroke={color} strokeWidth={2} fill="none" strokeLinejoin="round" />
+    </Svg>
+  );
+}

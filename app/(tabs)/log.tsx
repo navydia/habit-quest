@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { clockNow } from '@/src/game/clock';
+import { DebugSheet } from '@/src/ui/home/DebugSheet';
 import { dayKey } from '@/src/game/dates';
 import { Button } from '@/src/ui/kit/Button';
 import { FamiliarsCard } from '@/src/ui/character/FamiliarsCard';
@@ -25,7 +27,8 @@ export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const save = useGameStore((s) => s.save);
   const hideFromHistory = useGameStore((s) => s.hideFromHistory);
-  const { claimDaily, ensureDaily, setActiveFamiliar } = useGameStore.getState();
+  const { claimDaily, ensureDaily, setActiveFamiliar, debug, skipAdventure } = useGameStore.getState();
+  const [debugOpen, setDebugOpen] = useState(false);
   const now = useMinuteClock();
   const today = dayKey(now);
   useEffect(() => {
@@ -122,7 +125,26 @@ export default function LogScreen() {
         {entries.length > 0 && <Text variant="caption" color="textMuted">Removing an entry tidies your history. The habit still counts as done that day.</Text>}
       </View>
 
+      {__DEV__ && (
+        <Card style={{ gap: space.s }}>
+          <Text variant="heading" accessibilityRole="header">Debug (testing)</Text>
+          <Text variant="caption" color="textMuted">Development builds only: skip time, fill the gauge, give items and more.</Text>
+          <Button title="Open debug menu" variant="secondary" onPress={() => setDebugOpen(true)} />
+        </Card>
+      )}
+
       <ScrapbookSheet regionId={scrapbook} save={save} onClose={() => setScrapbook(null)} />
+      {__DEV__ && (
+        <DebugSheet
+          visible={debugOpen}
+          onClose={() => setDebugOpen(false)}
+          onAction={(a) => {
+            if (a === 'skip') skipAdventure(clockNow(), 'win');
+            else debug(a, clockNow());
+            setDebugOpen(false);
+          }}
+        />
+      )}
     </ScrollView>
   );
 }

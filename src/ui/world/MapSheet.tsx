@@ -9,14 +9,24 @@ import { Card } from '../kit/Card';
 import { Sheet } from '../kit/Sheet';
 import { Text } from '../kit/Text';
 
-type Props = { visible: boolean; save: SaveData; now: Date; onClose: () => void; onTravel: (id: string) => void; onScrapbook: (id: string) => void };
+type Props = { visible: boolean; save: SaveData; now: Date; onClose: () => void; onTravel: (id: string) => void; onScrapbook: (id: string) => void; onGoHome: () => void };
 
-export function MapSheet({ visible, save, now, onClose, onTravel, onScrapbook }: Props) {
+export function MapSheet({ visible, save, now, onClose, onTravel, onScrapbook, onGoHome }: Props) {
   const { c } = useTheme();
-  const here = currentRegion(save).id;
+  const atHome = save.world.atHome !== false;
+  // The region you are standing in (none while at home).
+  const here = atHome ? '' : currentRegion(save).id;
   return (
     <Sheet visible={visible} title="The map" onClose={onClose}>
       <View style={{ gap: space.m }}>
+        <Card style={{ gap: space.s, borderColor: atHome ? c.primary : c.line, borderWidth: atHome ? 2 : 1 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <Text variant="heading">🏡 Home</Text>
+            <Text variant="label" color={atHome ? 'primary' : 'textMuted'}>{atHome ? 'You are here' : ''}</Text>
+          </View>
+          <Text color="textMuted">Your cottage. Adventures still come from {currentRegion(save).name}.</Text>
+          {!atHome && <Button title="Go home" onPress={onGoHome} disabled={!!save.activeRun} />}
+        </Card>
         {REGIONS.map((r) => {
           const prog = progressOf(save, r.id);
           const locked = lockReason(save, r.id);

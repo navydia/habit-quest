@@ -211,7 +211,7 @@ describe('regions, bosses and debug', () => {
   test('the region chip opens the map, which explains why a region is locked', async () => {
     useGameStore.setState({ save: withHabit() });
     await render(<HomeScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Map: Thornwick Meadows' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Map. You are at home' }));
     expect(screen.getByText('Clear every adventure in Thornwick Meadows first.')).toBeTruthy();
   });
 
@@ -269,15 +269,6 @@ describe('regions, bosses and debug', () => {
     expect(screen.getByText('Empty Jam Jar')).toBeTruthy();
   });
 
-  test('the debug menu can fill the gauge', async () => {
-    const s = newSave();
-    s.habits = [habit('Read'), habit('Walk')];
-    useGameStore.setState({ save: s });
-    await render(<HomeScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Debug menu' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Fill adventure gauge' }));
-    expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
-  });
 });
 
 test('the return screen includes the familiar bonus and the level-up it causes', async () => {

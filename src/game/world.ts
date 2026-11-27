@@ -48,7 +48,7 @@ export function canTravel(s: SaveData, regionId: string, now: Date): TravelCheck
   if (s.activeRun) return { ok: false, reason: 'Your hero is out on an adventure. Travel once they are home.' };
   const r = regionById(regionId);
   if (!r || !isAvailableNow(r, now)) return { ok: false, reason: 'That region is not on the map.' };
-  if (currentRegion(s).id === regionId) return { ok: false, reason: 'You are already here.' };
+  if (currentRegion(s).id === regionId && s.world.atHome === false) return { ok: false, reason: 'You are already here.' };
   const reason = lockReason(s, regionId);
   return reason ? { ok: false, reason } : { ok: true };
 }
@@ -57,7 +57,7 @@ export function travel(s: SaveData, regionId: string, now: Date): SaveData {
   if (!canTravel(s, regionId, now).ok) return s;
   return {
     ...s,
-    board: null,
+    board: currentRegion(s).id === regionId ? s.board : null,
     world: { currentRegion: regionId, regions: { ...s.world.regions, [regionId]: progressOf(s, regionId) }, atHome: false },
   };
 }
