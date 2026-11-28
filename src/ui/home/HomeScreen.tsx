@@ -4,7 +4,7 @@ import { useIsFocused } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMinuteClock } from '../useMinuteClock';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
 import { ensurePermission } from '@/src/notify/questNotifications';
@@ -38,7 +38,7 @@ import { familiarBonus } from '@/src/game/familiars';
 import { ReturnReveal } from './ReturnReveal';
 
 export function HomeScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const { height, width } = useWindowDimensions();
   const now = useMinuteClock();
   const reduced = useReducedMotion();

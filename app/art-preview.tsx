@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import type { Anim } from '@/src/art/types';
 import { GEAR, RARITY_LABEL } from '@/src/content/gear';
 import type { Player, Slot } from '@/src/game/types';
@@ -16,7 +16,7 @@ const SLOTS: Slot[] = ['weapon', 'head', 'body', 'feet', 'accessory'];
 /** Testing screen: try any gear combination to check that art lines up. */
 export default function ArtPreview() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const profile = useGameStore((st) => st.save.profile);
   const [equipped, setEquipped] = useState<Partial<Record<Slot, string>>>({ weapon: 'wooden-sword', body: 'travellers-tunic' });
   const player: Player = {

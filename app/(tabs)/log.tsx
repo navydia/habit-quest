@@ -6,7 +6,7 @@ import { Button } from '@/src/ui/kit/Button';
 import { FamiliarsCard } from '@/src/ui/character/FamiliarsCard';
 import { useMinuteClock } from '@/src/ui/useMinuteClock';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import { REGIONS } from '@/src/content/regions';
 import { isRegionUnlocked, progressOf } from '@/src/game/world';
 import { useGameStore } from '@/src/store/gameStore';
@@ -24,7 +24,7 @@ const dayTitle = (key: string) => {
 /** The Log: mail, daily quests, scrapbooks, familiars and history — everything that doesn't have its own home. */
 export default function LogScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const save = useGameStore((s) => s.save);
   const hideFromHistory = useGameStore((s) => s.hideFromHistory);
   const { claimDaily, ensureDaily, setActiveFamiliar, debug, skipAdventure } = useGameStore.getState();

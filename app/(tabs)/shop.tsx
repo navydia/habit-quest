@@ -1,7 +1,7 @@
 import { clockNow } from '@/src/game/clock';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import { gearById, RARITY_LABEL } from '@/src/content/gear';
 import { POTIONS, potionById } from '@/src/content/shop';
 import { SLOT_INFO } from '@/src/content/slots';
@@ -27,7 +27,7 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
 /** The Shop: each shop is its own tab. */
 export default function ShopScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const now = useMinuteClock();
   const save = useGameStore((s) => s.save);
   const { buyGear, buyPotion, drinkPotion } = useGameStore.getState();

@@ -310,6 +310,9 @@ test('a new habit goes to the end of the custom order, even after reordering', (
 
 describe('shop and daily quests', () => {
   test('actions count toward today\'s daily quests', () => {
+    // Actions without an explicit time use the app clock: pin it to the test's day.
+    const { setClockOffset } = require('@/src/game/clock');
+    setClockOffset(at(DAY, 10).getTime() - Date.now());
     useGameStore.setState({ save: { ...g().save, player: { ...g().save.player, gold: 5000, unspentSp: 1 } } });
     g().ensureDaily(at(DAY, 8));
     const kinds = g().save.daily.quests.map((q) => q.event);
@@ -328,6 +331,7 @@ describe('shop and daily quests', () => {
       if (q.event !== 'adventure') expect([q.title, q.progress]).toEqual([q.title, q.target]);
     }
     expect(kinds).toHaveLength(3);
+    setClockOffset(0);
   });
 
   test('buying with too little gold returns the reason', () => {

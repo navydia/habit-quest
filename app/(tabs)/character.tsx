@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import { gearById, RARITY_LABEL } from '@/src/content/gear';
 import { familiarById } from '@/src/content/regions';
 import { SLOT_INFO } from '@/src/content/slots';
@@ -47,7 +47,7 @@ function effectText(stat: StatKey, total: number): string {
 
 export default function CharacterScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const save = useGameStore((s) => s.save);
   const p = save.player;
   const { allocateSp, respec, equip, unequip, setActiveFamiliar } = useGameStore.getState();
