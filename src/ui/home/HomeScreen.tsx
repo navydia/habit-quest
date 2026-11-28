@@ -104,22 +104,22 @@ export function HomeScreen() {
               accessibilityLabel={`Map. You are at ${scenePlace === 'home' ? 'home' : region.name}`}
               hitSlop={6}
               onPress={() => setMapOpen(true)}
-              style={({ pressed }) => [styles.chip, styles.tapChip, { flexDirection: 'row', alignItems: 'center', gap: space.s, opacity: pressed ? 0.75 : 1 }]}
+              style={({ pressed }) => [styles.chip, styles.tapChip, { flexDirection: 'row', alignItems: 'center', gap: space.s, flexShrink: 1, opacity: pressed ? 0.75 : 1 }]}
             >
               <MapIcon color={hud.text} />
-              <Text variant="bodyStrong" style={{ color: hud.text }}>{scenePlace === 'home' ? 'Home' : region.name}</Text>
+              <Text variant="bodyStrong" numberOfLines={1} style={{ color: hud.text, flexShrink: 1 }}>{scenePlace === 'home' ? 'Home' : region.name}</Text>
             </Pressable>
-          </View>
-          {/* Level and EXP, top right (display only). */}
+          {/* Level and EXP, top right (display only). Same row as the map, so they never overlap. */}
           <View
             accessible
             accessibilityLabel={`Level ${save.player.level}, ${save.player.exp} of ${expToNext(save.player.level)} EXP`}
-            style={[styles.chip, styles.levelChip, { top: insets.top + topTapGuard }]}
+            style={[styles.chip, styles.levelChip]}
           >
             <Text variant="bodyStrong" style={{ color: hud.text }}>Lv {save.player.level}</Text>
             <View style={{ width: 64, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.22)', overflow: 'hidden' }}>
               <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
             </View>
+          </View>
           </View>
           <View style={[styles.heroWrap, bossFight && [styles.heroWrapBoss, { width: Math.min(350, width - 2 * space.screen) }]]}>
             {/* At home the hero always stands in the middle of the rug. */}
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
   buddy: { position: 'absolute', left: 10, bottom: 14, width: 42, height: 36, borderTopLeftRadius: 21, borderTopRightRadius: 21, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#C79A5B', alignItems: 'center', justifyContent: 'center' },
   buddyEyes: { flexDirection: 'row', gap: 8, marginTop: -2 },
   eye: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#2A2623' },
-  mapRow: { position: 'absolute', left: space.screen, flexDirection: 'row' },
+  mapRow: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.s },
   hudRow2: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
   tapChip: { minHeight: minTouch, paddingHorizontal: space.l, justifyContent: 'center' },
-  levelChip: { position: 'absolute', right: space.screen, minHeight: minTouch, flexDirection: 'row', alignItems: 'center', gap: space.s },
+  levelChip: { minHeight: minTouch, flexDirection: 'row', alignItems: 'center', gap: space.s, flexShrink: 0 },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },
 });
