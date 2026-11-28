@@ -462,6 +462,24 @@ describe('round 8 Home edits', () => {
     expect(screen.queryByRole('progressbar', { name: 'Adventure gauge' })).toBeNull();
   });
 
+  test('with a full gauge the small boss tokens still open the boss habit picker', async () => {
+    useGameStore.setState({ save: full() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
+    expect(screen.getAllByText('Boss habit').length).toBeGreaterThan(0);
+  });
+
+  test('a Swift Tonic drunk on the board shortens the shown trip time', async () => {
+    const s = full();
+    s.potions = { owned: { swift: 1 }, active: null };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+    expect(screen.getAllByText(/8h/).length).toBeGreaterThan(0);
+    await fireEvent.press(screen.getByRole('button', { name: 'Drink Swift Tonic' }));
+    expect(screen.getAllByText(/6h 48m/).length).toBeGreaterThan(0);
+  });
+
   test('the gauge panel shows while filling', async () => {
     const s = newSave();
     s.habits = [habit('Read'), habit('Walk')];

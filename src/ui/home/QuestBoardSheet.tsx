@@ -12,7 +12,7 @@ import { useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Sheet } from '../kit/Sheet';
 import { Text } from '../kit/Text';
-import { activePotionPower, PotionPicker } from '../character/PotionPicker';
+import { activePotionPower, activePotionTimeMult, PotionPicker } from '../character/PotionPicker';
 
 const DIFF_LABEL = { easy: 'Easy', normal: 'Normal', hard: 'Hard' } as const;
 
@@ -65,7 +65,7 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
       >
         <View style={{ position: 'absolute', top: 6, alignSelf: 'center', width: 14, height: 14, borderRadius: 7, backgroundColor: board.pin, borderWidth: 2, borderColor: '#7A3524' }} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text variant="label" style={inkMuted}>{DIFF_LABEL[o.difficulty]} · {formatDuration(QUEST_BASE_MS * speedFactor(save.player))}</Text>
+          <Text variant="label" style={inkMuted}>{DIFF_LABEL[o.difficulty]} · {formatDuration(QUEST_BASE_MS * speedFactor(save.player) * activePotionTimeMult(save))}</Text>
           <View style={{ backgroundColor: tone, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: 2 }}>
             <Text variant="label" color={ON_TONE[chanceTone(chance)]}>{Math.round(chance * 100)}%</Text>
           </View>

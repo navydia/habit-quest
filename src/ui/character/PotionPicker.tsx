@@ -13,6 +13,11 @@ export function activePotionPower(save: SaveData): number {
   return save.potions.active ? (potionById(save.potions.active)?.effect.power ?? 0) : 0;
 }
 
+/** The trip-time multiplier of an already-drunk potion (1 when none). */
+export function activePotionTimeMult(save: SaveData): number {
+  return save.potions.active ? (potionById(save.potions.active)?.effect.timeMult ?? 1) : 1;
+}
+
 /**
  * The potions you own, each with Drink. Used in the Bag and before adventures and boss fights.
  * `compact` hides the empty-state hint's shop pointer and keeps the list short for the trip sheets.

@@ -12,6 +12,7 @@ import { BossFigure } from './BossFigure';
 import { statLine } from '../character/gearText';
 import { bossById, familiarById, regionById } from '@/src/content/regions';
 import { Text } from '../kit/Text';
+import { useSafeInsets } from '../useSafeInsets';
 
 const SUCCESS_LINES = ['Back before supper. Not bad, adventurer.', 'The job is done, and done properly.', 'The town owes you one. They will pay in gold.'];
 const FAIL_LINES = ['The slimes had numbers today.', 'Not every road goes your way.', 'A tough one. You came back in one piece.'];
@@ -31,6 +32,7 @@ const NO_BONUS: Bonus = { exp: 1, gold: 1, label: null };
 export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Props) {
   const { c } = useTheme();
   const reduced = useReducedMotion();
+  const insets = useSafeInsets();
   const scale = useState(() => new Animated.Value(0.6))[0];
   const spin = useState(() => new Animated.Value(0))[0];
   // Remember which result's log is open, so a new result starts with it closed.
@@ -75,7 +77,7 @@ export function ReturnReveal({ result, player, bonus = NO_BONUS, onCollect }: Pr
 
   return (
     <Modal visible animationType="fade" onRequestClose={() => onCollect(false)}>
-      <ScrollView style={{ backgroundColor: th.bg }} contentContainerStyle={styles.root}>
+      <ScrollView style={{ backgroundColor: th.bg }} contentContainerStyle={[styles.root, { paddingTop: insets.top + space.huge, paddingBottom: insets.bottom + space.huge }]}>
         <Text variant="label" style={{ color: th.accent }}>{label}</Text>
         <Text variant="display" accessibilityRole="header" style={{ textAlign: 'center', color: th.text }}>
           {mood === 'bossWin' ? 'Victory!' : mood === 'bossLoss' ? 'Not this time' : 'Your hero has returned!'}

@@ -80,12 +80,18 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
   else if (!gauge.hasHabits) hint = 'No habits are scheduled today. Your hero is resting.';
   else if (startedToday) hint = 'Today\'s adventure is done. Rest up for tomorrow.';
 
-  // A full gauge needs no panel: just the way out the door.
+  // A full gauge needs no panel: just the way out the door. The small tokens stay above it (right-aligned),
+  // since they are the only way to see your token count and choose or change the boss habit.
   if (canStart) {
-    return tokens >= 6 && bossHabit ? (
-      <Button title="Boss fight" variant="reward" onPress={onBoss} accessibilityHint="Your 6 boss tokens are ready" />
-    ) : (
-      <Button title="Choose an adventure" variant="reward" onPress={onChoose} />
+    return (
+      <View style={{ gap: space.xs }}>
+        {devils}
+        {tokens >= 6 && bossHabit ? (
+          <Button title="Boss fight" variant="reward" onPress={onBoss} accessibilityHint="Your 6 boss tokens are ready" />
+        ) : (
+          <Button title="Choose an adventure" variant="reward" onPress={onChoose} />
+        )}
+      </View>
     );
   }
 
