@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { pickInsets } from '@/src/ui/useSafeInsets';
 import { ModalRoot } from './ModalRoot';
@@ -18,10 +18,52 @@ type Props = {
   onClose: () => void;
   children: ReactNode;
   /** Pinned under the scrolling content, above the keyboard. */ footer?: ReactNode;
+  /** A small control on the right of the title (e.g. Go to shop). */
+  action?: ReactNode;
 };
 
-export function Sheet({ visible, title, onClose, children, footer }: Props) {
+/** How far (pt) or how fast a pull on the handle must go to close the sheet. */
+export const SHEET_DISMISS_DISTANCE = 100;
+const SHEET_DISMISS_VELOCITY = 0.8;
+
+/** A pull on the handle closes the sheet when it went far enough or was flicked fast enough. */
+export function shouldDismissSheet(dy: number, vy: number): boolean {
+  return dy > SHEET_DISMISS_DISTANCE || vy > SHEET_DISMISS_VELOCITY;
+}
+
+/** Drag-down-to-close for the sheet's handle area. `y` follows the finger (never above 0). */
+export function useSheetDrag(onClose: () => void) {
+  const [y] = useState(() => new Animated.Value(0));
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        // The handle area has nothing tappable of its own, so it takes the touch from the start. The title's
+        // action button sits deeper and answers first, so its taps still work.
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        // Keep the drag once it starts (on web the scroll view would otherwise take it over).
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderMove: (_e, g) => y.setValue(Math.max(0, g.dy)),
+        onPanResponderRelease: (_e, g) => {
+          if (shouldDismissSheet(g.dy, g.vy)) {
+            Animated.timing(y, { toValue: 800, duration: 180, useNativeDriver: true }).start(() => {
+              onClose();
+              y.setValue(0);
+            });
+          } else {
+            Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+          }
+        },
+        onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: true }).start(),
+      }),
+    [onClose, y],
+  );
+  return { y, handlers: responder.panHandlers };
+}
+
+export function Sheet({ visible, title, onClose, children, footer, action }: Props) {
   const { c } = useTheme();
+  const drag = useSheetDrag(onClose);
   // Only mount while open: closing unmounts the Modal. Toggling `visible` on a mounted Modal can fail to
   // dismiss on iOS inside native tab screens (the Customize "Done" bug), so no Modal here stays mounted hidden.
   if (!visible) return null;
@@ -36,8 +78,9 @@ export function Sheet({ visible, title, onClose, children, footer }: Props) {
             return (
               <KeyboardAvoidingView behavior={sheetKeyboardBehavior} style={styles.root} testID="sheet-keyboard-avoider">
                 <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.backdrop} onPress={onClose} />
-                <View
+                <Animated.View
                   style={[
+                    { transform: [{ translateY: drag.y }] },
                     styles.sheet,
                     {
                       backgroundColor: c.bg,
@@ -47,13 +90,19 @@ export function Sheet({ visible, title, onClose, children, footer }: Props) {
                     },
                   ]}
                 >
-                  <View style={[styles.grabber, { backgroundColor: c.line }]} />
-                  <Text variant="title" accessibilityRole="header" style={{ marginBottom: space.l }}>
-                    {title}
-                  </Text>
+                  {/* Handle + title: drag down to close. */}
+                  <View {...drag.handlers} testID="sheet-handle">
+                    <View style={[styles.grabber, { backgroundColor: c.line }]} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginBottom: space.l }}>
+                      <Text variant="title" accessibilityRole="header" style={{ flex: 1 }}>
+                        {title}
+                      </Text>
+                      {action}
+                    </View>
+                  </View>
                   <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
                   {footer ? <View style={{ paddingTop: space.m }}>{footer}</View> : null}
-                </View>
+                </Animated.View>
               </KeyboardAvoidingView>
             );
           }}
@@ -79,6 +128,7 @@ const styles = StyleSheet.create({
     paddingTop: space.m,
   },
   grabber: {
+    // The visible bar is small; the whole handle area (with the title) takes the drag.
     alignSelf: 'center',
     width: 40,
     height: 5,

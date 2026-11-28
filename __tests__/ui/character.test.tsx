@@ -1,7 +1,7 @@
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 jest.mock('expo-sqlite/kv-store', () => require('../helpers/memoryKv'));
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(async () => {}), ImpactFeedbackStyle: { Light: 'light' } }));
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, router: { push: jest.fn() } }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, router: { push: jest.fn(), navigate: jest.fn() } }));
 jest.mock('@/src/notify/questNotifications', () => ({ scheduleReturn: jest.fn(async () => {}), cancelReturn: jest.fn(async () => {}), ensurePermission: jest.fn(async () => true) }));
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
@@ -23,6 +23,21 @@ test('the character box shows power, name and title on one line, then class, and
   expect(screen.getByLabelText('Adventurer the Wanderer')).toBeTruthy();
   expect(screen.getByText('Vanguard')).toBeTruthy();
   expect(screen.getByText('Lv 1')).toBeTruthy();
+});
+
+test('the class sits above Stats with a tip on how classes are decided', async () => {
+  await render(<CharacterScreen />);
+  expect(screen.queryByText(/weapon you carry/)).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'How classes work' }));
+  expect(screen.getByText(/weapon you carry/)).toBeTruthy();
+});
+
+test('the bag has a Go to shop button that opens the Apothecary', async () => {
+  const { router } = jest.requireMock('expo-router');
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Bag' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Go to shop' }));
+  expect(router.navigate).toHaveBeenCalledWith({ pathname: '/shop', params: { tab: 'apothecary' } });
 });
 
 test('titles without "the" get one on the character box', async () => {

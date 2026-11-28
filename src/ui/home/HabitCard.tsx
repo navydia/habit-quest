@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { lifeAreaColor } from '@/src/content/habitOptions';
 import type { Habit } from '@/src/game/types';
 import { home, lipHeight, minTouch, radius, space } from '@/src/theme/tokens';
-import { CheckIcon } from '../icons/Icons';
+import { CheckIcon, DragonToken } from '../icons/Icons';
 import { useTheme } from '@/src/theme/useTheme';
 import { Text } from '../kit/Text';
 
@@ -11,6 +11,8 @@ type Props = {
   habit: Habit;
   subtitle: string;
   lifted?: boolean;
+  /** The boss habit: a small token sits on the icon's bottom-right. */
+  boss?: boolean;
   onComplete: () => void;
   onOpen: () => void;
   onLongPress?: () => void;
@@ -18,7 +20,7 @@ type Props = {
 };
 
 /** Finch-style habit card: emoji blob, name, subtitle, and a big tactile check button. */
-export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongPress, onMove }: Props) {
+export function HabitCard({ habit, subtitle, lifted, boss, onComplete, onOpen, onLongPress, onMove }: Props) {
   const { c } = useTheme();
   return (
     // Tactile like the buttons: a darker lip below, a light top highlight, and a soft shadow (light from above).
@@ -50,7 +52,7 @@ export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongP
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${habit.name}, ${subtitle}`}
+        accessibilityLabel={`${habit.name}, ${subtitle}${boss ? ', boss habit' : ''}`}
         accessibilityHint="Opens the habit. Long-press to drag."
         accessibilityActions={[{ name: 'moveUp', label: 'Move up' }, { name: 'moveDown', label: 'Move down' }]}
         onAccessibilityAction={(e) => onMove?.(e.nativeEvent.actionName === 'moveUp' ? 'up' : 'down')}
@@ -61,6 +63,11 @@ export function HabitCard({ habit, subtitle, lifted, onComplete, onOpen, onLongP
       >
         <View style={{ width: 48, height: 48, borderRadius: 17, backgroundColor: lifeAreaColor(habit.lifeArea), alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-4deg' }] }}>
           <Text style={{ fontSize: 24, lineHeight: 30 }}>{habit.emoji}</Text>
+          {boss && (
+            <View testID={`boss-token-${habit.id}`} style={{ position: 'absolute', right: -6, bottom: -6, transform: [{ rotate: '4deg' }] }}>
+              <DragonToken size={20} earned />
+            </View>
+          )}
         </View>
         <View style={{ flex: 1 }}>
           <Text variant="heading" numberOfLines={2}>{habit.name}</Text>

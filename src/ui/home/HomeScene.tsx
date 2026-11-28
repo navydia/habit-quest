@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { placeOf, type PlacePalette } from '@/src/content/places';
 import { scene } from '@/src/theme/tokens';
@@ -84,8 +84,6 @@ function Cottage() {
       {/* floor, fading into the page colour at the bottom */}
       <Rect x="0" y="300" width="390" height="120" fill={floor} />
       <Rect x="0" y="300" width="390" height="6" fill={scene.wallShade} opacity="0.6" />
-      <Ellipse cx="195" cy="372" rx="130" ry="26" fill="#8C4F3F" opacity="0.85" />
-      <Ellipse cx="195" cy="372" rx="108" ry="19" fill="none" stroke="#C9892B" strokeWidth="3" opacity="0.6" />
       {/* bed */}
       <Rect x={bed.x} y={bed.y + bed.h * 0.35} width={bed.w} height={bed.h * 0.65} rx="8" fill="#5C4034" />
       <Rect x={bed.x + 4} y={bed.y + bed.h * 0.2} width={bed.w - 8} height={bed.h * 0.4} rx="8" fill="#6F8FA6" />
@@ -123,4 +121,29 @@ function Outdoors({ pal }: { pal: PlacePalette }) {
       <Rect x="0" y="350" width="390" height="70" fill="url(#floorFade)" />
     </G>
   );
+}
+
+/** Width and height of the rug drawn under the hero at home. */
+export const RUG = { w: 220, h: 44 };
+/** Where the hero's feet sit, as a share of the sprite's height up from its bottom (frame 320, feet at 300). */
+export const FEET_FROM_BOTTOM = 20 / 320;
+
+/**
+ * The cottage rug. Drawn under the hero rather than in the backdrop, so the hero always stands in its centre
+ * whatever the screen size. Position it absolutely with its centre on the hero's feet.
+ */
+export function Rug({ style }: { style?: ViewStyle }) {
+  return (
+    <View pointerEvents="none" style={[{ position: 'absolute', width: RUG.w, height: RUG.h }, style]}>
+      <Svg width="100%" height="100%" viewBox="0 0 260 52" preserveAspectRatio="none">
+        <Ellipse cx="130" cy="26" rx="130" ry="26" fill="#8C4F3F" opacity="0.85" />
+        <Ellipse cx="130" cy="26" rx="108" ry="19" fill="none" stroke="#C9892B" strokeWidth="3" opacity="0.6" />
+      </Svg>
+    </View>
+  );
+}
+
+/** Style that centres the rug on a hero sprite of `spriteHeight`, whose horizontal centre is at `centerX` in the parent. */
+export function rugUnderFeet(spriteHeight: number, centerX: number) {
+  return { left: centerX - RUG.w / 2, bottom: spriteHeight * FEET_FROM_BOTTOM - RUG.h / 2 };
 }

@@ -9,7 +9,7 @@ import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
-import { home, hud, radius, space, topTapGuard } from '@/src/theme/tokens';
+import { home, hud, minTouch, radius, space, topTapGuard } from '@/src/theme/tokens';
 import { useReducedMotion } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
@@ -23,7 +23,8 @@ import { SortSheet } from './SortSheet';
 import { HabitList } from './HabitList';
 import { HeroSprite } from '../hero/HeroSprite';
 import { Slime } from './Slime';
-import { HomeScene } from './HomeScene';
+import { HomeScene, Rug, rugUnderFeet } from './HomeScene';
+import { FRAME_H, FRAME_W } from '@/src/art/types';
 import { QuestBoardSheet } from './QuestBoardSheet';
 import { QuestStatus } from './QuestStatus';
 import { MapSheet } from '../world/MapSheet';
@@ -103,13 +104,26 @@ export function HomeScreen() {
               accessibilityLabel={`Map. You are at ${scenePlace === 'home' ? 'home' : region.name}`}
               hitSlop={6}
               onPress={() => setMapOpen(true)}
-              style={({ pressed }) => [styles.chip, styles.tapChip, { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.75 : 1 }]}
+              style={({ pressed }) => [styles.chip, styles.tapChip, { flexDirection: 'row', alignItems: 'center', gap: space.s, opacity: pressed ? 0.75 : 1 }]}
             >
               <MapIcon color={hud.text} />
-              <Text variant="label" style={{ color: hud.text }}>{scenePlace === 'home' ? 'Home' : region.name}</Text>
+              <Text variant="bodyStrong" style={{ color: hud.text }}>{scenePlace === 'home' ? 'Home' : region.name}</Text>
             </Pressable>
           </View>
+          {/* Level and EXP, top right (display only). */}
+          <View
+            accessible
+            accessibilityLabel={`Level ${save.player.level}, ${save.player.exp} of ${expToNext(save.player.level)} EXP`}
+            style={[styles.chip, styles.levelChip, { top: insets.top + topTapGuard }]}
+          >
+            <Text variant="bodyStrong" style={{ color: hud.text }}>Lv {save.player.level}</Text>
+            <View style={{ width: 64, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.22)', overflow: 'hidden' }}>
+              <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
+            </View>
+          </View>
           <View style={[styles.heroWrap, bossFight && [styles.heroWrapBoss, { width: Math.min(350, width - 2 * space.screen) }]]}>
+            {/* At home the hero always stands in the middle of the rug. */}
+            {scenePlace === 'home' && <Rug style={rugUnderFeet(HERO_H, bossFight ? 10 + spriteWidth(HERO_H) / 2 : 125)} />}
             {mode === 'questing' && !bossFight && <Slime reduced={reduced} />}
             {bossFight && <BossFigure bossId={bossFight.id} name={bossFight.name} reduced={reduced} />}
             {save.familiars.active && <FamiliarBuddy id={save.familiars.active} />}
@@ -117,23 +131,14 @@ export function HomeScreen() {
               player={save.player}
               anim={mode === 'questing' ? 'fight' : 'idle'}
               appearance={appearance}
-              height={210}
+              height={HERO_H}
               paused={!focused}
               accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : bossFight ? `Your hero, fighting ${bossFight.name}` : 'Your hero, out on an adventure'}
             />
           </View>
         </View>
 
-        <View style={styles.body}>
-          <View style={{ marginTop: space.m, gap: 2 }} accessible accessibilityLabel={`Level ${save.player.level}, ${Math.max(0, expToNext(save.player.level) - save.player.exp)} EXP to next level`}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-              <Text variant="bodyStrong" style={{ color: home.text }}>Lv {save.player.level}</Text>
-              <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.18)', overflow: 'hidden' }}>
-                <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
-              </View>
-            </View>
-            <Text variant="caption" style={{ color: home.muted, textAlign: 'right' }}>{Math.max(0, expToNext(save.player.level) - save.player.exp)} EXP to next level</Text>
-          </View>
+        <View style={[styles.body, { marginTop: space.l }]}>
           <View>
             <QuestStatus
               save={save}
@@ -278,6 +283,10 @@ function FamiliarBuddy({ id }: { id: string }) {
 }
 
 
+/** The hero's height on Home, and a sprite's width at a given height. */
+const HERO_H = 210;
+const spriteWidth = (h: number) => (FRAME_W * h) / FRAME_H;
+
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
   heroWrap: { width: 250, alignItems: 'center', justifyContent: 'flex-end' },
@@ -289,7 +298,8 @@ const styles = StyleSheet.create({
   eye: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#2A2623' },
   mapRow: { position: 'absolute', left: space.screen, flexDirection: 'row' },
   hudRow2: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
-  tapChip: { minHeight: 32, justifyContent: 'center' },
+  tapChip: { minHeight: minTouch, paddingHorizontal: space.l, justifyContent: 'center' },
+  levelChip: { position: 'absolute', right: space.screen, minHeight: minTouch, flexDirection: 'row', alignItems: 'center', gap: space.s },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },
 });
@@ -297,7 +307,7 @@ const styles = StyleSheet.create({
 /** Folded-map icon (line style, matches the type). */
 function MapIcon({ color }: { color: string }) {
   return (
-    <Svg width={16} height={16} viewBox="0 0 24 24">
+    <Svg width={22} height={22} viewBox="0 0 24 24">
       <Path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14" stroke={color} strokeWidth={2} fill="none" strokeLinejoin="round" />
     </Svg>
   );

@@ -140,13 +140,13 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
   };
 
   const subtitle = (h: Habit) =>
-    [groupBy === 'lifeArea' ? timeLabel(h.timeOfDay) : lifeAreaLabel(h.lifeArea), describeSchedule(h.schedule), h.id === save.boss.habitId ? '◆ Boss habit' : null]
+    [groupBy === 'lifeArea' ? timeLabel(h.timeOfDay) : lifeAreaLabel(h.lifeArea), describeSchedule(h.schedule)]
       .filter(Boolean)
       .join(' · ');
 
   const left = todo.length;
   return (
-    <View style={{ gap: space.xs, marginTop: -space.s }}>
+    <View style={{ marginTop: -space.s }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text variant="heading" accessibilityRole="header" style={{ color: home.text, flex: 1 }}>
           {scheduled.length === 0 ? 'Today' : left === 0 ? 'All done for today' : `${left} ${left === 1 ? 'habit' : 'habits'} left for today`}
@@ -163,7 +163,7 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
       <View {...responder.panHandlers} style={{ gap: space.m }}>
         {visible.flatMap((s, si) => [
           groupBy !== 'custom' ? (
-            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: si === 0 ? space.xs : space.l, marginBottom: 0 }}>
+            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: si === 0 ? 0 : space.l, marginBottom: 0 }}>
               <Text variant="bodyStrong" style={{ color: home.text }}>{s.title}</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: home.line }} />
               <Pressable
@@ -171,7 +171,8 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
                 accessibilityLabel={`Add a habit to ${s.title}`}
                 onPress={() => onAdd(sectionTarget(groupBy, s.key))}
                 style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, backgroundColor: c.ember, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
-                hitSlop={6}
+                // No upward slop: the first header sits right under the Sort button.
+                hitSlop={{ top: si === 0 ? 0 : 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Text variant="bodyStrong" color="onEmber">+</Text>
               </Pressable>
@@ -186,6 +187,7 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
               <HabitCard
                 habit={h}
                 subtitle={subtitle(h)}
+                boss={h.id === save.boss.habitId}
                 lifted={dragId === h.id}
                 onComplete={() => onComplete(h, today)}
                 onOpen={() => onEdit(h)}

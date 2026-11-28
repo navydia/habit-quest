@@ -12,9 +12,10 @@ import { expToNext } from '@/src/game/progression';
 import { STAT_KEYS, gearStats, powerOf } from '@/src/game/stats';
 import type { Slot, StatKey } from '@/src/game/types';
 import { useGameStore } from '@/src/store/gameStore';
-import { fonts, home, hud, minTouch, radius, rarity as rarityColors, space } from '@/src/theme/tokens';
+import { fonts, home, hud, minTouch, radius, rarity as rarityColors, space, topTapGuard } from '@/src/theme/tokens';
 import { displayTitle, titleById } from '@/src/content/titles';
-import { HomeScene } from '@/src/ui/home/HomeScene';
+import { HomeScene, Rug, rugUnderFeet } from '@/src/ui/home/HomeScene';
+import { FRAME_H, FRAME_W } from '@/src/art/types';
 import { placeOf } from '@/src/content/places';
 import { CustomizeScreen } from '@/src/ui/character/CustomizeScreen';
 import { BagIcon, CogIcon } from '@/src/ui/icons/Icons';
@@ -58,6 +59,7 @@ export default function CharacterScreen() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [customizing, setCustomizing] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
+  const [classTip, setClassTip] = useState(false);
   const { setProfile } = useGameStore.getState();
   const need = expToNext(p.level);
   const gear = gearStats(p);
@@ -115,6 +117,10 @@ export default function CharacterScreen() {
       {/* Background colour = the place's ground, so a tall box (long name, big text) never shows a pale gap. */}
       <View style={{ marginHorizontal: -space.screen, marginTop: -(insets.top + space.l), paddingTop: insets.top + space.m, paddingHorizontal: space.screen, paddingBottom: space.l, gap: space.s, overflow: 'hidden', backgroundColor: placeOf(save.profile.background).bottom }}>
         <HomeScene place={save.profile.background} />
+        {/* Customize: top-left of the box, kept below the status-bar strip where taps don't register. */}
+        <View style={{ position: 'absolute', left: space.screen, top: insets.top + topTapGuard, zIndex: 1 }}>
+          {roundButton('Customize your character', () => setCustomizing(true), <CogIcon color={home.text} />)}
+        </View>
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', backgroundColor: 'rgba(28,24,22,0.35)' }} />
         <View style={{ alignItems: 'center' }} accessible accessibilityLabel={`${powerOf(p)} power`}>
           <Text variant="label" style={{ color: home.muted }}>POWER</Text>
@@ -122,7 +128,12 @@ export default function CharacterScreen() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ gap: space.m }}>{LEFT.map(box)}</View>
-          <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
+          {/* The bag sits at the portrait's bottom-right, beside the familiar box. */}
+          <View>
+            {save.profile.background === 'home' && <Rug style={rugUnderFeet(200, (FRAME_W * 200) / FRAME_H / 2)} />}
+            <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
+            <View style={{ position: 'absolute', right: -10, bottom: 0 }}>{roundButton('Bag', () => setBagOpen(true), <BagIcon color={home.text} />)}</View>
+          </View>
           <View style={{ gap: space.m }}>{RIGHT.map(box)}</View>
         </View>
         {/* Name and title on one line (title smaller), then the class. */}
@@ -136,12 +147,6 @@ export default function CharacterScreen() {
             {heroName}
             <Text variant="heading" style={{ color: home.muted }}>{` ${titleText}`}</Text>
           </Text>
-          <Text variant="heading" style={{ color: home.muted }}>{p.title}</Text>
-        </View>
-        {/* Bag and cog, right-aligned just above the EXP bar. */}
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.s }}>
-          {roundButton('Bag', () => setBagOpen(true), <BagIcon color={home.text} />)}
-          {roundButton('Customize your character', () => setCustomizing(true), <CogIcon color={home.text} />)}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
           <Text variant="title" style={{ color: home.text }}>Lv {p.level}</Text>
@@ -150,6 +155,33 @@ export default function CharacterScreen() {
             <Text variant="caption" style={{ color: home.muted }}>{p.exp} / {need} EXP to level {p.level + 1}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Class, with a tip on how it's decided. */}
+      <View style={{ gap: space.s }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs }}>
+          <Text variant="label" color="textMuted">CLASS</Text>
+          <Text variant="title">{p.title}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="How classes work"
+            accessibilityState={{ expanded: classTip }}
+            onPress={() => setClassTip((v) => !v)}
+            style={({ pressed }) => ({ width: minTouch, height: minTouch, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+          >
+            <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: c.textMuted, alignItems: 'center', justifyContent: 'center' }}>
+              <Text variant="label" color="textMuted" style={{ lineHeight: 16 }}>i</Text>
+            </View>
+          </Pressable>
+        </View>
+        {classTip && (
+          <View style={{ backgroundColor: c.surfaceSunk, borderRadius: radius.card, padding: space.m }}>
+            <Text variant="caption" color="textMuted">
+              Your class comes from the weapon you carry (sword, bow or staff) and your highest stat, gear included. A sword with Power
+              makes a Vanguard; a bow with Luck, a Trickshot. Change either and your class follows. Without a weapon you are a Wanderer.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Stats with what they do */}
@@ -203,7 +235,21 @@ export default function CharacterScreen() {
       <CustomizeScreen visible={customizing} save={save} onClose={() => setCustomizing(false)} onChange={setProfile} />
       <SlotSheet slot={slot} player={p} onClose={() => setSlot(null)} onEquip={(uid) => equip(uid)} onUnequip={unequip} />
       <FamiliarSheet visible={familiarOpen} owned={save.familiars.owned} active={save.familiars.active} onClose={() => setFamiliarOpen(false)} onSetActive={setActiveFamiliar} />
-      <Sheet visible={bagOpen} title="Bag" onClose={() => setBagOpen(false)}>
+      <Sheet
+        visible={bagOpen}
+        title="Bag"
+        onClose={() => setBagOpen(false)}
+        action={
+          <Button
+            title="Go to shop"
+            variant="secondary"
+            onPress={() => {
+              setBagOpen(false);
+              router.navigate({ pathname: '/shop', params: { tab: 'apothecary' } });
+            }}
+          />
+        }
+      >
         <View style={{ gap: space.l, paddingBottom: space.s }}>
           <Text variant="label" color="textMuted">POTIONS</Text>
           <PotionPicker save={save} />

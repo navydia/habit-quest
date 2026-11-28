@@ -488,12 +488,24 @@ describe('round 8 Home edits', () => {
     expect(screen.getByText('Adventure gauge')).toBeTruthy();
   });
 
-  test('the level bar says how much EXP is left to the next level', async () => {
+  test('level and EXP sit in the top corner, without the to-next-level text', async () => {
     const s = newSave();
     s.player = { ...s.player, exp: 30 };
     useGameStore.setState({ save: s });
     await render(<HomeScreen />);
-    expect(screen.getByText(/^\d+ EXP to next level$/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Level 1, 30 of \d+ EXP$/)).toBeTruthy();
+    expect(screen.queryByText(/to next level/)).toBeNull();
+  });
+
+  test('the boss habit card shows a token on its icon instead of the words', async () => {
+    const s = newSave();
+    s.habits = [habit('Read'), habit('Walk')];
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 0 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.queryByText(/Boss habit/)).toBeNull();
+    expect(screen.getByRole('button', { name: /^Read, .*boss habit/ })).toBeTruthy();
+    expect(screen.getByTestId('boss-token-Read')).toBeTruthy();
   });
 
   test('a potion can be drunk on the adventure board before setting out', async () => {

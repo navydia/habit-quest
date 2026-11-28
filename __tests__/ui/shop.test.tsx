@@ -1,6 +1,8 @@
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 jest.mock('expo-sqlite/kv-store', () => require('../helpers/memoryKv'));
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(async () => {}), ImpactFeedbackStyle: { Light: 'light' } }));
+const mockParams: { tab?: string } = {};
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => mockParams, router: { navigate: jest.fn(), push: jest.fn() } }));
 jest.mock('@/src/notify/questNotifications', () => ({ scheduleReturn: jest.fn(async () => {}), cancelReturn: jest.fn(async () => {}), ensurePermission: jest.fn(async () => true) }));
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
@@ -39,4 +41,12 @@ test('finished daily quests can be claimed in the Log', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Claim' }));
   expect(g().save.player.gold).toBe(50);
   expect(screen.getByText('Claimed')).toBeTruthy();
+});
+
+test('opening the Shop with tab=apothecary shows the Apothecary', async () => {
+  mockParams.tab = 'apothecary';
+  useGameStore.setState({ save: newSave(), loaded: true });
+  await render(<ShopScreen />);
+  expect(screen.getByText('Courage Brew')).toBeTruthy();
+  delete mockParams.tab;
 });

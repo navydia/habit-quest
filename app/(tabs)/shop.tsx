@@ -1,4 +1,5 @@
 import { clockNow } from '@/src/game/clock';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeInsets } from '@/src/ui/useSafeInsets';
@@ -32,6 +33,14 @@ export default function ShopScreen() {
   const save = useGameStore((s) => s.save);
   const { buyGear, buyPotion, drinkPotion } = useGameStore.getState();
   const [tab, setTab] = useState<Tab>('armory');
+  // Other screens can open a given shop (the Bag's "Go to shop" opens the Apothecary). Adjusted during render
+  // when the param changes, so a later visit with a new param switches tabs even though this screen stays mounted.
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+  const [seenParam, setSeenParam] = useState<string | undefined>(undefined);
+  if (tabParam !== seenParam) {
+    setSeenParam(tabParam);
+    if (TABS.some((t) => t.id === tabParam)) setTab(tabParam as Tab);
+  }
   const [message, setMessage] = useState<string | null>(null);
   const today = dayKey(now);
   const bought = save.shop.dayKey === today ? save.shop.bought : [];
