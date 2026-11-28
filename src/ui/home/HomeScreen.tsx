@@ -1,16 +1,16 @@
+import { clockNow } from '@/src/game/clock';
 import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMinuteClock } from '../useMinuteClock';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
-import { powerOf } from '@/src/game/stats';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
-import { hud, radius, space } from '@/src/theme/tokens';
-import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
+import { home, hud, minTouch, radius, space, topTapGuard } from '@/src/theme/tokens';
+import { useReducedMotion } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
 import { HabitSheet } from '../habits/HabitSheet';
@@ -18,43 +18,53 @@ import { UndoToast } from './UndoToast';
 import { BossSheet } from '../world/BossSheet';
 import { BossFigure } from './BossFigure';
 import { bossById , familiarById } from '@/src/content/regions';
-import type { Habit } from '@/src/game/types';
+import type { Habit, LifeArea, TimeOfDay } from '@/src/game/types';
+import { SortSheet } from './SortSheet';
 import { HabitList } from './HabitList';
 import { HeroSprite } from '../hero/HeroSprite';
 import { Slime } from './Slime';
-import { HomeScene } from './HomeScene';
+import { HomeScene, Rug, rugUnderFeet } from './HomeScene';
+import { FRAME_H, FRAME_W } from '@/src/art/types';
 import { QuestBoardSheet } from './QuestBoardSheet';
 import { QuestStatus } from './QuestStatus';
-import { DebugSheet } from './DebugSheet';
 import { MapSheet } from '../world/MapSheet';
 import { ScrapbookSheet } from '../world/ScrapbookSheet';
 import { BossHabitSheet } from '../world/BossHabitSheet';
 import { bossTokens } from '@/src/game/bosses';
-import { currentRegion } from '@/src/game/world';
+import { currentRegion, placeId } from '@/src/game/world';
+import { placeOf } from '@/src/content/places';
+import { expToNext } from '@/src/game/progression';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { familiarBonus } from '@/src/game/familiars';
 import { ReturnReveal } from './ReturnReveal';
 
 export function HomeScreen() {
-  const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const { height, width } = useWindowDimensions();
   const now = useMinuteClock();
   const reduced = useReducedMotion();
   const focused = useIsFocused();
   const save = useGameStore((s) => s.save);
-  const { addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit, debug } =
+  const { goHome, moveHabit, addHabit, updateHabit, archiveHabit, completeHabit, undoCompletion, setGroupBy, ensureBoard, startQuest, startBossFight, collect, skipAdventure, travel, setBossHabit } =
     useGameStore.getState();
   // Habit sheet: null = closed, 'new' = add, otherwise the habit being edited.
   const [editing, setEditing] = useState<Habit | 'new' | null>(null);
   const [undo, setUndo] = useState<{ habitId: string; key: string; message: string } | null>(null);
   const [bossOpen, setBossOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [preset, setPreset] = useState<{ timeOfDay?: TimeOfDay; lifeArea?: LifeArea }>({});
   const [choosing, setChoosing] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
   const [bossSheet, setBossSheet] = useState(false);
-  const [debugOpen, setDebugOpen] = useState(false);
   const region = currentRegion(save);
+  const runRegion = save.activeRun?.offer.regionId;
+  // Out on a trip: the region it happens in. Otherwise: home, or the region you travelled to.
+  const scenePlace = save.activeRun ? (runRegion ?? region.id) : placeId(save);
+  const pal = placeOf(scenePlace);
+  const appearance = useMemo(() => ({ look: save.profile.look, pronouns: save.profile.pronouns }), [save.profile.look, save.profile.pronouns]);
   const fam = save.familiars.active ? familiarById(save.familiars.active) : undefined;
   const revealBonus = { ...familiarBonus(save), label: fam ? `${fam.name}: +${fam.bonus.pct}% ${fam.bonus.kind === 'exp' ? 'EXP' : 'gold'}` : null };
 
@@ -71,52 +81,76 @@ export function HomeScreen() {
   }, [gauge.full]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
+    <View style={{ flex: 1, backgroundColor: pal.bottom }}>
+      {/* Pull-down area: the place's wall/sky colour, feathered into the floor colour. */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: height * 0.6 }}>
+        <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id="pull" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={pal.top} />
+              <Stop offset="0.7" stopColor={pal.top} />
+              <Stop offset="1" stopColor={pal.bottom} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#pull)" />
+        </Svg>
+      </View>
+      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingBottom: insets.bottom + 96, backgroundColor: pal.bottom }}>
         <View style={[styles.stage, { height: Math.max(300, height * 0.45) }]}>
-          <HomeScene mode={mode} />
-          <View style={[styles.hud, { top: insets.top + space.s }]}>
-            <Chip text={`Lv ${save.player.level}`} />
-            <Chip text={`${save.player.gold} gold`} />
-            <Chip text={`${powerOf(save.player)} power`} />
-          </View>
-          <View style={[styles.hudRow2, { top: insets.top + space.s + 36 }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Map: ${region.name}`} hitSlop={6} onPress={() => setMapOpen(true)} style={({ pressed }) => [styles.chip, styles.tapChip, { opacity: pressed ? 0.75 : 1 }]}>
-              <Text variant="label" style={{ color: hud.text }}>⌖ {region.name}</Text>
+          <HomeScene place={scenePlace} />
+          <View style={[styles.mapRow, { top: insets.top + topTapGuard }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Map. You are at ${scenePlace === 'home' ? 'home' : region.name}`}
+              hitSlop={6}
+              onPress={() => setMapOpen(true)}
+              style={({ pressed }) => [styles.chip, styles.tapChip, { flexDirection: 'row', alignItems: 'center', gap: space.s, opacity: pressed ? 0.75 : 1 }]}
+            >
+              <MapIcon color={hud.text} />
+              <Text variant="bodyStrong" style={{ color: hud.text }}>{scenePlace === 'home' ? 'Home' : region.name}</Text>
             </Pressable>
-            {__DEV__ && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Debug menu" hitSlop={6} onPress={() => setDebugOpen(true)} style={({ pressed }) => [styles.chip, styles.tapChip, { opacity: pressed ? 0.75 : 1 }]}>
-                <Text variant="label" style={{ color: hud.text }}>Debug</Text>
-              </Pressable>
-            )}
+          </View>
+          {/* Level and EXP, top right (display only). */}
+          <View
+            accessible
+            accessibilityLabel={`Level ${save.player.level}, ${save.player.exp} of ${expToNext(save.player.level)} EXP`}
+            style={[styles.chip, styles.levelChip, { top: insets.top + topTapGuard }]}
+          >
+            <Text variant="bodyStrong" style={{ color: hud.text }}>Lv {save.player.level}</Text>
+            <View style={{ width: 64, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.22)', overflow: 'hidden' }}>
+              <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
+            </View>
           </View>
           <View style={[styles.heroWrap, bossFight && [styles.heroWrapBoss, { width: Math.min(350, width - 2 * space.screen) }]]}>
+            {/* At home the hero always stands in the middle of the rug. */}
+            {scenePlace === 'home' && <Rug style={rugUnderFeet(HERO_H, bossFight ? 10 + spriteWidth(HERO_H) / 2 : 125)} />}
             {mode === 'questing' && !bossFight && <Slime reduced={reduced} />}
             {bossFight && <BossFigure bossId={bossFight.id} name={bossFight.name} reduced={reduced} />}
             {save.familiars.active && <FamiliarBuddy id={save.familiars.active} />}
             <HeroSprite
               player={save.player}
               anim={mode === 'questing' ? 'fight' : 'idle'}
-              height={210}
+              appearance={appearance}
+              height={HERO_H}
               paused={!focused}
               accessibilityLabel={mode === 'idle' ? 'Your hero, resting at home' : bossFight ? `Your hero, fighting ${bossFight.name}` : 'Your hero, out on an adventure'}
             />
           </View>
         </View>
 
-        <View style={styles.body}>
-          <View style={{ marginTop: -36 }}>
+        <View style={[styles.body, { marginTop: space.l }]}>
+          <View>
             <QuestStatus
               save={save}
               gauge={gauge}
               canStart={canStart}
               startedToday={save.lastQuestStartedDayKey === today}
               now={now}
-              onSkip={__DEV__ ? () => skipAdventure(new Date()) : undefined}
+              onSkip={__DEV__ ? (outcome) => skipAdventure(clockNow(), outcome) : undefined}
               onBossHabit={() => setBossSheet(true)}
               onBoss={() => setBossOpen(true)}
               onChoose={() => {
-                ensureBoard(new Date());
+                ensureBoard(clockNow());
                 setChoosing(true);
               }}
             />
@@ -125,23 +159,30 @@ export function HomeScreen() {
             save={save}
             today={today}
             onComplete={(h, key) => {
-              completeHabit(h.id, key, new Date());
+              completeHabit(h.id, key, clockNow());
               setUndo({ habitId: h.id, key, message: `${h.emoji} ${h.name} · done` });
             }}
             onEdit={(h) => setEditing(h)}
-            onGroupBy={setGroupBy}
+            onAdd={(preset) => {
+              setPreset(preset);
+              setEditing('new');
+            }}
+            onSort={() => setSortOpen(true)}
+            onMove={moveHabit}
+            onDragging={setDragging}
           />
-          <Button title="+ Add habit" variant="secondary" onPress={() => setEditing('new')} />
+          <Button title="+ New habit" variant="outline" outlineColor={home.text} onPress={() => { setPreset({}); setEditing('new'); }} />
         </View>
       </ScrollView>
 
+      <SortSheet visible={sortOpen} value={save.settings.groupBy} onClose={() => setSortOpen(false)} onChoose={setGroupBy} />
       <UndoToast message={notice} bottom={insets.bottom + 72} onDone={() => setNotice(null)} />
       <UndoToast
         message={undo?.message ?? null}
         bottom={insets.bottom + 72}
         onDone={() => setUndo(null)}
         onUndo={() => {
-          if (undo) undoCompletion(undo.habitId, undo.key, new Date());
+          if (undo) undoCompletion(undo.habitId, undo.key, clockNow());
           setUndo(null);
         }}
       />
@@ -151,8 +192,9 @@ export function HomeScreen() {
         isBossHabit={editing !== 'new' && editing?.id === save.boss.habitId}
         visible
         habit={editing === 'new' ? null : editing}
+        preset={preset}
         onClose={() => setEditing(null)}
-        onSave={(d) => (editing && editing !== 'new' ? updateHabit(editing.id, d) : addHabit(d.name, d.schedule, new Date(), d))}
+        onSave={(d) => (editing && editing !== 'new' ? updateHabit(editing.id, d) : addHabit(d.name, d.schedule, clockNow(), d))}
         onArchive={archiveHabit}
       />
       )}
@@ -162,7 +204,7 @@ export function HomeScreen() {
         onClose={() => setBossOpen(false)}
         onAdventureInstead={() => {
           setBossOpen(false);
-          ensureBoard(new Date());
+          ensureBoard(clockNow());
           setChoosing(true);
         }}
         onFight={(bossId, difficulty) => {
@@ -170,7 +212,7 @@ export function HomeScreen() {
           ensurePermission()
             .catch(() => false)
             .then(() => {
-              if (!startBossFight(bossId, difficulty, new Date())) setNotice('The boss fight could not start. Check your tokens and try again.');
+              if (!startBossFight(bossId, difficulty, clockNow())) setNotice('The boss fight could not start. Check your tokens and try again.');
             });
         }}
       />
@@ -183,7 +225,7 @@ export function HomeScreen() {
           // Ask first, so the return notification is allowed when it gets scheduled.
           ensurePermission()
             .catch(() => false)
-            .then(() => startQuest(id, new Date()));
+            .then(() => startQuest(id, clockNow()));
         }}
       />
       <MapSheet
@@ -192,7 +234,11 @@ export function HomeScreen() {
         now={now}
         onClose={() => setMapOpen(false)}
         onTravel={(id) => {
-          travel(id, new Date());
+          travel(id, clockNow());
+          setMapOpen(false);
+        }}
+        onGoHome={() => {
+          goHome();
           setMapOpen(false);
         }}
         onScrapbook={(id) => {
@@ -207,19 +253,8 @@ export function HomeScreen() {
         currentId={save.boss.habitId}
         tokens={bossTokens(save)}
         onClose={() => setBossSheet(false)}
-        onChoose={(id) => setBossHabit(id, new Date())}
+        onChoose={(id) => setBossHabit(id, clockNow())}
       />
-      {__DEV__ && (
-        <DebugSheet
-          visible={debugOpen}
-          onClose={() => setDebugOpen(false)}
-          onAction={(a) => {
-            if (a === 'skip') skipAdventure(new Date());
-            else debug(a, new Date());
-            setDebugOpen(false);
-          }}
-        />
-      )}
       <ReturnReveal
         result={save.pendingResult}
         player={save.player}
@@ -247,13 +282,10 @@ function FamiliarBuddy({ id }: { id: string }) {
   );
 }
 
-function Chip({ text }: { text: string }) {
-  return (
-    <View style={styles.chip}>
-      <Text variant="label" style={{ color: hud.text }}>{text}</Text>
-    </View>
-  );
-}
+
+/** The hero's height on Home, and a sprite's width at a given height. */
+const HERO_H = 210;
+const spriteWidth = (h: number) => (FRAME_W * h) / FRAME_H;
 
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 44, overflow: 'hidden' },
@@ -264,8 +296,19 @@ const styles = StyleSheet.create({
   buddy: { position: 'absolute', left: 10, bottom: 14, width: 42, height: 36, borderTopLeftRadius: 21, borderTopRightRadius: 21, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#C79A5B', alignItems: 'center', justifyContent: 'center' },
   buddyEyes: { flexDirection: 'row', gap: 8, marginTop: -2 },
   eye: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#2A2623' },
+  mapRow: { position: 'absolute', left: space.screen, flexDirection: 'row' },
   hudRow2: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
-  tapChip: { minHeight: 32, justifyContent: 'center' },
+  tapChip: { minHeight: minTouch, paddingHorizontal: space.l, justifyContent: 'center' },
+  levelChip: { position: 'absolute', right: space.screen, minHeight: minTouch, flexDirection: 'row', alignItems: 'center', gap: space.s },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },
   body: { paddingHorizontal: space.screen, gap: space.xxl },
 });
+
+/** Folded-map icon (line style, matches the type). */
+function MapIcon({ color }: { color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z M9 4v14 M15 6v14" stroke={color} strokeWidth={2} fill="none" strokeLinejoin="round" />
+    </Svg>
+  );
+}

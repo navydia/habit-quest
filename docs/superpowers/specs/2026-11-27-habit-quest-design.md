@@ -291,3 +291,61 @@ Goal: the creator can replace any placeholder by dropping in a file. No code cha
   - Home shows the hero fighting a big boss.
   - Only one trip (adventure or boss) per day.
 - **The Board tab is now the Log.** It holds mail (Guild Master letters, later), daily quests (City, later), the scrapbooks, and History.
+
+## 15. Home redesign, ordering, boss odds *(creator decisions, built in Plan 5; amends §6 and §14)*
+
+- **Home** follows Finch's layout with our own palette:
+  - A deep warm dusk page under the scene.
+  - An adventure panel with an icon.
+  - A "N habits left for today" header with a sort button.
+  - Section headers with "+".
+  - Large habit cards with a coloured emoji blob and a tactile check button.
+- **Tapping a card** opens it for editing. The habit sheet is made of rows (Life area, Time of day, Repeat), with Save pinned to the bottom.
+- **Long-press and drag** reorders habits. Dropping into another time-of-day or life-area section changes that property. **Custom** sort shows one list in your own order. Screen readers get Move up / Move down actions.
+- **Boss odds:**
+  - Each difficulty has a required power: Normal = the boss's power, Hard +30, Extreme +60. Defense adds 2 per point.
+  - **Normal always wins.** Hard and Extreme win if you meet their requirement, otherwise 50% and 5%.
+  - **A lost boss fight spends the tokens.**
+- **Boss preview:** the boss large on a backdrop coloured by risk (moss = safe, gold = a gamble, ember = a long shot), with small difficulty buttons showing the required power and chance.
+- **Adventure board:** a cork board with paper notes pinned on, each showing required power, chance, rewards and memento status.
+- **Skip (testing)** has **Win** and **Lose** buttons.
+
+## 16. Character tab, Shop, potions, daily quests *(creator decisions, built in Plan 6; supersedes §9 and §9.5)*
+
+- **Character tab:**
+  - A portrait with **six equipment boxes**: weapon, head and body on the left; feet, accessory and **familiar** on the right. Tapping a box shows the item's stats and lets you change it.
+  - **Stats show their effect** (for example "+9 power rating", "+6% drop chance", "−12% adventure time").
+  - Your familiar's bonus.
+  - **Lifetime stats:** adventures won and tried, habits completed, bosses beaten, regions explored, mementos, gold earned.
+- **The familiar collection** lives in the **Log**.
+- **The City tab is now the Shop tab** (no tavern). Each shop is its own tab:
+  - **Armory:** 4 items a day plus a weekly special (rare or better, 1.5× price). Prices: common 60, uncommon 150, rare 350, epic 800, legendary 1800.
+  - **Apothecary:** one-use potions you drink before your next trip. Fortune Draught: +10 Luck. Swift Tonic: −15% time. Courage Brew: +40 power. One active at a time.
+  - **Cosmetics** and **Housing:** coming soon.
+- **Daily quests:** 3 a day from a pool of 7 (an adventure, 3 or 5 habits, buy an item, drink a potion, equip gear, spend a skill point). Rewards are 40–80 gold, claimed in the Log.
+
+## 17. Customization, places and Home polish *(creator decisions, built in Plan 7)*
+
+- **Habit editor:** a full-screen page with **Cancel · New habit · Add/Save** in the header, so the keyboard never hides the action.
+- **Places:** the hero is either at **home** (the cottage) or in a **region** (that region's scene).
+  - The Home page background is the place's floor or ground colour.
+  - Pulling down shows the wall or sky colour, feathered into the background.
+  - A **map button** at the top right reads "Home" or the region name. The map has **Go home**.
+  - Adventures come from the last region you travelled to.
+- **Home:**
+  - Gold and power are removed. **Level** and a small EXP bar sit under the character.
+  - The adventure panel has an "Adventure gauge" subtitle, then the hint, then the **boss tokens: red dragon coins**.
+  - Habit cards are more compact, with **moss check buttons** that match the gauge and a rounded check.
+  - The header is smaller, with a sliders icon.
+- **Debug menu** lives in the **Log** (dev builds only). It adds **Skip 1/3/8 hours** and **Start a new day**, done with a dev clock offset.
+- **Return screens:** four distinct looks.
+  - Adventure win: gold rays and a chest.
+  - Adventure loss: a dusk lantern.
+  - Boss win: red and gold, "Victory!".
+  - Boss loss: dark, with the boss looming.
+- **Character:**
+  - A **name** (editable).
+  - **Titles** earned through adventures, bosses, events and milestones. One is shown.
+  - The box runs full-bleed over a **place background**, showing in order: **power** (large, at the top), name, title, class · level.
+  - The familiar card is removed (the familiar has an equipment slot).
+- **Customize** (the cog by the portrait): name, title, pronouns (he / she / they), skin tone, hairstyle, hair colour, eye colour, ears (round / pointed) and background. Every look has art in the layered format.

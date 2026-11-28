@@ -1,3 +1,4 @@
+import { clockNow } from '../game/clock';
 import * as Notifications from 'expo-notifications';
 
 const ID = 'quest-return';
@@ -15,7 +16,7 @@ export async function cancelReturn(): Promise<void> {
 /** One fixed identifier, so rescheduling replaces rather than stacks. */
 export async function scheduleReturn(endTime: Date): Promise<void> {
   await cancelReturn();
-  if (endTime.getTime() <= Date.now()) return;
+  if (endTime.getTime() <= clockNow().getTime()) return;
   await Notifications.scheduleNotificationAsync({
     identifier: ID,
     content: { title: 'Habit Quest', body: 'Your hero has returned!' },

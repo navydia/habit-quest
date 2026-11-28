@@ -268,15 +268,97 @@ test('habits can be edited and grouping saved', () => {
   expect(g().save.settings.groupBy).toBe('lifeArea');
 });
 
-test('archiving the boss habit clears it, so a fight in progress reports its tokens as not kept', () => {
+test('archiving the boss habit clears it', () => {
   twoHabitsDone();
   const [a] = g().save.habits;
   g().setBossHabit(a.id, at('2026-11-20', 7));
-  useGameStore.setState({ save: { ...g().save, boss: { ...g().save.boss, bonusTokens: 6 } } });
-  expect(g().startBossFight('old-bramblehide', 'normal', at(DAY, 9))).toBe(true);
   g().archiveHabit(a.id, at(DAY, 10));
   expect(g().save.boss.habitId).toBeNull();
-  useGameStore.setState({ save: { ...g().save, activeRun: { ...g().save.activeRun!, boss: { ...g().save.activeRun!.boss!, successChance: 0 } } } });
-  g().tick(at(DAY, 18));
-  expect(g().save.pendingResult?.boss?.tokensKept).toBe(false);
+});
+
+test('Skip (testing) can force a win or a loss', () => {
+  twoHabitsDone();
+  g().ensureBoard(at(DAY, 9));
+  g().startQuest(`${DAY}-hard`, at(DAY, 9));
+  g().skipAdventure(at(DAY, 9, 5), 'lose');
+  expect(g().save.pendingResult?.success).toBe(false);
+  useGameStore.setState({ save: { ...g().save, pendingResult: null, lastQuestStartedDayKey: null } });
+  g().startQuest(`${DAY}-hard`, at(DAY, 10));
+  g().skipAdventure(at(DAY, 10, 5), 'win');
+  expect(g().save.pendingResult?.success).toBe(true);
+});
+
+test('habits can be moved and custom order chosen', () => {
+  g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+  g().addHabit('B', { kind: 'daily' }, at(DAY, 7));
+  const [a, b] = g().save.habits;
+  g().moveHabit(b.id, { beforeId: a.id, timeOfDay: 'evening' });
+  expect(g().save.habits.find((h) => h.id === b.id)?.timeOfDay).toBe('evening');
+  g().setGroupBy('custom');
+  expect(g().save.settings.groupBy).toBe('custom');
+});
+
+test('a new habit goes to the end of the custom order, even after reordering', () => {
+  g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+  g().addHabit('B', { kind: 'daily' }, at(DAY, 7));
+  const [a, b] = g().save.habits;
+  g().moveHabit(b.id, { beforeId: a.id });
+  g().addHabit('C', { kind: 'daily' }, at(DAY, 7));
+  const c = g().save.habits.find((h) => h.name === 'C')!;
+  expect(c.order).toBeGreaterThan(Math.max(...g().save.habits.filter((h) => h !== c).map((h) => h.order ?? 0)));
+});
+
+describe('shop and daily quests', () => {
+  test('actions count toward today\'s daily quests', () => {
+    // Actions without an explicit time use the app clock: pin it to the test's day.
+    const { setClockOffset } = require('@/src/game/clock');
+    setClockOffset(at(DAY, 10).getTime() - Date.now());
+    useGameStore.setState({ save: { ...g().save, player: { ...g().save.player, gold: 5000, unspentSp: 1 } } });
+    g().ensureDaily(at(DAY, 8));
+    const kinds = g().save.daily.quests.map((q) => q.event);
+    g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+    for (let i = 0; i < 5; i++) {
+      g().addHabit(`H${i}`, { kind: 'daily' }, at(DAY, 7));
+    }
+    g().save.habits.forEach((h) => g().completeHabit(h.id, DAY, at(DAY, 9)));
+    expect(g().buyPotion('fortune')).toBeUndefined();
+    g().drinkPotion('fortune');
+    g().allocateSp('luck');
+    const stock = require('@/src/game/shop').armoryStock(DAY);
+    expect(g().buyGear(stock[0].slotId, at(DAY, 10))).toBeUndefined();
+    g().equip(g().save.player.inventory[g().save.player.inventory.length - 1].uid, at(DAY, 10));
+    for (const q of g().save.daily.quests) {
+      if (q.event !== 'adventure') expect([q.title, q.progress]).toEqual([q.title, q.target]);
+    }
+    expect(kinds).toHaveLength(3);
+    setClockOffset(0);
+  });
+
+  test('buying with too little gold returns the reason', () => {
+    const stock = require('@/src/game/shop').armoryStock(DAY);
+    expect(g().buyGear(stock[0].slotId, at(DAY, 10))).toMatch(/more gold/);
+  });
+
+  test('a successful adventure counts toward "Complete an adventure"', () => {
+    twoHabitsDone();
+    g().ensureBoard(at(DAY, 9));
+    g().startQuest(`${DAY}-easy`, at(DAY, 9));
+    useGameStore.setState({ save: { ...g().save, daily: { dayKey: DAY, quests: [{ id: 'q', kind: 'adventure', event: 'adventure', title: 'Complete an adventure', target: 1, progress: 0, reward: 60, claimed: false }] } } });
+    g().skipAdventure(at(DAY, 9, 5), 'win');
+    expect(g().save.daily.quests[0].progress).toBe(1);
+    g().claimDaily('q');
+    expect(g().save.daily.quests[0].claimed).toBe(true);
+  });
+});
+
+test('habit daily quests count today\'s completions, so undo-and-redo cannot farm them', () => {
+  useGameStore.setState({ save: { ...g().save, daily: { dayKey: DAY, quests: [{ id: 'h', kind: 'habit3', event: 'habit', title: 'Complete 3 habits', target: 3, progress: 0, reward: 40, claimed: false }] } } });
+  g().addHabit('A', { kind: 'daily' }, at(DAY, 7));
+  const a = g().save.habits[0];
+  for (let i = 0; i < 4; i++) {
+    g().completeHabit(a.id, DAY, at(DAY, 9, i));
+    g().undoCompletion(a.id, DAY, at(DAY, 9, i));
+  }
+  g().completeHabit(a.id, DAY, at(DAY, 10));
+  expect(g().save.daily.quests[0].progress).toBe(1);
 });

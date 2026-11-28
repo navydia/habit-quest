@@ -9,7 +9,11 @@ import { Text } from '../kit/Text';
 const ACTIONS: { action: DebugAction | 'skip'; title: string }[] = [
   { action: 'fillGauge', title: 'Fill adventure gauge' },
   { action: 'skip', title: 'Skip running adventure' },
-  { action: 'newDay', title: 'Allow another adventure today' },
+  { action: 'anotherAdventure', title: 'Allow another adventure today' },
+  { action: 'skip1', title: 'Skip 1 hour' },
+  { action: 'skip3', title: 'Skip 3 hours' },
+  { action: 'skip8', title: 'Skip 8 hours' },
+  { action: 'newDay', title: 'Start a new day' },
   { action: 'bossTokens', title: 'Give 6 boss tokens' },
   { action: 'levelUp', title: 'Level up' },
   { action: 'gold', title: 'Add 500 gold' },

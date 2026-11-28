@@ -124,3 +124,13 @@ test('the result carries a quest-log story matching the outcome', () => {
   const loss = resolveQuest(s, at(DAY, 18), () => 0.99).pendingResult!;
   expect(loss.story).toBe(t.failure);
 });
+
+test('an active potion applies to the next trip only, and is used up', () => {
+  const s = readySave();
+  s.potions = { owned: {}, active: 'courage' };
+  const r = startQuest(s, `${DAY}-hard`, at(DAY, 9)); // hard needs 160; 103 + 40 = 143 → 60%
+  expect(r.activeRun?.successChance).toBe(0.6);
+  expect(r.potions.active).toBeNull();
+  const swift = startQuest({ ...readySave(), potions: { owned: {}, active: 'swift' } }, `${DAY}-easy`, at(DAY, 9));
+  expect(questEndTime(swift.activeRun!, []).getTime()).toBe(at(DAY, 9).getTime() + 8 * HOUR * 0.85);
+});

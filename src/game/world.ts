@@ -48,7 +48,7 @@ export function canTravel(s: SaveData, regionId: string, now: Date): TravelCheck
   if (s.activeRun) return { ok: false, reason: 'Your hero is out on an adventure. Travel once they are home.' };
   const r = regionById(regionId);
   if (!r || !isAvailableNow(r, now)) return { ok: false, reason: 'That region is not on the map.' };
-  if (currentRegion(s).id === regionId) return { ok: false, reason: 'You are already here.' };
+  if (currentRegion(s).id === regionId && s.world.atHome === false) return { ok: false, reason: 'You are already here.' };
   const reason = lockReason(s, regionId);
   return reason ? { ok: false, reason } : { ok: true };
 }
@@ -57,8 +57,8 @@ export function travel(s: SaveData, regionId: string, now: Date): SaveData {
   if (!canTravel(s, regionId, now).ok) return s;
   return {
     ...s,
-    board: null,
-    world: { currentRegion: regionId, regions: { ...s.world.regions, [regionId]: progressOf(s, regionId) } },
+    board: currentRegion(s).id === regionId ? s.board : null,
+    world: { currentRegion: regionId, regions: { ...s.world.regions, [regionId]: progressOf(s, regionId) }, atHome: false },
   };
 }
 
@@ -74,4 +74,14 @@ export function recordClear(s: SaveData, offer: QuestOffer): { save: SaveData; m
     save: { ...s, world: { ...s.world, regions: { ...s.world.regions, [region.id]: next } } },
     memento: { regionId: region.id, mementoId: adventure.memento.id },
   };
+}
+
+/** Back to the cottage. Adventures still come from the last region you travelled to. */
+export function goHome(s: SaveData): SaveData {
+  return s.world.atHome ? s : { ...s, world: { ...s.world, atHome: true } };
+}
+
+/** 'home' or the current region id: which scene to show. */
+export function placeId(s: SaveData): string {
+  return s.world.atHome === false ? currentRegion(s).id : 'home';
 }

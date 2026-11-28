@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { clockNow } from '@/src/game/clock';
+import { DebugSheet } from '@/src/ui/home/DebugSheet';
+import { dayKey } from '@/src/game/dates';
+import { Button } from '@/src/ui/kit/Button';
+import { FamiliarsCard } from '@/src/ui/character/FamiliarsCard';
+import { useMinuteClock } from '@/src/ui/useMinuteClock';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/src/ui/useSafeInsets';
 import { REGIONS } from '@/src/content/regions';
 import { isRegionUnlocked, progressOf } from '@/src/game/world';
 import { useGameStore } from '@/src/store/gameStore';
@@ -15,12 +21,19 @@ const dayTitle = (key: string) => {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 };
 
-/** The Log: history, scrapbooks, mail and daily quests — everything that doesn't have its own home. */
+/** The Log: mail, daily quests, scrapbooks, familiars and history — everything that doesn't have its own home. */
 export default function LogScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const save = useGameStore((s) => s.save);
   const hideFromHistory = useGameStore((s) => s.hideFromHistory);
+  const { claimDaily, ensureDaily, setActiveFamiliar, debug, skipAdventure } = useGameStore.getState();
+  const [debugOpen, setDebugOpen] = useState(false);
+  const now = useMinuteClock();
+  const today = dayKey(now);
+  useEffect(() => {
+    ensureDaily(now);
+  }, [ensureDaily, now]);
   const [scrapbook, setScrapbook] = useState<string | null>(null);
 
   const entries = save.completions.filter((x) => !x.hidden).sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -40,7 +53,25 @@ export default function LogScreen() {
       <Text variant="display" accessibilityRole="header">Log</Text>
 
       {placeholder('Mail', 'Letters from the Guild Master arrive in a later update.')}
-      {placeholder('Daily quests', 'Daily quests from the City arrive in a later update.')}
+      <Card style={{ gap: space.s }}>
+        <Text variant="heading" accessibilityRole="header">Daily quests</Text>
+        <Text variant="caption" color="textMuted">Three new quests every day.</Text>
+        {save.daily.dayKey === today &&
+          save.daily.quests.map((q) => {
+            const done = q.progress >= q.target;
+            return (
+              <View key={q.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, minHeight: minTouch + 8 }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text variant="bodyStrong" color={q.claimed ? 'textMuted' : 'text'}>{q.title}</Text>
+                  <Text variant="caption" color="textMuted">{q.claimed ? 'Claimed' : `${q.progress} / ${q.target} · ${q.reward} gold`}</Text>
+                </View>
+                {!q.claimed && (
+                  <Button title={done ? 'Claim' : 'In progress'} variant={done ? 'reward' : 'secondary'} disabled={!done} onPress={() => claimDaily(q.id)} />
+                )}
+              </View>
+            );
+          })}
+      </Card>
 
       <Card style={{ gap: space.s }}>
         <Text variant="heading" accessibilityRole="header">Scrapbooks</Text>
@@ -57,6 +88,8 @@ export default function LogScreen() {
           </Pressable>
         ))}
       </Card>
+
+      <FamiliarsCard owned={save.familiars.owned} active={save.familiars.active} onSetActive={setActiveFamiliar} />
 
       <View style={{ gap: space.s }}>
         <Text variant="title" accessibilityRole="header">History</Text>
@@ -92,7 +125,26 @@ export default function LogScreen() {
         {entries.length > 0 && <Text variant="caption" color="textMuted">Removing an entry tidies your history. The habit still counts as done that day.</Text>}
       </View>
 
+      {__DEV__ && (
+        <Card style={{ gap: space.s }}>
+          <Text variant="heading" accessibilityRole="header">Debug (testing)</Text>
+          <Text variant="caption" color="textMuted">Development builds only: skip time, fill the gauge, give items and more.</Text>
+          <Button title="Open debug menu" variant="secondary" onPress={() => setDebugOpen(true)} />
+        </Card>
+      )}
+
       <ScrapbookSheet regionId={scrapbook} save={save} onClose={() => setScrapbook(null)} />
+      {__DEV__ && (
+        <DebugSheet
+          visible={debugOpen}
+          onClose={() => setDebugOpen(false)}
+          onAction={(a) => {
+            if (a === 'skip') skipAdventure(clockNow(), 'win');
+            else debug(a, clockNow());
+            setDebugOpen(false);
+          }}
+        />
+      )}
     </ScrollView>
   );
 }

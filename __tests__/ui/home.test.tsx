@@ -99,7 +99,7 @@ test('logging a forgotten habit from yesterday removes it from that list too', a
   await fireEvent.press(screen.getByRole('button', { name: /yesterday/i }));
   await fireEvent.press(screen.getByRole('checkbox', { name: 'Walk' }));
   expect(screen.queryByRole('checkbox', { name: 'Walk' })).toBeNull();
-  expect(screen.getByText('All done for today. You can find them in your Log.')).toBeTruthy();
+  expect(screen.getByText('All done for today')).toBeTruthy();
 });
 
 test('habits can be grouped by life area', async () => {
@@ -107,19 +107,22 @@ test('habits can be grouped by life area', async () => {
   s.habits = [{ ...habit('Read'), lifeArea: 'learning' }, { ...habit('Walk'), lifeArea: 'health' }];
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Sort habits' }));
   await fireEvent.press(screen.getByRole('radio', { name: 'Life area' }));
   expect(useGameStore.getState().save.settings.groupBy).toBe('lifeArea');
   expect(screen.getByText('📚 Learning')).toBeTruthy();
   expect(screen.getByText('💪 Health')).toBeTruthy();
 });
 
-test('a habit can be edited from its ⋯ button', async () => {
+test('tapping a habit card opens it for editing', async () => {
   const s = newSave();
   s.habits = [habit('Read')];
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit Read' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Read, / }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Time of day:/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Evening' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Emoji ✨/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Emoji 📚' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
   expect(useGameStore.getState().save.habits[0]).toMatchObject({ timeOfDay: 'evening', emoji: '📚' });
@@ -162,7 +165,7 @@ test('in development builds a running adventure shows a Skip button for testing'
   };
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
-  await fireEvent.press(screen.getByRole('button', { name: 'Skip (testing)' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Skip: win' }));
   expect(useGameStore.getState().save.pendingResult).not.toBeNull();
 });
 
@@ -208,7 +211,7 @@ describe('regions, bosses and debug', () => {
   test('the region chip opens the map, which explains why a region is locked', async () => {
     useGameStore.setState({ save: withHabit() });
     await render(<HomeScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Map: Thornwick Meadows' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Map. You are at home' }));
     expect(screen.getByText('Clear every adventure in Thornwick Meadows first.')).toBeTruthy();
   });
 
@@ -220,12 +223,13 @@ describe('regions, bosses and debug', () => {
   });
 
   test('without a boss habit, Home offers to choose one; with one, it shows tokens', async () => {
-    useGameStore.setState({ save: withHabit() });
+    // Tokens show while the gauge is filling (a full gauge shows only its button).
+    useGameStore.setState({ save: { ...withHabit(), completions: [] } });
     await render(<HomeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Read' }));
     expect(useGameStore.getState().save.boss.habitId).toBe('Read');
-    expect(screen.getByText('Boss tokens 0 / 6')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Boss habit Read, 0 of 6 tokens. Change' })).toBeTruthy();
   });
 
   test('with a full gauge and 6 tokens the button becomes Boss fight, which replaces the adventure', async () => {
@@ -266,15 +270,6 @@ describe('regions, bosses and debug', () => {
     expect(screen.getByText('Empty Jam Jar')).toBeTruthy();
   });
 
-  test('the debug menu can fill the gauge', async () => {
-    const s = newSave();
-    s.habits = [habit('Read'), habit('Walk')];
-    useGameStore.setState({ save: s });
-    await render(<HomeScreen />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Debug menu' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Fill adventure gauge' }));
-    expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
-  });
 });
 
 test('the return screen includes the familiar bonus and the level-up it causes', async () => {
@@ -313,7 +308,7 @@ test('archiving the boss habit warns that tokens will reset', async () => {
   s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 4 };
   useGameStore.setState({ save: s });
   await render(<HomeScreen />);
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit Read' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Read, / }));
   await fireEvent.press(screen.getByRole('button', { name: 'Archive habit' }));
   expect(screen.getByText(/This is your boss habit\. Archiving it resets your 4 boss tokens\./)).toBeTruthy();
 });
@@ -330,4 +325,209 @@ test('a boss fight that cannot start says so', async () => {
   await fireEvent.press(screen.getByRole('button', { name: /^Fight / }));
   await new Promise((r) => setTimeout(r, 0));
   expect(screen.getByText('The boss fight could not start. Check your tokens and try again.')).toBeTruthy();
+});
+
+test('screen readers can move a habit down past an empty section into the next', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Run'), timeOfDay: 'afternoon' }, { ...habit('Read'), timeOfDay: 'evening' }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent(screen.getByRole('button', { name: /^Run, / }), 'accessibilityAction', { nativeEvent: { actionName: 'moveDown' } });
+  expect(useGameStore.getState().save.habits.find((h) => h.id === 'Run')?.timeOfDay).toBe('evening');
+});
+
+
+test('a section + button starts a new habit in that section', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Run'), timeOfDay: 'morning' }];
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Add a habit to Morning' }));
+  await fireEvent.changeText(screen.getByLabelText('Habit name'), 'Stretch');
+  await fireEvent.press(screen.getByRole('button', { name: 'Add habit' }));
+  expect(useGameStore.getState().save.habits.find((h) => h.name === 'Stretch')?.timeOfDay).toBe('morning');
+});
+
+test('custom order shows one list without section headers', async () => {
+  const s = newSave();
+  s.habits = [{ ...habit('Run'), timeOfDay: 'morning' }, { ...habit('Read'), timeOfDay: 'evening' }];
+  s.settings = { groupBy: 'custom' };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  expect(screen.queryByText('Morning')).toBeNull();
+  expect(screen.getByRole('button', { name: /^Run, / })).toBeTruthy();
+});
+
+test('the boss preview shows each difficulty\'s required power and chance', async () => {
+  const s = newSave();
+  s.habits = [habit('Read')];
+  s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+  s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+  useGameStore.setState({ save: s });
+  await render(<HomeScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+  expect(screen.getByText('100%')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('radio', { name: /^Hard/ }));
+  expect(screen.getByText('50%')).toBeTruthy();
+  expect(screen.getByText(/Requires 170 power · You have 105/)).toBeTruthy();
+});
+
+
+test('wins and losses look different for adventures and bosses', async () => {
+  const offer = { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy' as const, requiredPower: 90, rewardExp: 40, rewardGold: 20 };
+  const show = async (pendingResult: any) => {
+    const s = newSave();
+    s.pendingResult = pendingResult;
+    useGameStore.setState({ save: s });
+    return render(<HomeScreen />);
+  };
+  await show({ offer, success: false, exp: 10, gold: 5, resolvedAt: 'a' });
+  expect(screen.getByText('The adventure went sideways')).toBeTruthy();
+  await show({ kind: 'boss', offer, success: true, exp: 0, gold: 0, resolvedAt: 'b', boss: { bossId: 'old-bramblehide', difficulty: 'normal', success: true, exp: 150, gold: 80 } });
+  expect(screen.getByText('Victory!')).toBeTruthy();
+  await show({ kind: 'boss', offer, success: false, exp: 0, gold: 0, resolvedAt: 'c', boss: { bossId: 'old-bramblehide', difficulty: 'hard', success: false, exp: 0, gold: 0 } });
+  expect(screen.getByText('Not this time')).toBeTruthy();
+});
+
+describe('every overlay on Home closes', () => {
+  const base = () => {
+    const s = newSave();
+    s.habits = [habit('Read')];
+    s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+    return s;
+  };
+  test('habit page: Cancel closes it', async () => {
+    useGameStore.setState({ save: base() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: '+ New habit' }));
+    expect(screen.getByText('New habit')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText('New habit')).toBeNull();
+  });
+  test('map, sort, boss habit and adventure board close', async () => {
+    useGameStore.setState({ save: base() });
+    await render(<HomeScreen />);
+    for (const [open, marker] of [
+      [/^Map\./, 'The map'],
+      ['Sort habits', 'Sort habits'],
+      ['Choose an adventure', 'Adventures in Thornwick Meadows'],
+    ] as const) {
+      await fireEvent.press(screen.getByRole('button', { name: open }));
+      expect(screen.getAllByText(marker).length).toBeGreaterThan(0);
+      await fireEvent.press(screen.getAllByRole('button', { name: 'Close' }).slice(-1)[0]);
+      expect(screen.queryByText(marker === 'Sort habits' ? 'Custom' : marker)).toBeNull();
+    }
+  });
+  test('the boss habit picker closes', async () => {
+    useGameStore.setState({ save: { ...base(), completions: [] } });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
+    expect(screen.getAllByText('Boss habit').length).toBeGreaterThan(0);
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Close' }).slice(-1)[0]);
+    expect(screen.queryByText('Boss habit')).toBeNull();
+  });
+  test('the boss screen closes with ×', async () => {
+    const s = base();
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+    expect(screen.getByText('chance of victory')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('chance of victory')).toBeNull();
+  });
+  test('the return screen closes with Collect', async () => {
+    const s = newSave();
+    s.pendingResult = { offer: { id: 'o', templateId: 'slime-patrol', name: 'Slime Patrol', flavour: 'f', difficulty: 'easy', requiredPower: 90, rewardExp: 40, rewardGold: 20 }, success: true, exp: 40, gold: 20, resolvedAt: 'x' };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Collect' }));
+    expect(screen.queryByText('Your hero has returned!')).toBeNull();
+  });
+});
+
+describe('round 8 Home edits', () => {
+  const full = () => {
+    const s = newSave();
+    s.habits = [habit('Read')];
+    s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+    return s;
+  };
+
+  test('a full gauge hides the panel and shows only the button', async () => {
+    useGameStore.setState({ save: full() });
+    await render(<HomeScreen />);
+    expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
+    expect(screen.queryByText('Adventure gauge')).toBeNull();
+    expect(screen.queryByRole('progressbar', { name: 'Adventure gauge' })).toBeNull();
+  });
+
+  test('with a full gauge the small boss tokens still open the boss habit picker', async () => {
+    useGameStore.setState({ save: full() });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
+    expect(screen.getAllByText('Boss habit').length).toBeGreaterThan(0);
+  });
+
+  test('a Swift Tonic drunk on the board shortens the shown trip time', async () => {
+    const s = full();
+    s.potions = { owned: { swift: 1 }, active: null };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+    expect(screen.getAllByText(/8h/).length).toBeGreaterThan(0);
+    await fireEvent.press(screen.getByRole('button', { name: 'Drink Swift Tonic' }));
+    expect(screen.getAllByText(/6h 48m/).length).toBeGreaterThan(0);
+  });
+
+  test('the gauge panel shows while filling', async () => {
+    const s = newSave();
+    s.habits = [habit('Read'), habit('Walk')];
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.getByText('Adventure gauge')).toBeTruthy();
+  });
+
+  test('level and EXP sit in the top corner, without the to-next-level text', async () => {
+    const s = newSave();
+    s.player = { ...s.player, exp: 30 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.getByLabelText(/^Level 1, 30 of \d+ EXP$/)).toBeTruthy();
+    expect(screen.queryByText(/to next level/)).toBeNull();
+  });
+
+  test('the boss habit card shows a token on its icon instead of the words', async () => {
+    const s = newSave();
+    s.habits = [habit('Read'), habit('Walk')];
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 0 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.queryByText(/Boss habit/)).toBeNull();
+    expect(screen.getByRole('button', { name: /^Read, .*boss habit/ })).toBeTruthy();
+    expect(screen.getByTestId('boss-token-Read')).toBeTruthy();
+  });
+
+  test('a potion can be drunk on the adventure board before setting out', async () => {
+    const s = full();
+    s.potions = { owned: { courage: 1 }, active: null };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Drink Courage Brew' }));
+    expect(useGameStore.getState().save.potions.active).toBe('courage');
+    expect(screen.getByText(/Courage Brew is active/)).toBeTruthy();
+  });
+
+  test('a potion can be drunk in the boss preview, and its power counts', async () => {
+    const s = full();
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+    s.potions = { owned: { courage: 1 }, active: null };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Drink Courage Brew' }));
+    await fireEvent.press(screen.getByRole('radio', { name: /^Hard/ }));
+    expect(screen.getByText(/Requires 170 power · You have 145/)).toBeTruthy();
+  });
 });

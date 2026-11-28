@@ -32,9 +32,10 @@ export const BOSS_TOKENS_NEEDED = 6;
 export const BOSS_DEFENSE_PER_POINT = 2;
 export const BOSS_BASE = { exp: 150, gold: 80 };
 export const BOSS_DIFFICULTY = {
-  normal: { penalty: 0, reward: 1, familiar: 1, rarityShift: 0 },
-  hard: { penalty: 30, reward: 1.75, familiar: 2, rarityShift: 10 },
-  extreme: { penalty: 60, reward: 3, familiar: 4, rarityShift: 20 },
+  // extraPower: added to the boss's required power. belowChance: odds when your power falls short.
+  normal: { extraPower: 0, belowChance: 1, reward: 1, familiar: 1, rarityShift: 0 },
+  hard: { extraPower: 30, belowChance: 0.5, reward: 1.75, familiar: 2, rarityShift: 10 },
+  extreme: { extraPower: 60, belowChance: 0.05, reward: 3, familiar: 4, rarityShift: 20 },
 } as const;
 /** Boss loot never includes commons. rarityShift moves weight from uncommon to epic/legendary (2:1). */
 export const BOSS_RARITY_WEIGHTS = { uncommon: 50, rare: 35, epic: 12, legendary: 3 } as const;

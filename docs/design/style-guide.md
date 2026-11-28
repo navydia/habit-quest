@@ -64,15 +64,15 @@ Light / Dark. All text pairings meet 4.5:1.
 
 ## 4. Type
 
-- **Headings:** **Fraunces** (variable soft serif, SemiBold 600, "SOFT" axis 100). It gives the storybook gravitas.
+- **Headings:** **Nunito Sans ExtraBold (800)**. The creator swapped the storybook serif for a friendly sans-serif (Plan 6).
 - **Body/UI:** **Nunito Sans** (Regular 400 / SemiBold 600 / Bold 700). It's rounded and friendly without looking childish.
 - Numbers in HUD (gold, timers): Nunito Sans Bold with tabular figures.
 
 | Style | Font | Size/Line |
 |---|---|---|
-| `display` | Fraunces 600 | 32/38 |
-| `title` | Fraunces 600 | 24/30 |
-| `heading` | Fraunces 600 | 19/24 |
+| `display` | Nunito Sans 800 | 32/38 |
+| `title` | Nunito Sans 800 | 24/30 |
+| `heading` | Nunito Sans 800 | 19/24 |
 | `body` | Nunito Sans 400 | 16/24 (1.5 line height) |
 | `bodyStrong` | Nunito Sans 700 | 16/24 |
 | `label` | Nunito Sans 600 | 13/18, sentence case |
@@ -128,7 +128,7 @@ These are distilled from six UI-guideline sources and chosen for this app: Adham
 9. **Contrast:** at least 4.5:1 for text and 3:1 for icons and large text, checked by the contrast test. **Color is never the only signal.** Pair it with text, an icon or a check mark.
 
 **Type and copy**
-10. **Two families only:** Fraunces for headings, Nunito Sans for everything else. Use regular and bold weights, and sentence case (no all-caps labels). Body text has a line height of about 1.5 and is left-aligned; center only short lines.
+10. **One family:** Nunito Sans (ExtraBold for headings). Use regular and bold weights, and sentence case (no all-caps labels). Body text has a line height of about 1.5 and is left-aligned; center only short lines.
 11. **Keep text short and verb-led** ("Set out", "Collect", "Read quest log"). Use the Guild Master voice (§8) for anything narrative.
 
 **Feedback and states**
@@ -144,3 +144,11 @@ These are distilled from six UI-guideline sources and chosen for this app: Adham
 
 **Consistency**
 18. **The design system is the single source of truth.** Screens use only tokens and kit components. The same component looks and behaves the same everywhere. New screen types (shop, scrapbook, region map) get a reusable template before a second one is built.
+
+## 10. Home look (Plans 5–6, creator decisions)
+- **Home page:** sits on `home.bg` (deep warm dusk). Text there uses `home.text` / `home.muted`.
+- **Habit cards:** tactile, like buttons: a darker lip below, a light top highlight, and a soft shadow.
+- **Secondary actions on dark pages** use the **outline** button.
+- **Adventure gauge:** a translucent panel. The count sits inside a tall bar, with boss tokens as 😈 icons below it (faded when not yet earned) and no token text.
+- **Spacing:** generous gaps between habit cards and before group headers.
+- **New screens** (Character, Shop, Log) reuse these pieces: tactile cards, the coloured blobs, the outline buttons and the sans-serif headings.

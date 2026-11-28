@@ -13,9 +13,9 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Label>Character</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} md="person" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="city">
-        <NativeTabs.Trigger.Label>City</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'building.2', selected: 'building.2.fill' }} md="location_city" />
+      <NativeTabs.Trigger name="shop">
+        <NativeTabs.Trigger.Label>Shop</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'bag', selected: 'bag.fill' }} md="storefront" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="log">
         <NativeTabs.Trigger.Label>Log</NativeTabs.Trigger.Label>

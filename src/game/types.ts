@@ -13,6 +13,8 @@ export interface Habit {
   emoji: string;
   lifeArea: LifeArea;
   timeOfDay: TimeOfDay;
+  /** Position in the creator's custom order (lower first). */
+  order?: number;
 }
 
 export interface Completion {
@@ -50,6 +52,9 @@ export interface QuestRun {
   preStartKeys?: string[];
   /** Speed multiplier fixed at start, so later stat changes don't move the return time. */
   speedFactor?: number;
+  /** Potion drunk before this trip (its effects are baked into the run). */
+  potion?: string;
+  luckBonus?: number;
   /** A boss fight added to this trip (6 tokens spent at start). */
   boss?: {
     bossId: string;
@@ -117,8 +122,41 @@ export interface RegionProgress {
   bossDefeated: boolean;
 }
 
+export interface DailyQuest {
+  id: string;
+  kind: string;
+  event: string;
+  title: string;
+  target: number;
+  progress: number;
+  reward: number;
+  claimed: boolean;
+}
+
+export type Skin = 'fair' | 'light' | 'tan' | 'brown' | 'deep';
+export type HairStyle = 'short' | 'long' | 'curly' | 'bun';
+export type HairColor = 'black' | 'brown' | 'auburn' | 'blonde' | 'silver' | 'teal';
+export type EyeColor = 'dark' | 'brown' | 'green' | 'blue' | 'violet';
+export type Ears = 'round' | 'pointed';
+export type Pronouns = 'he' | 'she' | 'they';
+export interface Look {
+  skin: Skin;
+  hairStyle: HairStyle;
+  hairColor: HairColor;
+  eyes: EyeColor;
+  ears: Ears;
+}
+export interface Profile {
+  name: string;
+  titleId: string;
+  pronouns: Pronouns;
+  look: Look;
+  /** 'home' or a region id: the picture behind the character box. */
+  background: string;
+}
+
 export interface SaveData {
-  version: 4;
+  version: 6;
   player: Player;
   habits: Habit[];
   completions: Completion[];
@@ -127,7 +165,11 @@ export interface SaveData {
   pendingResult: QuestResult | null;
   lastQuestStartedDayKey: DayKey | null;
   questLog: QuestResult[];
-  world: { currentRegion: string; regions: Record<string, RegionProgress> };
+  /** currentRegion: where adventures come from. atHome: whether the hero is shown at home or out in that region. */
+  world: { currentRegion: string; regions: Record<string, RegionProgress>; atHome?: boolean };
+  profile: Profile;
+  /** Development only: how far the Debug menu has moved the clock forward. */
+  dev: { offsetMs: number };
   boss: {
     habitId: string | null;
     tokenEpoch: string | null;
@@ -137,5 +179,9 @@ export interface SaveData {
     bonusTokens?: number;
   };
   familiars: { owned: string[]; active: string | null };
-  settings: { groupBy: 'timeOfDay' | 'lifeArea' };
+  settings: { groupBy: 'timeOfDay' | 'lifeArea' | 'custom' };
+  /** Armory slots bought today. */
+  shop: { dayKey: DayKey | null; bought: string[] };
+  potions: { owned: Record<string, number>; active: string | null };
+  daily: { dayKey: DayKey | null; quests: DailyQuest[] };
 }

@@ -1,7 +1,7 @@
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 jest.mock('expo-sqlite/kv-store', () => require('../helpers/memoryKv'));
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(async () => {}), ImpactFeedbackStyle: { Light: 'light' } }));
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, router: { push: jest.fn() } }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, router: { push: jest.fn(), navigate: jest.fn() } }));
 jest.mock('@/src/notify/questNotifications', () => ({ scheduleReturn: jest.fn(async () => {}), cancelReturn: jest.fn(async () => {}), ensurePermission: jest.fn(async () => true) }));
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
@@ -17,10 +17,58 @@ beforeEach(() => {
   useGameStore.setState({ save: s, loaded: true });
 });
 
-test('shows the class title and level', async () => {
+test('the character box shows power, name and title on one line, then class, and the level by the EXP bar', async () => {
   await render(<CharacterScreen />);
+  expect(screen.getByLabelText(/^[0-9]+ power$/)).toBeTruthy();
+  expect(screen.getByLabelText('Adventurer the Wanderer')).toBeTruthy();
   expect(screen.getByText('Vanguard')).toBeTruthy();
-  expect(screen.getByText(/Level 1/)).toBeTruthy();
+  expect(screen.getByText('Lv 1')).toBeTruthy();
+});
+
+test('the class sits above Stats with a tip on how classes are decided', async () => {
+  await render(<CharacterScreen />);
+  expect(screen.queryByText(/weapon you carry/)).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'How classes work' }));
+  expect(screen.getByText(/weapon you carry/)).toBeTruthy();
+});
+
+test('the bag has a Go to shop button that opens the Apothecary', async () => {
+  const { router } = jest.requireMock('expo-router');
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Bag' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Go to shop' }));
+  expect(router.navigate).toHaveBeenCalledWith({ pathname: '/shop', params: { tab: 'apothecary' } });
+});
+
+test('titles without "the" get one on the character box', async () => {
+  useGameStore.setState({ save: { ...g().save, profile: { ...g().save.profile, titleId: 'boss-breaker' } } });
+  await render(<CharacterScreen />);
+  expect(screen.getByLabelText('Adventurer the Boss Breaker')).toBeTruthy();
+});
+
+test('the bag shows your potions and lets you drink one', async () => {
+  const s = g().save;
+  useGameStore.setState({ save: { ...s, potions: { owned: { courage: 2 }, active: null } } });
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Bag' }));
+  expect(screen.getByText('Courage Brew')).toBeTruthy();
+  expect(screen.getByText('×2')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Drink Courage Brew' }));
+  expect(g().save.potions).toEqual({ owned: { courage: 1 }, active: 'courage' });
+});
+
+test('the cog opens Customize, where name, look and title can change', async () => {
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Customize your character' }));
+  await fireEvent.changeText(screen.getByLabelText('Name'), 'Leo');
+  await fireEvent.press(screen.getByRole('button', { name: 'Skin deep' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Pointed' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'She / her' }));
+  const prof = g().save.profile;
+  expect(prof.name).toBe('Leo');
+  expect(prof.look).toMatchObject({ skin: 'deep', ears: 'pointed' });
+  expect(prof.pronouns).toBe('she');
+  expect(screen.getByRole('button', { name: /Boss Breaker, locked/ }).props.accessibilityState.disabled).toBe(true);
 });
 
 test('the + button spends a skill point', async () => {
@@ -59,6 +107,35 @@ test('an equipped item that no longer exists shows as Unknown item and can be ta
 test('a familiar can be made active', async () => {
   useGameStore.setState({ save: { ...g().save, familiars: { owned: ['hoglet', 'bog-toad'], active: 'hoglet' } } });
   await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: /^Familiar: Hoglet/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Bring Bog Toad along' }));
   expect(g().save.familiars.active).toBe('bog-toad');
+});
+
+test('an empty name falls back to Adventurer when Customize closes', async () => {
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Customize your character' }));
+  await fireEvent.changeText(screen.getByLabelText('Name'), '   ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  expect(g().save.profile.name).toBe('Adventurer');
+});
+
+describe('every overlay on the Character tab closes', () => {
+  test('Customize closes with Done', async () => {
+    await render(<CharacterScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Customize your character' }));
+    expect(screen.getByText('Customize')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByText('Customize')).toBeNull();
+  });
+  test('the slot sheet and familiar sheet close', async () => {
+    await render(<CharacterScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: /^Head:/ }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('Leather Cap')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: /^Familiar:/ }));
+    expect(screen.getByText(/Beat bosses for a chance/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText(/Beat bosses for a chance/)).toBeNull();
+  });
 });

@@ -1,5 +1,5 @@
 import { gearById } from '@/src/content/gear';
-import { availableBosses, bossChance, bossTokens, setBossHabit } from '@/src/game/bosses';
+import { availableBosses, bossChance, bossRequiredPower, bossTokens, setBossHabit } from '@/src/game/bosses';
 import { collectResult, resolveQuest, startBossFight } from '@/src/game/questRun';
 import { generateBoard } from '@/src/game/quests';
 import { seededRng } from '@/src/game/rng';
@@ -38,13 +38,19 @@ test('only bosses of unlocked regions are available', () => {
   expect(availableBosses(newSave()).map((b) => b.id)).toEqual([BOSS]);
 });
 
-test('harder difficulty means lower odds; Defense helps', () => {
+test('Normal is always 100%; Hard falls to 50% and Extreme to 5% below their power', () => {
   const p = withTokens(6).player; // 103 power vs 140
   const boss = availableBosses(newSave())[0];
-  expect(bossChance(p, boss, 'normal')).toBe(0.6);
-  expect(bossChance(p, boss, 'extreme')).toBe(0.2);
-  const tanky = { ...p, stats: { ...p.stats, defense: 20 } }; // +40 effective
-  expect(bossChance(tanky, boss, 'normal')).toBe(1);
+  expect(bossChance(p, boss, 'normal')).toBe(1);
+  expect(bossRequiredPower(boss, 'hard')).toBe(170);
+  expect(bossRequiredPower(boss, 'extreme')).toBe(200);
+  expect(bossChance(p, boss, 'hard')).toBe(0.5);
+  expect(bossChance(p, boss, 'extreme')).toBe(0.05);
+  const strong = { ...p, level: 9 }; // 220 power
+  expect(bossChance(strong, boss, 'hard')).toBe(1);
+  expect(bossChance(strong, boss, 'extreme')).toBe(1);
+  const tanky = { ...p, stats: { ...p.stats, defense: 35 } }; // +70 vs boss
+  expect(bossChance(tanky, boss, 'hard')).toBe(1);
 });
 
 test('a boss fight needs 6 tokens, spends them, and is the day\'s only trip', () => {
@@ -71,12 +77,11 @@ test('winning beats the boss, pays out and drops non-common gear', () => {
   expect(resolveQuest(s, at(DAY, 18), () => 0).world.regions['thornwick-meadows'].bossDefeated).toBe(true);
 });
 
-test('losing keeps the 6 tokens for another try', () => {
-  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'normal' });
-  let n = 0;
-  const r = resolveQuest(s, at(DAY, 18), () => 0.99); // boss loses
+test('losing costs the 6 tokens', () => {
+  const s = startBossFight(withTokens(6), at(DAY, 9), { bossId: BOSS, difficulty: 'hard' });
+  const r = resolveQuest(s, at(DAY, 18), () => 0.99);
   expect(r.pendingResult?.boss?.success).toBe(false);
-  expect(bossTokens(r)).toBe(6);
+  expect(bossTokens(r)).toBe(0);
 });
 
 test('Hard pays 1.75× and Extreme 3×', () => {
@@ -115,19 +120,7 @@ describe('review fixes', () => {
     expect(bossTokens(rechecked)).toBe(0);
   });
 
-  test('a loss gives back all 6 tokens even if one was unchecked during the trip', () => {
-    const s = start();
-    const fewer = { ...s, completions: s.completions.filter((c) => c.dayKey !== '2026-11-21') };
-    const r = resolveQuest(fewer, at(DAY, 18), () => 0.99);
-    expect(r.pendingResult?.boss?.tokensKept).toBe(true);
-    expect(bossTokens(r)).toBe(6);
-  });
 
-  test('if the boss habit was switched during the trip, a loss says the tokens were not kept', () => {
-    const s = setBossHabit(start(), 'a', at(DAY, 10));
-    const r = resolveQuest(s, at(DAY, 18), () => 0.99);
-    expect(r.pendingResult?.boss?.tokensKept).toBe(false);
-  });
 
   test('Luck raises the familiar chance', () => {
     const lucky = withTokens(6);
