@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { pickInsets } from '@/src/ui/useSafeInsets';
@@ -28,35 +28,41 @@ const SHEET_DISMISS_VELOCITY = 0.8;
 
 /** A pull on the handle closes the sheet when it went far enough or was flicked fast enough. */
 export function shouldDismissSheet(dy: number, vy: number): boolean {
-  return dy > SHEET_DISMISS_DISTANCE || vy > SHEET_DISMISS_VELOCITY;
+  // A flick only counts once the sheet has actually moved down a little.
+  return dy > SHEET_DISMISS_DISTANCE || (vy > SHEET_DISMISS_VELOCITY && dy > 12);
 }
 
 /** Drag-down-to-close for the sheet's handle area. `y` follows the finger (never above 0). */
 export function useSheetDrag(onClose: () => void) {
   const [y] = useState(() => new Animated.Value(0));
-  const responder = useMemo(
-    () =>
-      PanResponder.create({
-        // The handle area has nothing tappable of its own, so it takes the touch from the start. The title's
-        // action button sits deeper and answers first, so its taps still work.
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-        // Keep the drag once it starts (on web the scroll view would otherwise take it over).
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderMove: (_e, g) => y.setValue(Math.max(0, g.dy)),
-        onPanResponderRelease: (_e, g) => {
-          if (shouldDismissSheet(g.dy, g.vy)) {
-            Animated.timing(y, { toValue: 800, duration: 180, useNativeDriver: true }).start(() => {
-              onClose();
-              y.setValue(0);
-            });
-          } else {
-            Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
-          }
-        },
-        onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: true }).start(),
-      }),
-    [onClose, y],
+  // The latest onClose, kept outside the responder so a re-render mid-drag doesn't rebuild it (and reset the drag).
+  const latest = useRef(onClose);
+  useEffect(() => {
+    latest.current = onClose;
+  }, [onClose]);
+  // The ref is only read inside gesture callbacks, never while rendering (same pattern as HabitList's drag).
+  // eslint-disable-next-line react-hooks/refs
+  const [responder] = useState(() =>
+    PanResponder.create({
+      // The handle area has nothing tappable of its own, so it takes the touch from the start. The title's
+      // action button sits deeper and answers first, so its taps still work.
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      // Keep the drag once it starts (on web the scroll view would otherwise take it over).
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_e, g) => y.setValue(Math.max(0, g.dy)),
+      onPanResponderRelease: (_e, g) => {
+        if (shouldDismissSheet(g.dy, g.vy)) {
+          Animated.timing(y, { toValue: 800, duration: 180, useNativeDriver: true }).start(() => {
+            latest.current();
+            y.setValue(0);
+          });
+        } else {
+          Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+        }
+      },
+      onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: true }).start(),
+    }),
   );
   return { y, handlers: responder.panHandlers };
 }

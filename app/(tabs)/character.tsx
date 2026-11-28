@@ -130,7 +130,7 @@ export default function CharacterScreen() {
           <View style={{ gap: space.m }}>{LEFT.map(box)}</View>
           {/* The bag sits at the portrait's bottom-right, beside the familiar box. */}
           <View>
-            {save.profile.background === 'home' && <Rug style={rugUnderFeet(200, (FRAME_W * 200) / FRAME_H / 2)} />}
+            {save.profile.background === 'home' && <Rug width={170} style={rugUnderFeet(200, (FRAME_W * 200) / FRAME_H / 2, 170)} />}
             <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
             <View style={{ position: 'absolute', right: -10, bottom: 0 }}>{roundButton('Bag', () => setBagOpen(true), <BagIcon color={home.text} />)}</View>
           </View>
@@ -245,7 +245,8 @@ export default function CharacterScreen() {
             variant="secondary"
             onPress={() => {
               setBagOpen(false);
-              router.navigate({ pathname: '/shop', params: { tab: 'apothecary' } });
+              // `at` makes each visit a new request, so the Shop switches even if the last param was the same.
+              router.navigate({ pathname: '/shop', params: { tab: 'apothecary', at: String(Date.now()) } });
             }}
           />
         }

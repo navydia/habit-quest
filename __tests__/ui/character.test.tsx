@@ -37,7 +37,7 @@ test('the bag has a Go to shop button that opens the Apothecary', async () => {
   await render(<CharacterScreen />);
   await fireEvent.press(screen.getByRole('button', { name: 'Bag' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Go to shop' }));
-  expect(router.navigate).toHaveBeenCalledWith({ pathname: '/shop', params: { tab: 'apothecary' } });
+  expect(router.navigate).toHaveBeenCalledWith({ pathname: '/shop', params: { tab: 'apothecary', at: expect.any(String) } });
 });
 
 test('titles without "the" get one on the character box', async () => {

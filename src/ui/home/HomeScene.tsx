@@ -132,9 +132,9 @@ export const FEET_FROM_BOTTOM = 20 / 320;
  * The cottage rug. Drawn under the hero rather than in the backdrop, so the hero always stands in its centre
  * whatever the screen size. Position it absolutely with its centre on the hero's feet.
  */
-export function Rug({ style }: { style?: ViewStyle }) {
+export function Rug({ style, width = RUG.w }: { style?: ViewStyle; width?: number }) {
   return (
-    <View pointerEvents="none" style={[{ position: 'absolute', width: RUG.w, height: RUG.h }, style]}>
+    <View pointerEvents="none" style={[{ position: 'absolute', width, height: (width * RUG.h) / RUG.w }, style]}>
       <Svg width="100%" height="100%" viewBox="0 0 260 52" preserveAspectRatio="none">
         <Ellipse cx="130" cy="26" rx="130" ry="26" fill="#8C4F3F" opacity="0.85" />
         <Ellipse cx="130" cy="26" rx="108" ry="19" fill="none" stroke="#C9892B" strokeWidth="3" opacity="0.6" />
@@ -144,6 +144,7 @@ export function Rug({ style }: { style?: ViewStyle }) {
 }
 
 /** Style that centres the rug on a hero sprite of `spriteHeight`, whose horizontal centre is at `centerX` in the parent. */
-export function rugUnderFeet(spriteHeight: number, centerX: number) {
-  return { left: centerX - RUG.w / 2, bottom: spriteHeight * FEET_FROM_BOTTOM - RUG.h / 2 };
+export function rugUnderFeet(spriteHeight: number, centerX: number, width = RUG.w) {
+  const h = (width * RUG.h) / RUG.w;
+  return { left: centerX - width / 2, bottom: spriteHeight * FEET_FROM_BOTTOM - h / 2 };
 }
