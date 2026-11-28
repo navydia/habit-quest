@@ -7,7 +7,7 @@ import { REGIONS } from '@/src/content/regions';
 import { TITLES, earnedTitles } from '@/src/content/titles';
 import type { EyeColor, HairColor, HairStyle, Look, Pronouns, SaveData, Skin } from '@/src/game/types';
 import { isRegionUnlocked } from '@/src/game/world';
-import { minTouch, radius, space } from '@/src/theme/tokens';
+import { minTouch, radius, space , topTapGuard } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { HeroSprite } from '../hero/HeroSprite';
 import { HomeScene } from '../home/HomeScene';
@@ -138,7 +138,7 @@ export function CustomizeScreen({ visible, save, onClose: close, onChange }: Pro
                 style={{
                   flex: 1,
                   backgroundColor: c.bg,
-                  paddingTop: insets.top,
+                  paddingTop: insets.top + topTapGuard,
                 }}
               >
                 <View

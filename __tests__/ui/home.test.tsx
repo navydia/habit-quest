@@ -223,7 +223,8 @@ describe('regions, bosses and debug', () => {
   });
 
   test('without a boss habit, Home offers to choose one; with one, it shows tokens', async () => {
-    useGameStore.setState({ save: withHabit() });
+    // Tokens show while the gauge is filling (a full gauge shows only its button).
+    useGameStore.setState({ save: { ...withHabit(), completions: [] } });
     await render(<HomeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Read' }));
@@ -409,7 +410,6 @@ describe('every overlay on Home closes', () => {
     for (const [open, marker] of [
       [/^Map\./, 'The map'],
       ['Sort habits', 'Sort habits'],
-      ['Choose a boss habit', 'Boss habit'],
       ['Choose an adventure', 'Adventures in Thornwick Meadows'],
     ] as const) {
       await fireEvent.press(screen.getByRole('button', { name: open }));
@@ -417,6 +417,14 @@ describe('every overlay on Home closes', () => {
       await fireEvent.press(screen.getAllByRole('button', { name: 'Close' }).slice(-1)[0]);
       expect(screen.queryByText(marker === 'Sort habits' ? 'Custom' : marker)).toBeNull();
     }
+  });
+  test('the boss habit picker closes', async () => {
+    useGameStore.setState({ save: { ...base(), completions: [] } });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose a boss habit' }));
+    expect(screen.getAllByText('Boss habit').length).toBeGreaterThan(0);
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Close' }).slice(-1)[0]);
+    expect(screen.queryByText('Boss habit')).toBeNull();
   });
   test('the boss screen closes with ×', async () => {
     const s = base();
@@ -435,5 +443,61 @@ describe('every overlay on Home closes', () => {
     await render(<HomeScreen />);
     await fireEvent.press(screen.getByRole('button', { name: 'Collect' }));
     expect(screen.queryByText('Your hero has returned!')).toBeNull();
+  });
+});
+
+describe('round 8 Home edits', () => {
+  const full = () => {
+    const s = newSave();
+    s.habits = [habit('Read')];
+    s.completions = [{ habitId: 'Read', dayKey: today, at: new Date().toISOString() }];
+    return s;
+  };
+
+  test('a full gauge hides the panel and shows only the button', async () => {
+    useGameStore.setState({ save: full() });
+    await render(<HomeScreen />);
+    expect(screen.getByRole('button', { name: 'Choose an adventure' })).toBeTruthy();
+    expect(screen.queryByText('Adventure gauge')).toBeNull();
+    expect(screen.queryByRole('progressbar', { name: 'Adventure gauge' })).toBeNull();
+  });
+
+  test('the gauge panel shows while filling', async () => {
+    const s = newSave();
+    s.habits = [habit('Read'), habit('Walk')];
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.getByText('Adventure gauge')).toBeTruthy();
+  });
+
+  test('the level bar says how much EXP is left to the next level', async () => {
+    const s = newSave();
+    s.player = { ...s.player, exp: 30 };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    expect(screen.getByText(/^\d+ EXP to next level$/)).toBeTruthy();
+  });
+
+  test('a potion can be drunk on the adventure board before setting out', async () => {
+    const s = full();
+    s.potions = { owned: { courage: 1 }, active: null };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose an adventure' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Drink Courage Brew' }));
+    expect(useGameStore.getState().save.potions.active).toBe('courage');
+    expect(screen.getByText(/Courage Brew is active/)).toBeTruthy();
+  });
+
+  test('a potion can be drunk in the boss preview, and its power counts', async () => {
+    const s = full();
+    s.boss = { habitId: 'Read', tokenEpoch: null, bonusTokens: 6 };
+    s.potions = { owned: { courage: 1 }, active: null };
+    useGameStore.setState({ save: s });
+    await render(<HomeScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Boss fight' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Drink Courage Brew' }));
+    await fireEvent.press(screen.getByRole('radio', { name: /^Hard/ }));
+    expect(screen.getByText(/Requires 170 power · You have 145/)).toBeTruthy();
   });
 });

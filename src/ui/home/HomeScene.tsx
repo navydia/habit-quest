@@ -19,39 +19,87 @@ export function HomeScene({ place }: { place: string }) {
           <Stop offset="0" stopColor={scene.lamp} stopOpacity="0.55" />
           <Stop offset="1" stopColor={scene.lamp} stopOpacity="0" />
         </RadialGradient>
+        <LinearGradient id="floorFade" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={pal.bottom} stopOpacity="0" />
+          <Stop offset="1" stopColor={pal.bottom} stopOpacity="1" />
+        </LinearGradient>
       </Defs>
       {pal.kind === 'home' ? <Cottage /> : <Outdoors pal={pal} />}
     </Svg>
   );
 }
 
+/**
+ * Furniture placeholders, laid out from the creator's sketch (2026-11-28). Each piece is one entry in
+ * COTTAGE_LAYOUT (viewBox units, 390 × 420; the floor starts at y 300) so it can be moved without touching the art.
+ */
+export const COTTAGE_LAYOUT = {
+  lamp: { x: 210, y: 0, drop: 100 },
+  shelf: { x: 34, y: 140, w: 92, h: 96 },
+  window: { cx: 214, cy: 192, r: 50 },
+  door: { x: 304, y: 168, w: 64, h: 136 },
+  bed: { x: 14, y: 282, w: 120, h: 64 },
+  table: { x: 124, y: 284, w: 40, h: 30 },
+  statue: { x: 258, y: 262, w: 26, h: 62 },
+} as const;
+
 function Cottage() {
+  const L = COTTAGE_LAYOUT;
+  const { lamp, shelf, window: win, door, bed, table, statue } = L;
+  const floor = placeOf('home').bottom;
   return (
     <G>
       <Rect width="390" height="420" fill={placeOf('home').top} />
       {[40, 110, 180, 250, 320].map((x) => (
         <Rect key={x} x={x} y="0" width="3" height="300" fill={scene.wallShade} opacity="0.5" />
       ))}
-      {/* round window onto the dusk */}
-      <Circle cx="285" cy="120" r="56" fill={scene.wallShade} />
-      <Circle cx="285" cy="120" r="48" fill="url(#sky)" />
-      <Path d="M245 150 Q270 128 300 146 T330 140 L330 168 L240 168 Z" fill={scene.hillsFar} />
-      <Rect x="283" y="72" width="4" height="96" fill={scene.wallShade} />
-      <Rect x="237" y="118" width="96" height="4" fill={scene.wallShade} />
-      {/* shelf */}
-      <Rect x="40" y="150" width="110" height="8" rx="3" fill={scene.floor} />
-      <Rect x="52" y="126" width="14" height="24" rx="3" fill="#7E8F6A" />
-      <Rect x="70" y="132" width="12" height="18" rx="3" fill="#A06A4F" />
-      <Circle cx="112" cy="140" r="10" fill="#C79A5B" />
+      {/* round window onto the dusk, behind the hero */}
+      <Circle cx={win.cx} cy={win.cy} r={win.r + 8} fill={scene.wallShade} />
+      <Circle cx={win.cx} cy={win.cy} r={win.r} fill="url(#sky)" />
+      <Path
+        d={`M${win.cx - win.r} ${win.cy + win.r * 0.45} Q${win.cx - 15} ${win.cy + 2} ${win.cx + 15} ${win.cy + win.r * 0.4} T${win.cx + win.r} ${win.cy + win.r * 0.3} L${win.cx + win.r} ${win.cy + win.r} L${win.cx - win.r} ${win.cy + win.r} Z`}
+        fill={scene.hillsFar}
+      />
+      <Rect x={win.cx - 2} y={win.cy - win.r} width="4" height={win.r * 2} fill={scene.wallShade} />
+      <Rect x={win.cx - win.r} y={win.cy - 2} width={win.r * 2} height="4" fill={scene.wallShade} />
+      {/* shelf (bookcase placeholder) */}
+      <Rect x={shelf.x} y={shelf.y} width={shelf.w} height={shelf.h} rx="4" fill={scene.wallShade} />
+      {[0.33, 0.66].map((f) => (
+        <Rect key={f} x={shelf.x + 4} y={shelf.y + shelf.h * f} width={shelf.w - 8} height="4" fill={scene.floor} />
+      ))}
+      <Rect x={shelf.x + 10} y={shelf.y + 8} width="12" height={shelf.h * 0.33 - 8} rx="2" fill="#7E8F6A" />
+      <Rect x={shelf.x + 26} y={shelf.y + 14} width="10" height={shelf.h * 0.33 - 14} rx="2" fill="#A06A4F" />
+      <Circle cx={shelf.x + shelf.w - 18} cy={shelf.y + shelf.h * 0.66 - 9} r="9" fill="#C79A5B" />
+      {/* door */}
+      <Rect x={door.x} y={door.y} width={door.w} height={door.h} rx="30" fill={scene.wallShade} />
+      <Rect x={door.x + 6} y={door.y + 6} width={door.w - 12} height={door.h - 6} rx="26" fill="#6B4A3A" />
+      <Circle cx={door.x + door.w - 16} cy={door.y + door.h * 0.58} r="4" fill="#D9B46A" />
       {/* hanging lamp */}
-      <Rect x="160" y="0" width="2" height="70" fill={scene.wallShade} />
-      <Circle cx="161" cy="86" r="70" fill="url(#lampGlow)" />
-      <Path d="M146 70 L176 70 L170 88 L152 88 Z" fill="#D9B46A" />
-      {/* floor and rug */}
-      <Rect x="0" y="300" width="390" height="120" fill={placeOf('home').bottom} />
+      <Rect x={lamp.x - 1} y={lamp.y} width="2" height={lamp.drop} fill={scene.wallShade} />
+      <Circle cx={lamp.x} cy={lamp.y + lamp.drop + 16} r="70" fill="url(#lampGlow)" />
+      <Path
+        d={`M${lamp.x - 26} ${lamp.y + lamp.drop + 18} Q${lamp.x} ${lamp.y + lamp.drop - 8} ${lamp.x + 26} ${lamp.y + lamp.drop + 18} Z`}
+        fill="#D9B46A"
+      />
+      {/* floor, fading into the page colour at the bottom */}
+      <Rect x="0" y="300" width="390" height="120" fill={floor} />
       <Rect x="0" y="300" width="390" height="6" fill={scene.wallShade} opacity="0.6" />
       <Ellipse cx="195" cy="372" rx="130" ry="26" fill="#8C4F3F" opacity="0.85" />
       <Ellipse cx="195" cy="372" rx="108" ry="19" fill="none" stroke="#C9892B" strokeWidth="3" opacity="0.6" />
+      {/* bed */}
+      <Rect x={bed.x} y={bed.y + bed.h * 0.35} width={bed.w} height={bed.h * 0.65} rx="8" fill="#5C4034" />
+      <Rect x={bed.x + 4} y={bed.y + bed.h * 0.2} width={bed.w - 8} height={bed.h * 0.4} rx="8" fill="#6F8FA6" />
+      <Rect x={bed.x + 6} y={bed.y + bed.h * 0.1} width="30" height={bed.h * 0.3} rx="7" fill="#EFE3CF" />
+      <Rect x={bed.x} y={bed.y} width="8" height={bed.h} rx="3" fill="#5C4034" />
+      {/* side table */}
+      <Rect x={table.x} y={table.y} width={table.w} height="6" rx="2" fill="#7A5240" />
+      <Rect x={table.x + 4} y={table.y + 6} width="5" height={table.h - 6} fill="#5C4034" />
+      <Rect x={table.x + table.w - 9} y={table.y + 6} width="5" height={table.h - 6} fill="#5C4034" />
+      {/* statue */}
+      <Rect x={statue.x - 2} y={statue.y + statue.h - 12} width={statue.w + 4} height="12" rx="2" fill="#8A8178" />
+      <Ellipse cx={statue.x + statue.w / 2} cy={statue.y + 12} rx={statue.w / 3} ry="11" fill="#A39A90" />
+      <Rect x={statue.x + 4} y={statue.y + 20} width={statue.w - 8} height={statue.h - 32} rx="6" fill="#A39A90" />
+      <Rect x="0" y="350" width="390" height="70" fill="url(#floorFade)" />
     </G>
   );
 }
@@ -72,6 +120,7 @@ function Outdoors({ pal }: { pal: PlacePalette }) {
       {[60, 140, 250, 320].map((x) => (
         <Path key={x} d={`M${x} 340 q3 -10 6 0 q3 -12 6 0`} stroke="#5E7D63" strokeWidth="2" fill="none" />
       ))}
+      <Rect x="0" y="350" width="390" height="70" fill="url(#floorFade)" />
     </G>
   );
 }

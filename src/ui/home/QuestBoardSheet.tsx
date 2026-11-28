@@ -12,6 +12,7 @@ import { useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Sheet } from '../kit/Sheet';
 import { Text } from '../kit/Text';
+import { activePotionPower, PotionPicker } from '../character/PotionPicker';
 
 const DIFF_LABEL = { easy: 'Easy', normal: 'Normal', hard: 'Hard' } as const;
 
@@ -26,7 +27,7 @@ type Props = { visible: boolean; save: SaveData; onClose: () => void; onStart: (
 export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
   const { c } = useTheme();
   const [selected, setSelected] = useState<string | null>(null);
-  const power = powerOf(save.player);
+  const power = powerOf(save.player) + activePotionPower(save);
   const offers = save.board?.offers ?? [];
   const chosen = offers.find((o) => o.id === selected);
   const region = currentRegion(save);
@@ -86,6 +87,7 @@ export function QuestBoardSheet({ visible, save, onClose, onStart }: Props) {
         <View style={{ gap: space.l, backgroundColor: board.cork, borderRadius: radius.card, borderWidth: 6, borderColor: board.corkEdge, padding: space.l }} accessibilityRole="radiogroup" accessibilityLabel="Adventures">
           {offers.map((o, i) => card(o, i))}
         </View>
+        <PotionPicker save={save} compact />
         <Button
           title={chosen ? `Set out: ${chosen.name}` : 'Choose an adventure above'}
           disabled={!chosen}

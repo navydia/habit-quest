@@ -37,12 +37,12 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
       accessibilityLabel={bossHabit ? `Boss habit ${bossHabit.name}, ${tokens} of 6 tokens. Change` : 'Choose a boss habit'}
       onPress={onBossHabit}
       hitSlop={6}
-      style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.s, opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, opacity: pressed ? 0.7 : 1 })}
     >
+      {!bossHabit && <Text variant="caption" style={{ color: home.muted, marginRight: space.xs }}>Choose a boss habit</Text>}
       {Array.from({ length: 6 }, (_, i) => (
-        <DragonToken key={i} earned={!!bossHabit && i < tokens} />
+        <DragonToken key={i} size={18} earned={!!bossHabit && i < tokens} />
       ))}
-      {!bossHabit && <Text variant="label" style={{ color: home.muted }}>Choose a boss habit</Text>}
     </Pressable>
   ) : null;
 
@@ -80,9 +80,22 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
   else if (!gauge.hasHabits) hint = 'No habits are scheduled today. Your hero is resting.';
   else if (startedToday) hint = 'Today\'s adventure is done. Rest up for tomorrow.';
 
+  // A full gauge needs no panel: just the way out the door.
+  if (canStart) {
+    return tokens >= 6 && bossHabit ? (
+      <Button title="Boss fight" variant="reward" onPress={onBoss} accessibilityHint="Your 6 boss tokens are ready" />
+    ) : (
+      <Button title="Choose an adventure" variant="reward" onPress={onChoose} />
+    );
+  }
+
   return panel(
     <>
-      <Text variant="label" style={{ color: home.muted }}>Adventure gauge</Text>
+      {/* Subtitle on the left, small boss tokens right-aligned on the same row, just above the gauge. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: -space.s }}>
+        <Text variant="label" style={{ color: home.muted }}>Adventure gauge</Text>
+        {devils}
+      </View>
       <Gauge
         value={gauge.done / gauge.target}
         fill={gauge.full ? home.fill.gold : home.fill.moss}
@@ -90,12 +103,6 @@ export function QuestStatus({ save, gauge, canStart, startedToday, now, onChoose
         text={`${Math.min(gauge.done, gauge.target)} / ${gauge.target}`}
       />
       {hint && <Text variant="caption" style={{ color: home.muted, textAlign: 'center' }}>{hint}</Text>}
-      {devils}
-      {canStart && (tokens >= 6 && bossHabit ? (
-        <Button title="Boss fight" variant="reward" onPress={onBoss} accessibilityHint="Your 6 boss tokens are ready" />
-      ) : (
-        <Button title="Choose an adventure" variant="reward" onPress={onChoose} />
-      ))}
     </>,
   );
 }

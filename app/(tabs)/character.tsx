@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import type React from 'react';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeInsets } from '@/src/ui/useSafeInsets';
@@ -11,12 +12,13 @@ import { expToNext } from '@/src/game/progression';
 import { STAT_KEYS, gearStats, powerOf } from '@/src/game/stats';
 import type { Slot, StatKey } from '@/src/game/types';
 import { useGameStore } from '@/src/store/gameStore';
-import { board, fonts, home, hud, minTouch, radius, rarity as rarityColors, space } from '@/src/theme/tokens';
-import { titleById } from '@/src/content/titles';
+import { fonts, home, hud, minTouch, radius, rarity as rarityColors, space } from '@/src/theme/tokens';
+import { displayTitle, titleById } from '@/src/content/titles';
 import { HomeScene } from '@/src/ui/home/HomeScene';
 import { placeOf } from '@/src/content/places';
 import { CustomizeScreen } from '@/src/ui/character/CustomizeScreen';
-import { CogIcon } from '@/src/ui/icons/Icons';
+import { BagIcon, CogIcon } from '@/src/ui/icons/Icons';
+import { PotionPicker } from '@/src/ui/character/PotionPicker';
 import { useTheme } from '@/src/theme/useTheme';
 import { FamiliarSheet, familiarBonusText } from '@/src/ui/character/FamiliarSheet';
 import { SlotSheet } from '@/src/ui/character/SlotSheet';
@@ -55,6 +57,7 @@ export default function CharacterScreen() {
   const [familiarOpen, setFamiliarOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [customizing, setCustomizing] = useState(false);
+  const [bagOpen, setBagOpen] = useState(false);
   const { setProfile } = useGameStore.getState();
   const need = expToNext(p.level);
   const gear = gearStats(p);
@@ -83,11 +86,26 @@ export default function CharacterScreen() {
     );
   };
 
-  const tile = (emoji: string, value: number, label: string, color: string) => (
-    <View key={label} style={{ flexBasis: '47%', flexGrow: 1, backgroundColor: color, borderRadius: radius.card, padding: space.m, gap: 2 }}>
-      <Text style={{ fontSize: 20 }}>{emoji}</Text>
-      <Text variant="title" style={{ color: board.ink }}>{value}</Text>
-      <Text variant="caption" style={{ color: board.ink }}>{label}</Text>
+  const heroName = save.profile.name.trim() || 'Adventurer';
+  const titleText = displayTitle(titleById(save.profile.titleId)?.name ?? 'the Wanderer');
+
+  const roundButton = (label: string, onPress: () => void, icon: React.ReactNode) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => ({ width: minTouch, height: minTouch, borderRadius: minTouch / 2, backgroundColor: hud.bg, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+    >
+      {icon}
+    </Pressable>
+  );
+
+  /** One line of the lifetime list. */
+  const row = (emoji: string, value: number, label: string, last = false) => (
+    <View key={label} accessible accessibilityLabel={`${label}: ${value}`} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, minHeight: minTouch, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.line }}>
+      <Text style={{ fontSize: 18, width: 26, textAlign: 'center' }}>{emoji}</Text>
+      <Text style={{ flex: 1 }}>{label}</Text>
+      <Text variant="bodyStrong">{value}</Text>
     </View>
   );
 
@@ -104,28 +122,33 @@ export default function CharacterScreen() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ gap: space.m }}>{LEFT.map(box)}</View>
-          {/* The cog sits on the portrait's bottom-right, next to the familiar box. */}
-          <View>
-            <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Customize your character"
-              onPress={() => setCustomizing(true)}
-              style={({ pressed }) => ({ position: 'absolute', right: -6, bottom: 4, width: minTouch, height: minTouch, borderRadius: minTouch / 2, backgroundColor: hud.bg, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
-            >
-              <CogIcon color={home.text} />
-            </Pressable>
-          </View>
+          <HeroSprite player={p} anim="idle" height={200} appearance={{ look: save.profile.look, pronouns: save.profile.pronouns }} />
           <View style={{ gap: space.m }}>{RIGHT.map(box)}</View>
         </View>
+        {/* Name and title on one line (title smaller), then the class. */}
         <View style={{ alignItems: 'center', gap: 2 }}>
-          <Text variant="display" accessibilityRole="header" style={{ color: home.text, textAlign: 'center' }}>{save.profile.name.trim() || 'Adventurer'}</Text>
-          <Text variant="bodyStrong" style={{ color: home.muted }}>{titleById(save.profile.titleId)?.name ?? 'the Wanderer'}</Text>
-          <Text variant="caption" style={{ color: home.muted }}>{p.title} · Level {p.level}</Text>
+          <Text
+            variant="display"
+            accessibilityRole="header"
+            accessibilityLabel={`${heroName} ${titleText}`}
+            style={{ color: home.text, textAlign: 'center' }}
+          >
+            {heroName}
+            <Text variant="heading" style={{ color: home.muted }}>{` ${titleText}`}</Text>
+          </Text>
+          <Text variant="heading" style={{ color: home.muted }}>{p.title}</Text>
         </View>
-        <View style={{ gap: space.xs }}>
-          <ProgressBar value={p.exp / need} label="Experience" tone="accent" />
-          <Text variant="caption" style={{ color: home.muted }}>{p.exp} / {need} EXP to level {p.level + 1}</Text>
+        {/* Bag and cog, right-aligned just above the EXP bar. */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.s }}>
+          {roundButton('Bag', () => setBagOpen(true), <BagIcon color={home.text} />)}
+          {roundButton('Customize your character', () => setCustomizing(true), <CogIcon color={home.text} />)}
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <Text variant="title" style={{ color: home.text }}>Lv {p.level}</Text>
+          <View style={{ flex: 1, gap: space.xs }}>
+            <ProgressBar value={p.exp / need} label="Experience" tone="accent" />
+            <Text variant="caption" style={{ color: home.muted }}>{p.exp} / {need} EXP to level {p.level + 1}</Text>
+          </View>
         </View>
       </View>
 
@@ -164,13 +187,14 @@ export default function CharacterScreen() {
       {/* Lifetime stats */}
       <TactileCard>
         <Text variant="heading" accessibilityRole="header">Your journey</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.s }}>
-          {tile('⚔️', life.adventuresCompleted, `Adventures won (${life.adventuresTried} tried)`, '#E3A99A')}
-          {tile('✅', life.habitsCompleted, 'Habits completed', '#A8C9A0')}
-          {tile('😈', life.bossesBeaten, 'Bosses beaten', '#D9B28A')}
-          {tile('🗺️', life.regionsExplored, 'Regions explored', '#9DB8D3')}
-          {tile('✦', life.mementos, 'Mementos found', '#E6C27A')}
-          {tile('🪙', life.goldEarned, 'Gold earned', '#B9AED6')}
+        <View>
+          {row('⚔️', life.adventuresCompleted, 'Adventures won')}
+          {row('🧭', life.adventuresTried, 'Adventures tried')}
+          {row('✅', life.habitsCompleted, 'Habits completed')}
+          {row('😈', life.bossesBeaten, 'Bosses beaten')}
+          {row('🗺️', life.regionsExplored, 'Regions explored')}
+          {row('✦', life.mementos, 'Mementos found')}
+          {row('🪙', life.goldEarned, 'Gold earned', true)}
         </View>
       </TactileCard>
 
@@ -179,6 +203,12 @@ export default function CharacterScreen() {
       <CustomizeScreen visible={customizing} save={save} onClose={() => setCustomizing(false)} onChange={setProfile} />
       <SlotSheet slot={slot} player={p} onClose={() => setSlot(null)} onEquip={(uid) => equip(uid)} onUnequip={unequip} />
       <FamiliarSheet visible={familiarOpen} owned={save.familiars.owned} active={save.familiars.active} onClose={() => setFamiliarOpen(false)} onSetActive={setActiveFamiliar} />
+      <Sheet visible={bagOpen} title="Bag" onClose={() => setBagOpen(false)}>
+        <View style={{ gap: space.l, paddingBottom: space.s }}>
+          <Text variant="label" color="textMuted">POTIONS</Text>
+          <PotionPicker save={save} />
+        </View>
+      </Sheet>
       <Sheet visible={confirmReset} title="Reset your points?" onClose={() => setConfirmReset(false)}>
         <View style={{ gap: space.l }}>
           <Text color="textMuted">All {p.spentSp} points come back for you to spend again. It&rsquo;s free.</Text>

@@ -7,10 +7,11 @@ import { availableBosses, bossChance, bossRequiredPower } from '@/src/game/bosse
 import { BOSS_DEFENSE_PER_POINT } from '@/src/game/config';
 import { powerOf, totalStats } from '@/src/game/stats';
 import type { BossDifficulty, SaveData } from '@/src/game/types';
-import { minTouch, radius, space } from '@/src/theme/tokens';
+import { minTouch, radius, space , topTapGuard } from '@/src/theme/tokens';
 import { useReducedMotion, useTheme } from '@/src/theme/useTheme';
 import { BossFigure } from '../home/BossFigure';
 import { Button } from '../kit/Button';
+import { activePotionPower, PotionPicker } from '../character/PotionPicker';
 import { Text } from '../kit/Text';
 
 const NO_INSETS = { top: 0, bottom: 0, left: 0, right: 0 };
@@ -40,8 +41,9 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
   // Only mounted while open (see Sheet): closing unmounts the Modal.
   if (!visible || !boss) return null;
 
-  const chance = bossChance(save.player, boss, difficulty);
-  const yourPower = powerOf(save.player) + BOSS_DEFENSE_PER_POINT * totalStats(save.player).defense;
+  const potionPower = activePotionPower(save);
+  const chance = bossChance(save.player, boss, difficulty, potionPower);
+  const yourPower = powerOf(save.player) + BOSS_DEFENSE_PER_POINT * totalStats(save.player).defense + potionPower;
   // Colour shows the risk: moss = safe, gold = a gamble, ember = a long shot.
   const tone = chance >= 1 ? c.primary : chance >= 0.5 ? c.accent : c.ember;
   const toneText = chance >= 1 ? 'onPrimary' : chance >= 0.5 ? 'onAccent' : 'onEmber';
@@ -66,7 +68,7 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
                   <View
                     style={{
                       backgroundColor: tone,
-                      paddingTop: insets.top + space.m,
+                      paddingTop: insets.top + topTapGuard,
                       paddingBottom: space.xl,
                       borderBottomLeftRadius: radius.sheet,
                       borderBottomRightRadius: radius.sheet,
@@ -162,7 +164,7 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
                     <View style={{ flexDirection: 'row', gap: space.s }} accessibilityRole="radiogroup" accessibilityLabel="Difficulty">
                       {DIFFS.map((x) => {
                         const sel = x.d === difficulty;
-                        const ch = bossChance(save.player, boss, x.d);
+                        const ch = bossChance(save.player, boss, x.d, potionPower);
                         return (
                           <Pressable
                             key={x.d}
@@ -204,6 +206,7 @@ export function BossSheet({ visible, save, onClose, onFight, onAdventureInstead 
                         {label.note} Losing spends your 6 tokens.
                       </Text>
                     </View>
+                    <PotionPicker save={save} compact />
                     <Button title={`Fight ${boss.name} (${label.label})`} variant="reward" onPress={() => onFight(boss.id, difficulty)} />
                     <Pressable
                       accessibilityRole="button"

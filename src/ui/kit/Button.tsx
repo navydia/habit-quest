@@ -7,6 +7,8 @@ import { Text } from './Text';
 
 type Props = {
   title: string;
+  /** Spoken label when the visible title is too short on its own (defaults to the title). */
+  accessibilityLabel?: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'reward' | 'outline';
   /** Text/border colour for the outline variant (e.g. on the dark Home page). */
@@ -17,7 +19,7 @@ type Props = {
 };
 
 /** Tactile button: a darker "lip" below; the face sinks on press. */
-export function Button({ title, onPress, variant = 'primary', disabled, style, accessibilityHint, outlineColor }: Props) {
+export function Button({ title, accessibilityLabel, onPress, variant = 'primary', disabled, style, accessibilityHint, outlineColor }: Props) {
   const { c } = useTheme();
   const sink = useState(() => new Animated.Value(0))[0];
   const spring = (to: number) =>
@@ -28,7 +30,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, style, a
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={title}
+        accessibilityLabel={accessibilityLabel ?? title}
         accessibilityHint={accessibilityHint}
         accessibilityState={{ disabled: !!disabled }}
         disabled={disabled}
@@ -55,7 +57,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, style, a
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}

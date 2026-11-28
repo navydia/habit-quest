@@ -8,7 +8,7 @@ import { EMOJI_CHOICES, LIFE_AREAS, TIMES_OF_DAY, lifeAreaColor } from '@/src/co
 import { dayKey } from '@/src/game/dates';
 import type { Habit, LifeArea, Schedule, TimeOfDay, Weekday } from '@/src/game/types';
 import type { HabitDetails } from '@/src/store/gameStore';
-import { minTouch, radius, space } from '@/src/theme/tokens';
+import { minTouch, radius, space , topTapGuard } from '@/src/theme/tokens';
 import { useTheme } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
@@ -169,7 +169,7 @@ export function HabitSheet({ visible, habit, onClose, onSave, onArchive, bossTok
                 style={{
                   flex: 1,
                   backgroundColor: c.bg,
-                  paddingTop: insets.top,
+                  paddingTop: insets.top + topTapGuard,
                 }}
               >
                 <View

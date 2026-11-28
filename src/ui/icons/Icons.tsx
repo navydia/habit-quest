@@ -50,3 +50,20 @@ export function CogIcon({ size = 22, color }: { size?: number; color: string }) 
     </Svg>
   );
 }
+
+/** A drawstring bag (the potion bag on the Character box). */
+export function BagIcon({ size = 22, color }: { size?: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M9 3.5h6l-1.6 3.2h-2.8z" stroke={color} strokeWidth={2} strokeLinejoin="round" fill="none" />
+      <Path
+        d="M10.6 6.7C6.4 8.4 4 11.6 4 15.4 4 18.9 6.6 21 12 21s8-2.1 8-5.6c0-3.8-2.4-7-6.6-8.7"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        fill="none"
+      />
+      <Path d="M9.5 8.2h5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}

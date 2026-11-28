@@ -17,12 +17,29 @@ beforeEach(() => {
   useGameStore.setState({ save: s, loaded: true });
 });
 
-test('the character box shows power, name, title, then class and level', async () => {
+test('the character box shows power, name and title on one line, then class, and the level by the EXP bar', async () => {
   await render(<CharacterScreen />);
   expect(screen.getByLabelText(/^[0-9]+ power$/)).toBeTruthy();
-  expect(screen.getByText('Adventurer')).toBeTruthy();
-  expect(screen.getByText('the Wanderer')).toBeTruthy();
-  expect(screen.getByText('Vanguard · Level 1')).toBeTruthy();
+  expect(screen.getByLabelText('Adventurer the Wanderer')).toBeTruthy();
+  expect(screen.getByText('Vanguard')).toBeTruthy();
+  expect(screen.getByText('Lv 1')).toBeTruthy();
+});
+
+test('titles without "the" get one on the character box', async () => {
+  useGameStore.setState({ save: { ...g().save, profile: { ...g().save.profile, titleId: 'boss-breaker' } } });
+  await render(<CharacterScreen />);
+  expect(screen.getByLabelText('Adventurer the Boss Breaker')).toBeTruthy();
+});
+
+test('the bag shows your potions and lets you drink one', async () => {
+  const s = g().save;
+  useGameStore.setState({ save: { ...s, potions: { owned: { courage: 2 }, active: null } } });
+  await render(<CharacterScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Bag' }));
+  expect(screen.getByText('Courage Brew')).toBeTruthy();
+  expect(screen.getByText('×2')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Drink Courage Brew' }));
+  expect(g().save.potions).toEqual({ owned: { courage: 1 }, active: 'courage' });
 });
 
 test('the cog opens Customize, where name, look and title can change', async () => {

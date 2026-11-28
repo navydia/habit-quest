@@ -9,7 +9,7 @@ import { dayKey } from '@/src/game/dates';
 import { canStartQuest, gaugeProgress } from '@/src/game/gauge';
 import { ensurePermission } from '@/src/notify/questNotifications';
 import { useGameStore } from '@/src/store/gameStore';
-import { home, hud, radius, space } from '@/src/theme/tokens';
+import { home, hud, radius, space, topTapGuard } from '@/src/theme/tokens';
 import { useReducedMotion } from '@/src/theme/useTheme';
 import { Button } from '../kit/Button';
 import { Text } from '../kit/Text';
@@ -94,10 +94,10 @@ export function HomeScreen() {
           <Rect width="100%" height="100%" fill="url(#pull)" />
         </Svg>
       </View>
-      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}>
+      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingBottom: insets.bottom + 96, backgroundColor: pal.bottom }}>
         <View style={[styles.stage, { height: Math.max(300, height * 0.45) }]}>
           <HomeScene place={scenePlace} />
-          <View style={[styles.mapRow, { top: insets.top + space.s }]}>
+          <View style={[styles.mapRow, { top: insets.top + topTapGuard }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Map. You are at ${scenePlace === 'home' ? 'home' : region.name}`}
@@ -125,11 +125,14 @@ export function HomeScreen() {
         </View>
 
         <View style={styles.body}>
-          <View style={{ marginTop: space.m, flexDirection: 'row', alignItems: 'center', gap: space.m }} accessible accessibilityLabel={`Level ${save.player.level}, ${save.player.exp} of ${expToNext(save.player.level)} EXP`}>
-            <Text variant="bodyStrong" style={{ color: home.text }}>Lv {save.player.level}</Text>
-            <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.18)', overflow: 'hidden' }}>
-              <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
+          <View style={{ marginTop: space.m, gap: 2 }} accessible accessibilityLabel={`Level ${save.player.level}, ${Math.max(0, expToNext(save.player.level) - save.player.exp)} EXP to next level`}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+              <Text variant="bodyStrong" style={{ color: home.text }}>Lv {save.player.level}</Text>
+              <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,248,236,0.18)', overflow: 'hidden' }}>
+                <View style={{ width: `${Math.min(100, (save.player.exp / expToNext(save.player.level)) * 100)}%`, height: '100%', backgroundColor: home.fill.gold }} />
+              </View>
             </View>
+            <Text variant="caption" style={{ color: home.muted, textAlign: 'right' }}>{Math.max(0, expToNext(save.player.level) - save.player.exp)} EXP to next level</Text>
           </View>
           <View>
             <QuestStatus
@@ -284,7 +287,7 @@ const styles = StyleSheet.create({
   buddy: { position: 'absolute', left: 10, bottom: 14, width: 42, height: 36, borderTopLeftRadius: 21, borderTopRightRadius: 21, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#C79A5B', alignItems: 'center', justifyContent: 'center' },
   buddyEyes: { flexDirection: 'row', gap: 8, marginTop: -2 },
   eye: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#2A2623' },
-  mapRow: { position: 'absolute', right: space.screen, flexDirection: 'row' },
+  mapRow: { position: 'absolute', left: space.screen, flexDirection: 'row' },
   hudRow2: { position: 'absolute', left: space.screen, right: space.screen, flexDirection: 'row', gap: space.s },
   tapChip: { minHeight: 32, justifyContent: 'center' },
   chip: { backgroundColor: hud.bg, borderRadius: radius.chip, paddingHorizontal: space.m, paddingVertical: space.xs },

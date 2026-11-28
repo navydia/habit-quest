@@ -28,3 +28,8 @@ export const TITLES: TitleDef[] = [
 
 export const titleById = (id: string) => TITLES.find((t) => t.id === id);
 export const earnedTitles = (s: SaveData) => TITLES.filter((t) => t.earned(s));
+
+/** Titles read after the name ("Leo the Boss Breaker"), so each one starts with "the". */
+export function displayTitle(name: string): string {
+  return /^the\s/i.test(name) ? name : `the ${name}`;
+}

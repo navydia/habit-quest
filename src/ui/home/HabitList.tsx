@@ -146,12 +146,12 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
 
   const left = todo.length;
   return (
-    <View style={{ gap: space.s }}>
+    <View style={{ gap: space.xs, marginTop: -space.s }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text variant="heading" accessibilityRole="header" style={{ color: home.text, flex: 1 }}>
           {scheduled.length === 0 ? 'Today' : left === 0 ? 'All done for today' : `${left} ${left === 1 ? 'habit' : 'habits'} left for today`}
         </Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Sort habits" onPress={onSort} hitSlop={6} style={({ pressed }) => ({ minHeight: minTouch, minWidth: minTouch, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Sort habits" onPress={onSort} hitSlop={6} style={({ pressed }) => ({ minHeight: minTouch, minWidth: minTouch, marginVertical: -space.s, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
           <SlidersIcon color={home.text} />
         </Pressable>
       </View>
@@ -161,9 +161,9 @@ export function HabitList({ save, today, onComplete, onEdit, onAdd, onSort, onMo
 
       {/* Headers, cards and placeholders are direct children, so every onLayout y shares one coordinate space. */}
       <View {...responder.panHandlers} style={{ gap: space.m }}>
-        {visible.flatMap((s) => [
+        {visible.flatMap((s, si) => [
           groupBy !== 'custom' ? (
-            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: space.l, marginBottom: 0 }}>
+            <View key={`hdr-${s.key}`} onLayout={(e) => layout.set(`hdr:${s.key}`, { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginTop: si === 0 ? 0 : space.l, marginBottom: 0 }}>
               <Text variant="bodyStrong" style={{ color: home.text }}>{s.title}</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: home.line }} />
               <Pressable

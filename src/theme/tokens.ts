@@ -81,6 +81,8 @@ export const rarity = {
 export const space = { xs: 4, s: 8, m: 12, l: 16, xl: 20, xxl: 24, xxxl: 32, huge: 40, screen: 20 };
 export const radius = { card: 20, sheet: 28, button: 16, chip: 999 };
 export const minTouch = 44;
+/** Extra gap below the safe area before anything tappable: taps right under the status bar don't register on the creator's iPhone. */
+export const topTapGuard = 28;
 export const lipHeight = 4;
 
 export const fonts = {
