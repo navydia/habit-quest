@@ -35,10 +35,11 @@ export default function ShopScreen() {
   const [tab, setTab] = useState<Tab>('armory');
   // Other screens can open a given shop (the Bag's "Go to shop" opens the Apothecary). Adjusted during render
   // when the param changes, so a later visit with a new param switches tabs even though this screen stays mounted.
-  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
-  const [seenParam, setSeenParam] = useState<string | undefined>(undefined);
-  if (tabParam !== seenParam) {
-    setSeenParam(tabParam);
+  const { tab: tabParam, at } = useLocalSearchParams<{ tab?: string; at?: string }>();
+  const request = `${tabParam ?? ''}|${at ?? ''}`;
+  const [seenRequest, setSeenRequest] = useState('|');
+  if (request !== seenRequest) {
+    setSeenRequest(request);
     if (TABS.some((t) => t.id === tabParam)) setTab(tabParam as Tab);
   }
   const [message, setMessage] = useState<string | null>(null);
